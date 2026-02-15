@@ -1,0 +1,333 @@
+/* =======================================
+   СБРОС СТИЛЕЙ И БАЗОВЫЕ НАСТРОЙКИ
+   ======================================= */
+   
+/* Убираем все отступы и отключаем стандартные рамки */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Ширина элемента считается вместе с границами и отступами */
+}
+
+/* Основные настройки для всего документа */
+body {
+    font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* Современный, хорошо читаемый шрифт без засечек */
+    background-color: #1a1e24; /* Глубокий темно-серый фон для серьезности */
+    color: #e0e0e0; /* Светлый текст, не чисто белый, чтобы не резал глаз */
+    line-height: 1.5; /* Комфортная высота строки для чтения */
+}
+
+/* =======================================
+   КОНТЕЙНЕР ПРИЛОЖЕНИЯ
+   ======================================= */
+   
+#app {
+    height: 100vh; /* Растягиваем на всю высоту окна */
+    width: 100vw;  /* Растягиваем на всю ширину окна */
+    display: flex;
+    flex-direction: column;
+}
+
+#content {
+    flex: 1; /* Занимает все доступное место */
+    display: flex;
+}
+
+/* =======================================
+   ЭКРАН АВТОРИЗАЦИИ
+   ======================================= */
+
+.login-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Центрируем по вертикали */
+    align-items: center;     /* Центрируем по горизонтали */
+    background: linear-gradient(145deg, #222831 0%, #2d343c 100%);
+    /* Благородный градиент, напоминающий камень или металл */
+    color: #ffffff;
+}
+
+/* Заголовок "Добро пожаловать" */
+.login-container h1 {
+    font-size: 3rem;       /* Крупный, внушительный размер */
+    font-weight: 400;      /* Не слишком жирный, утонченный */
+    letter-spacing: 2px;   /* Небольшой интервал между буквами */
+    margin-bottom: 1rem;
+    text-transform: uppercase; /* Заглавные буквы для официальности */
+    color: #d4af37; /* Золотистый акцент — цвет куполов, статуса */
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3); /* Легкая тень для глубины */
+}
+
+/* Подзаголовок про корпоративную почту */
+.login-container p {
+    font-size: 1.2rem;
+    margin-bottom: 3rem;
+    color: #a0a8b4; /* Приглушенный серый для второстепенного текста */
+    letter-spacing: 0.5px;
+}
+
+/* Кнопка входа */
+#login-btn {
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+    background: transparent; /* Прозрачный фон */
+    border: 2px solid #d4af37; /* Золотая рамка */
+    border-radius: 30px;      /* Скругленные, но не игривые углы */
+    cursor: pointer;
+    transition: all 0.3s ease; /* Плавное изменение при наведении */
+    outline: none;
+}
+
+/* Эффект при наведении на кнопку */
+#login-btn:hover {
+    background: #d4af37; /* Заливается золотым */
+    color: #222831;      /* Текст становится темным */
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); /* Золотое свечение */
+}
+
+/* Состояние кнопки, когда вход выполняется (disabled) */
+#login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    border-color: #a0a8b4;
+}
+
+/* =======================================
+   ИНТЕРФЕЙС ЧАТА
+   ======================================= */
+
+.chat-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    background-color: #1e242b; /* Основной фон чата */
+}
+
+/* ----- БОКОВАЯ ПАНЕЛЬ (СЛЕВА) ----- */
+.sidebar {
+    width: 280px;           /* Фиксированная ширина */
+    background-color: #252b33; /* Чуть светлее основного фона */
+    border-right: 1px solid #3a424c; /* Едва заметная граница */
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(5px); /* Легкое размытие фона (современный эффект) */
+}
+
+/* Блок с информацией о пользователе */
+.user-info {
+    padding: 20px;
+    border-bottom: 1px solid #3a424c;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+/* Аватар пользователя */
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%; /* Круглый аватар */
+    object-fit: cover;   /* Чтобы картинка не искажалась */
+    border: 2px solid #d4af37; /* Золотая рамка вокруг аватара */
+}
+
+/* Email пользователя под аватаром */
+#user-email {
+    font-size: 0.95rem;
+    color: #c0c8d2;
+    font-weight: 500;
+    word-break: break-all; /* Перенос длинных email'ов */
+}
+
+/* Список чатов */
+.chats-list {
+    flex: 1; /* Занимает всё оставшееся место между user-info и кнопкой выхода */
+    overflow-y: auto; /* Прокрутка, если чатов много */
+    padding: 15px;
+}
+
+/* Отдельный элемент в списке чатов */
+.chat-item {
+    padding: 15px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    color: #d0d8e2;
+    font-weight: 400;
+    border-left: 3px solid transparent; /* Подготовка для активного чата */
+}
+
+/* Эффект при наведении на чат в списке */
+.chat-item:hover {
+    background-color: #323a45;
+}
+
+/* Активный (выбранный) чат */
+.chat-item.active {
+    background-color: #2d363f;
+    border-left: 3px solid #d4af37; /* Золотая полоска слева */
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* Кнопка выхода */
+.logout {
+    margin: 15px;
+    padding: 12px;
+    background: transparent;
+    color: #e05a5a; /* Приглушенный красный */
+    border: 1px solid #e05a5a;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+}
+
+.logout:hover {
+    background: #e05a5a;
+    color: #ffffff;
+}
+
+/* ----- ОСНОВНАЯ ОБЛАСТЬ ЧАТА (СПРАВА) ----- */
+.chat-area {
+    flex: 1; /* Занимает всю оставшуюся ширину */
+    display: flex;
+    flex-direction: column;
+    background-color: #1a1e24; /* Темный фон */
+}
+
+/* Область с сообщениями */
+.messages {
+    flex: 1; /* Растягивается, оставляя место для поля ввода */
+    padding: 25px;
+    overflow-y: auto; /* Прокрутка для старых сообщений */
+    display: flex;
+    flex-direction: column;
+    gap: 15px; /* Расстояние между сообщениями */
+}
+
+/* Базовый стиль для любого сообщения */
+.message {
+    max-width: 70%; /* Чтобы сообщение не растягивалось на всю ширину */
+    padding: 12px 18px;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word; /* Перенос длинных слов */
+    line-height: 1.4;
+}
+
+/* Входящее сообщение (от других пользователей) */
+.message.received {
+    align-self: flex-start; /* Прижимаем к левому краю */
+    background-color: #2d343c; /* Темно-серый фон */
+    color: #e0e0e0;
+    border-bottom-left-radius: 5px; /* Легкая асимметрия для стиля */
+}
+
+/* Исходящее сообщение (от текущего пользователя) */
+.message.sent {
+    align-self: flex-end; /* Прижимаем к правому краю */
+    background: linear-gradient(135deg, #3a424c 0%, #2d343c 100%);
+    color: #ffffff;
+    border-bottom-right-radius: 5px;
+    border: 1px solid #4a535f;
+}
+
+/* Текст внутри сообщения */
+.message .text {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+/* Время отправки сообщения */
+.message .time {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    text-align: right;
+    text-transform: uppercase; /* Время заглавными */
+    letter-spacing: 0.5px;
+}
+
+/* ----- ПАНЕЛЬ ВВОДА СООБЩЕНИЯ ----- */
+.message-input {
+    display: flex;
+    padding: 20px;
+    background-color: #252b33; /* Как боковая панель */
+    border-top: 1px solid #3a424c;
+    gap: 15px;
+}
+
+/* Поле для ввода текста */
+#message-field {
+    flex: 1;
+    padding: 15px 20px;
+    background-color: #1a1e24;
+    border: 1px solid #3a424c;
+    border-radius: 30px;
+    color: #ffffff;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+/* Эффект при фокусе на поле ввода */
+#message-field:focus {
+    border-color: #d4af37; /* Золотое свечение при фокусе */
+}
+
+/* Плейсхолдер (подсказка внутри поля) */
+#message-field::placeholder {
+    color: #6f7a88;
+    font-style: italic;
+}
+
+/* Кнопка отправки сообщения */
+#send-btn {
+    padding: 0 30px;
+    background: transparent;
+    color: #d4af37;
+    border: 2px solid #d4af37;
+    border-radius: 30px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+#send-btn:hover {
+    background: #d4af37;
+    color: #1a1e24;
+}
+
+/* =======================================
+   ПОЛОСЫ ПРОКРУТКИ (для WebKit-браузеров)
+   ======================================= */
+
+/* Стилизация полосы прокрутки, чтобы она не выбивалась из дизайна */
+::-webkit-scrollbar {
+    width: 6px; /* Тонкая полоса */
+}
+
+::-webkit-scrollbar-track {
+    background: #252b33; /* Цвет трека */
+}
+
+::-webkit-scrollbar-thumb {
+    background: #4a535f; /* Цвет ползунка */
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #d4af37; /* Золотой при наведении */
+}
