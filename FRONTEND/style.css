@@ -108,6 +108,7 @@ body {
     width: 100%;
     height: 100%;
     background-color: #1e242b; /* Основной фон чата */
+    overflow: hidden; /* запрещаем прокрутку всего контейнера*/
 }
 
 /* ----- БОКОВАЯ ПАНЕЛЬ (СЛЕВА) ----- */
@@ -117,16 +118,25 @@ body {
     border-right: 1px solid #3a424c; /* Едва заметная граница */
     display: flex;
     flex-direction: column;
-    backdrop-filter: blur(5px); /* Легкое размытие фона (современный эффект) */
+    backdrop-filter: blur(10px); /* Легкое размытие фона (современный эффект) */
+    height: 100vh; /* Вся высота окна */
+    position: sticky; /* Прикрепляем */
+    top: 0; /* К верхнему краю */
+    left: 0;
+    overflow-y: auto; /* Прокрутка только если список чатов очень длинный */
 }
 
-/* Блок с информацией о пользователе */
+/* Блок с информацией о пользователе - всегда сверху будет */
 .user-info {
     padding: 20px;
     border-bottom: 1px solid #3a424c;
     display: flex;
     align-items: center;
     gap: 15px;
+    background-color: #252b33; /* Фон чтобы не просвечивало */
+    position: sticky;
+    top: 0;
+    z-index: 10; /* Поверх всего */
 }
 
 /* Аватар пользователя */
@@ -151,6 +161,7 @@ body {
     flex: 1; /* Занимает всё оставшееся место между user-info и кнопкой выхода */
     overflow-y: auto; /* Прокрутка, если чатов много */
     padding: 15px;
+    max-height: calc(100vh - 140px); /* Высота минус user-info и кнопка выхода */
 }
 
 /* Отдельный элемент в списке чатов */
@@ -204,16 +215,20 @@ body {
     display: flex;
     flex-direction: column;
     background-color: #1a1e24; /* Темный фон */
+    height: 100vh; /* Вся высота окна */
+    overflow: hidden; /* Запрещаем прокрутку всей области */
+
 }
 
 /* Область с сообщениями */
 .messages {
-    flex: 1; /* Растягивается, оставляя место для поля ввода */
+    flex: 1;
     padding: 25px;
-    overflow-y: auto; /* Прокрутка для старых сообщений */
+    overflow-y: auto; /* ВАЖНО: прокрутка ТОЛЬКО для сообщений */
     display: flex;
     flex-direction: column;
-    gap: 15px; /* Расстояние между сообщениями */
+    gap: 15px;
+    max-height: calc(100vh - 100px); /* Высота минус панель ввода */
 }
 
 /* Базовый стиль для любого сообщения */
