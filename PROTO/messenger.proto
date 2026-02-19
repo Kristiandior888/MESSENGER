@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package messenger;
+
+option go_package = "./proto;messenger";
+
+// Сервис мессенджера
+service MessengerService {
+    // Аутентификация пользователя
+    rpc Login (LoginRequest) returns (LoginResponse);
+    
+    // Получение списка чатов пользователя
+    rpc GetChats (GetChatsRequest) returns (GetChatsResponse);
+    
+    // Получение истории сообщений чата
+    rpc GetMessages (GetMessagesRequest) returns (GetMessagesResponse);
+    
+    // Отправка сообщения
+    rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+    
+    // Стриминг новых сообщений (для real-time обновлений)
+    rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
+}
+
+// --- Сообщения для аутентификации ---
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    bool success = 1;
+    string token = 2;
+    User user = 3;
+    string error = 4;
+}
+
+// --- Информация о пользователе ---
+message User {
+    string id = 1;
+    string email = 2;
+    string name = 3;
+    string avatar_url = 4;
+    string status = 5;
+    int64 last_seen = 6;
+}
+
+// --- Чат (диалог или группа) ---
+message Chat {
+    string id = 1;
+    string name = 2;
+    ChatType type = 3;
+    string avatar_url = 4;
+    Message last_message = 5;
+    int32 unread_count = 6;
+    repeated User participants = 7;
+    int64 created_at = 8;
+}
+
+enum ChatType {
+    PRIVATE = 0;
+    GROUP = 1;
+}
+
+// --- Сообщение ---
+message Message {
+    string id = 1;
+    string chat_id = 2;
+    string sender_id = 3;
+    string sender_name = 4;
+    string text = 5;
+    int64 timestamp = 6;
+    MessageStatus status = 7;
+    MessageType type = 8;
+    string file_url = 9;
+}
+
+enum MessageStatus {
+    SENT = 0;
+    DELIVERED = 1;
+    READ = 2;
+}
+
+enum MessageType {
+    TEXT = 0;
+    IMAGE = 1;
+    FILE = 2;
+    SYSTEM = 3;
+}
+
+// --- Запросы/Ответы для чатов ---
+message GetChatsRequest {
+    string user_id = 1;
+    string token = 2;
+}
+
+message GetChatsResponse {
+    repeated Chat chats = 1;
+    string error = 2;
+}
+
+// --- Запросы/Ответы для сообщений ---
+message GetMessagesRequest {
+    string chat_id = 1;
+    string token = 2;
+    int32 limit = 3;
+    string cursor = 4;
+}
+
+message GetMessagesResponse {
+    repeated Message messages = 1;
+    string next_cursor = 2;
+    string error = 3;
+}
+
+// --- Отправка сообщения ---
+message SendMessageRequest {
+    string chat_id = 1;
+    string sender_id = 2;
+    string text = 3;
+    string token = 4;
+    MessageType type = 5;
+    string file_data = 6;
+}
+
+message SendMessageResponse {
+    bool success = 1;
+    Message message = 2;
+    string error = 3;
+}
+
+// --- Стриминг сообщений ---
+message StreamMessagesRequest {
+    string user_id = 1;
+    string token = 2;
+    repeated string chat_ids = 3;
+}
