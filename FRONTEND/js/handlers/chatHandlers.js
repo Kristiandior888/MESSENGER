@@ -1,7 +1,7 @@
 import { showScreen } from '../ui.js';
-import { addMessage } from '../utils/messageUtils.js';
+import { addMessage, updateLastMessageStatusUI } from '../utils/messageUtils.js';
 import { state } from '../app.js';
-import { getMessages } from '../storage.js';
+import { getMessages, updateLastMessageStatus } from '../storage.js';
 
 // НАСТРОЙКА ЭКРАНА ЧАТА
 function setupChatHandlers() {
@@ -16,12 +16,9 @@ function setupChatHandlers() {
     // ЗАГРУЖАЕМ АВАТАР
     const chatAvatar = document.getElementById('chat-avatar');
     if (chatAvatar) {
-        // Если есть сохраненный аватар в состоянии
         if (state.userAvatar) {
             chatAvatar.src = state.userAvatar;
-        } 
-        // Или в localStorage
-        else {
+        } else {
             const savedAvatar = localStorage.getItem('userAvatar');
             if (savedAvatar) {
                 state.userAvatar = savedAvatar;
@@ -46,12 +43,27 @@ function setupChatHandlers() {
         const sendMessage = () => {
             const text = messageField.value.trim();
             if (text) {
-                addMessage(text, 'sent', true);
+                // 1. Показываем сообщение со статусом 'sending'
+                addMessage(text, 'sent', true, 'sending');
                 messageField.value = '';
-
+                
+                // 2. Через 1 секунду - 'sent'
                 setTimeout(() => {
-                    addMessage('Сообщение доставлено!', 'received', true);
+                    updateLastMessageStatusUI('sent');
+                    updateLastMessageStatus(state.currentChat, 'sent');
                 }, 1000);
+                
+                // 3. Через 2 секунды - 'delivered'
+                setTimeout(() => {
+                    updateLastMessageStatusUI('delivered');
+                    updateLastMessageStatus(state.currentChat, 'delivered');
+                }, 2000);
+                
+                // 4. Через 3 секунды - 'read'
+                setTimeout(() => {
+                    updateLastMessageStatusUI('read');
+                    updateLastMessageStatus(state.currentChat, 'read');
+                }, 3000);
             }
         };
 
@@ -100,10 +112,33 @@ function loadMessagesForChat(chatName) {
             messages.forEach(msg => {
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `message ${msg.type}`;
-                messageDiv.innerHTML = `
-                    <div class="text">${msg.text}</div>
-                    <div class="time">${msg.time}</div>
-                `;
+                
+                // Текст сообщения
+                const textDiv = document.createElement('div');
+                textDiv.className = 'text';
+                textDiv.textContent = msg.text;
+                
+                // Контейнер для времени и статуса
+                const metaDiv = document.createElement('div');
+                metaDiv.className = 'message-meta';
+                
+                // Время
+                const timeSpan = document.createElement('span');
+                timeSpan.className = 'time';
+                timeSpan.textContent = msg.time;
+                
+                // Статус для исходящих
+                if (msg.type === 'sent') {
+                    const statusSpan = document.createElement('span');
+                    statusSpan.className = `message-status ${msg.status || 'sent'}`;
+                    metaDiv.appendChild(timeSpan);
+                    metaDiv.appendChild(statusSpan);
+                } else {
+                    metaDiv.appendChild(timeSpan);
+                }
+                
+                messageDiv.appendChild(textDiv);
+                messageDiv.appendChild(metaDiv);
                 messagesDiv.appendChild(messageDiv);
             });
             messagesDiv.scrollTop = messagesDiv.scrollHeight;

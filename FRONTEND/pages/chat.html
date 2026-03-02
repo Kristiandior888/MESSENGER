@@ -1,12 +1,11 @@
-
 <div class="chat-container">
 
     <div class="sidebar">
         <div class="user-info">
-                <div class="avatar-wrapper" id="avatar-wrapper" style="cursor: pointer;">
+            <div class="avatar-wrapper" id="avatar-wrapper" style="cursor: pointer;">
                 <img src="images/default-avatar.png" alt="avatar" class="avatar" id="chat-avatar">
-                </div>
-                <span id="user-email">user@company.com</span>
+            </div>
+            <span id="user-email">user@company.com</span>
         </div>
 
         <div class="chats-list">
@@ -20,21 +19,15 @@
 
     
     <div class="chat-area">
+        <!-- Контейнер для сообщений - пустой, сообщения добавляются через JS -->
         <div class="messages" id="messages">
-            <div class="message received">
-                <div class="text">Привет! Это тестовое сообщение</div>
-                <div class="time">14:30</div>
-            </div>
-            <div class="message sent">
-                <div class="text">И тебе привет!</div>
-                <div class="time">14:31</div>
-            </div>
+            <!-- Сообщения будут добавляться сюда через JavaScript -->
         </div>
+        
         <div class="message-input">
             <input type="text" id="message-field" placeholder="Написать сообщение...">
             <button id="send-btn">Отправить</button>
         </div>
     </div>
-
 
 </div>
