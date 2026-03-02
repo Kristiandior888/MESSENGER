@@ -1,8 +1,7 @@
-//управлнеие экранами
-
 import { addMessage } from './utils/messageUtils.js';
 import { setupLoginHandlers } from './handlers/loginHandlers.js';
 import { setupChatHandlers } from './handlers/chatHandlers.js';
+import { setupProfileHandlers } from './handlers/profileHandlers.js';  // Добавляем импорт
 
 // ЗАГРУЗКА HTML-ФАЙЛОВ
 async function loadPage(url) {
@@ -24,13 +23,14 @@ async function showScreen(screenName) {
     console.log('showScreen вызвана с параметром:', screenName);
 
     const content = document.getElementById('content');
-    console.log('Найден контейнер content:', content);
 
     let pageUrl = '';
     if (screenName === 'login') {
         pageUrl = 'pages/login.html';
     } else if (screenName === 'chat') {
         pageUrl = 'pages/chat.html';
+    } else if (screenName === 'profile') {  // Добавляем profile
+        pageUrl = 'pages/profile.html';
     }
 
     if (pageUrl) {
@@ -41,10 +41,12 @@ async function showScreen(screenName) {
             setupChatHandlers();
         } else if (screenName === 'login') {
             setupLoginHandlers();
+        } else if (screenName === 'profile') {  // Добавляем profile
+            setupProfileHandlers();
         }
     } else {
         console.error('Неизвестное имя экрана:', screenName);
     }
 }
 
-export { showScreen };
+export { loadPage, showScreen };

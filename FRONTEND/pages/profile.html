@@ -1,0 +1,35 @@
+<div class="profile-container">
+    <div class="profile-header">
+        <h2>Профиль пользователя</h2>
+        <button id="close-profile-btn" class="close-btn">✕</button>
+    </div>
+    
+    <div class="profile-content">
+        <div class="avatar-section">
+            <div class="current-avatar">
+                <img src="images/default-avatar.png" alt="avatar" id="profile-avatar" class="profile-avatar">
+                <div class="avatar-overlay" id="change-avatar-overlay">
+                    <span>Изменить</span>
+                </div>
+            </div>
+            
+            <!-- Скрытое поле для загрузки файла -->
+            <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+            
+            <div class="avatar-hint">
+                Нажмите на аватар, чтобы загрузить новое изображение (JPEG, PNG, GIF)
+            </div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-row">
+                <label>Имя:</label>
+                <span id="profile-name"></span>
+            </div>
+            <div class="info-row">
+                <label>Email:</label>
+                <span id="profile-email"></span>
+            </div>
+        </div>
+    </div>
+</div>

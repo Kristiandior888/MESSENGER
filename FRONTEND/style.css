@@ -346,3 +346,140 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: #d4af37; /* Золотой при наведении */
 }
+
+
+/* =======================================
+   СТРАНИЦА ПРОФИЛЯ
+   ======================================= */
+
+.profile-container {
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(145deg, #222831 0%, #2d343c 100%);
+    display: flex;
+    flex-direction: column;
+}
+
+.profile-header {
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #3a424c;
+}
+
+.profile-header h2 {
+    color: #d4af37;
+    margin: 0;
+}
+
+.close-btn {
+    background: transparent;
+    border: 1px solid #a0a8b4;
+    color: #a0a8b4;
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.close-btn:hover {
+    border-color: #d4af37;
+    color: #d4af37;
+}
+
+.profile-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    overflow-y: auto;
+}
+
+.avatar-section {
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.current-avatar {
+    position: relative;
+    width: 150px;
+    height: 150px;
+    margin: 0 auto 20px;
+    cursor: pointer;
+}
+
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #d4af37;
+    transition: filter 0.3s;
+}
+
+.avatar-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 14px;
+}
+
+.current-avatar:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.current-avatar:hover .profile-avatar {
+    filter: brightness(0.7);
+}
+
+.avatar-hint {
+    color: #a0a8b4;
+    font-size: 14px;
+    max-width: 300px;
+}
+
+.info-section {
+    width: 100%;
+    max-width: 400px;
+    background: #1a1e24;
+    border-radius: 10px;
+    padding: 20px;
+}
+
+.info-row {
+    display: flex;
+    padding: 15px 0;
+    border-bottom: 1px solid #3a424c;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row label {
+    width: 100px;
+    color: #a0a8b4;
+    font-weight: 500;
+}
+
+.info-row span {
+    flex: 1;
+    color: #ffffff;
+}

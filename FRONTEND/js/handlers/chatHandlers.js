@@ -9,8 +9,33 @@ function setupChatHandlers() {
 
     // ОТОБРАЖАЕМ ИНФОРМАЦИЮ О ПОЛЬЗОВАТЕЛЕ 
     const userEmail = document.getElementById('user-email');
-    if (userEmail && state.currentUser) {  // ← ДОБАВЛЕНО
+    if (userEmail && state.currentUser) {
         userEmail.textContent = state.currentUser.email;
+    }
+
+    // ЗАГРУЖАЕМ АВАТАР
+    const chatAvatar = document.getElementById('chat-avatar');
+    if (chatAvatar) {
+        // Если есть сохраненный аватар в состоянии
+        if (state.userAvatar) {
+            chatAvatar.src = state.userAvatar;
+        } 
+        // Или в localStorage
+        else {
+            const savedAvatar = localStorage.getItem('userAvatar');
+            if (savedAvatar) {
+                state.userAvatar = savedAvatar;
+                chatAvatar.src = savedAvatar;
+            }
+        }
+    }
+
+    // ПЕРЕХОД В ПРОФИЛЬ ПРИ КЛИКЕ НА АВАТАР
+    const avatarWrapper = document.getElementById('avatar-wrapper');
+    if (avatarWrapper) {
+        avatarWrapper.addEventListener('click', () => {
+            showScreen('profile');
+        });
     }
 
     // НАСТРАИВАЕМ ОТПРАВКУ СООБЩЕНИЙ 
@@ -40,8 +65,8 @@ function setupChatHandlers() {
     const logoutBtn = document.getElementById('logout-btn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            state.isAuthenticated = false;  // ← ДОБАВЛЕНО
-            state.currentUser = null;        // ← ДОБАВЛЕНО
+            state.isAuthenticated = false;
+            state.currentUser = null;
             showScreen('login');
         });
     }
@@ -54,13 +79,13 @@ function setupChatHandlers() {
             item.classList.add('active');
 
             const chatName = item.textContent.trim();
-            state.currentChat = chatName;  // ← ДОБАВЛЕНО: обновляем текущий чат
+            state.currentChat = chatName;
             loadMessagesForChat(chatName);
         });
     });
 
     // ЗАГРУЖАЕМ СООБЩЕНИЯ ДЛЯ ТЕКУЩЕГО ЧАТА
-    loadMessagesForChat(state.currentChat);  // ← ИСПРАВЛЕНО: добавил state.
+    loadMessagesForChat(state.currentChat);
 }
 
 // ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ВЫБРАННОГО ЧАТА
