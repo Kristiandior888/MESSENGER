@@ -1,0 +1,16 @@
+# Автоматически нормализовать концы строк
+* text=auto
+
+# Для Go файлов (специфика)
+*.go text eol=lf
+
+# Для Windows скриптов
+*.bat text eol=crlf
+
+# Для shell скриптов
+*.sh text eol=lf
+
+# Бинарные файлы
+*.png binary
+*.jpg binary
+*.exe binary
