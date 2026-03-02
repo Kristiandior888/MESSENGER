@@ -1,7 +1,9 @@
+import { getFileIcon, formatFileSize, getFileFromStorage, downloadFile } from '../utils/fileUtils.js';
 import { showScreen } from '../ui.js';
 import { addMessage, updateLastMessageStatusUI } from '../utils/messageUtils.js';
 import { state } from '../app.js';
 import { getMessages, updateLastMessageStatus } from '../storage.js';
+import { saveFileToStorage } from '../utils/fileUtils.js';
 
 // НАСТРОЙКА ЭКРАНА ЧАТА
 function setupChatHandlers() {
@@ -35,43 +37,117 @@ function setupChatHandlers() {
         });
     }
 
-    // НАСТРАИВАЕМ ОТПРАВКУ СООБЩЕНИЙ 
-    const sendBtn = document.getElementById('send-btn');
-    const messageField = document.getElementById('message-field');
+  // НАСТРАИВАЕМ ПРИКРЕПЛЕНИЕ ФАЙЛОВ
+const attachBtn = document.getElementById('attach-btn');
+const fileUpload = document.getElementById('file-upload');
+let attachedFiles = []; // Временное хранилище для прикрепленных файлов
 
-    if (sendBtn && messageField) {
-        const sendMessage = () => {
-            const text = messageField.value.trim();
-            if (text) {
-                // 1. Показываем сообщение со статусом 'sending'
-                addMessage(text, 'sent', true, 'sending');
-                messageField.value = '';
-                
-                // 2. Через 1 секунду - 'sent'
-                setTimeout(() => {
-                    updateLastMessageStatusUI('sent');
-                    updateLastMessageStatus(state.currentChat, 'sent');
-                }, 1000);
-                
-                // 3. Через 2 секунды - 'delivered'
-                setTimeout(() => {
-                    updateLastMessageStatusUI('delivered');
-                    updateLastMessageStatus(state.currentChat, 'delivered');
-                }, 2000);
-                
-                // 4. Через 3 секунды - 'read'
-                setTimeout(() => {
-                    updateLastMessageStatusUI('read');
-                    updateLastMessageStatus(state.currentChat, 'read');
-                }, 3000);
+if (attachBtn && fileUpload) {
+    attachBtn.addEventListener('click', () => {
+        fileUpload.click();
+    });
+    
+    fileUpload.addEventListener('change', async (e) => {
+        const files = Array.from(e.target.files);
+        
+        for (const file of files) {
+            // Проверяем размер (макс 10MB для демо)
+            if (file.size > 10 * 1024 * 1024) {
+                alert(`Файл ${file.name} слишком большой. Максимальный размер - 10MB`);
+                continue;
             }
-        };
+            
+            try {
+                // Сохраняем файл в хранилище и получаем ID
+                const fileId = await saveFileToStorage(file);
+                
+                // Добавляем в список прикрепленных файлов
+                attachedFiles.push({
+                    id: fileId,
+                    name: file.name,
+                    size: file.size,
+                    type: file.type
+                });
+                
+                // Визуально показываем, что файл прикреплен (можно добавить индикатор)
+                console.log(`Файл прикреплен: ${file.name}`);
+                
+            } catch (error) {
+                console.error('Ошибка при загрузке файла:', error);
+                alert(`Не удалось загрузить файл ${file.name}`);
+            }
+        }
+        
+        // Очищаем input, чтобы можно было загрузить те же файлы снова
+        fileUpload.value = '';
+        
+        // Можно добавить индикатор прикрепленных файлов
+        updateAttachedFilesIndicator();
+    });
+}
 
-        sendBtn.addEventListener('click', sendMessage);
-        messageField.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') sendMessage();
-        });
+// Функция для отображения индикатора прикрепленных файлов
+function updateAttachedFilesIndicator() {
+    const attachBtn = document.getElementById('attach-btn');
+    if (attachBtn) {
+        if (attachedFiles.length > 0) {
+            attachBtn.style.backgroundColor = 'rgba(212, 175, 55, 0.2)';
+            attachBtn.style.borderColor = '#d4af37';
+            attachBtn.title = `${attachedFiles.length} файл(ов) прикреплено`;
+        } else {
+            attachBtn.style.backgroundColor = 'transparent';
+            attachBtn.style.borderColor = '#3a424c';
+            attachBtn.title = 'Прикрепить файл';
+        }
     }
+}
+
+// НАСТРАИВАЕМ ОТПРАВКУ СООБЩЕНИЙ 
+const sendBtn = document.getElementById('send-btn');
+const messageField = document.getElementById('message-field');
+
+if (sendBtn && messageField) {
+    const sendMessage = () => {
+        const text = messageField.value.trim();
+        
+        // Отправляем, если есть текст ИЛИ прикрепленные файлы
+        if (text || attachedFiles.length > 0) {
+            
+            // Если есть файлы, отправляем каждый как отдельное сообщение?
+            // Или один файл? Давай сделаем так: все файлы в одном сообщении
+            
+            // Создаем копию файлов и очищаем массив
+            const filesToSend = [...attachedFiles];
+            attachedFiles = [];
+            updateAttachedFilesIndicator();
+            
+            // Отправляем сообщение с файлами
+            addMessage(text, 'sent', true, 'sending', filesToSend);
+            messageField.value = '';
+            
+            // Симуляция доставки
+            setTimeout(() => {
+                updateLastMessageStatusUI('sent');
+                updateLastMessageStatus(state.currentChat, 'sent');
+            }, 1000);
+            
+            setTimeout(() => {
+                updateLastMessageStatusUI('delivered');
+                updateLastMessageStatus(state.currentChat, 'delivered');
+            }, 2000);
+            
+            setTimeout(() => {
+                updateLastMessageStatusUI('read');
+                updateLastMessageStatus(state.currentChat, 'read');
+            }, 3000);
+        }
+    };
+
+    sendBtn.addEventListener('click', sendMessage);
+    messageField.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+}
 
     // НАСТРАИВАЕМ КНОПКУ ВЫХОДА 
     const logoutBtn = document.getElementById('logout-btn');
@@ -114,20 +190,57 @@ function loadMessagesForChat(chatName) {
                 messageDiv.className = `message ${msg.type}`;
                 
                 // Текст сообщения
-                const textDiv = document.createElement('div');
-                textDiv.className = 'text';
-                textDiv.textContent = msg.text;
+                if (msg.text) {
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'text';
+                    textDiv.textContent = msg.text;
+                    messageDiv.appendChild(textDiv);
+                }
                 
-                // Контейнер для времени и статуса
+                // Если есть файлы, отображаем их
+                if (msg.files && msg.files.length > 0) {
+                    const filesContainer = document.createElement('div');
+                    filesContainer.className = 'message-files';
+                    
+                    msg.files.forEach(fileData => {
+                        const fileDiv = document.createElement('div');
+                        fileDiv.className = 'message-file';
+                        fileDiv.setAttribute('data-file-id', fileData.id);
+                        
+                        const fileIcon = getFileIcon(fileData.name, fileData.type);
+                        
+                        fileDiv.innerHTML = `
+                            <span class="file-icon ${fileIcon.class}">${fileIcon.icon}</span>
+                            <div class="file-info">
+                                <div class="file-name">${fileData.name}</div>
+                                <div class="file-size">${formatFileSize(fileData.size)}</div>
+                            </div>
+                            <span class="download-hint">⬇️</span>
+                        `;
+                        
+                        fileDiv.addEventListener('click', () => {
+                            const savedFile = getFileFromStorage(fileData.id);
+                            if (savedFile) {
+                                downloadFile(savedFile, fileData.name);
+                            } else {
+                                alert('Файл не найден в хранилище');
+                            }
+                        });
+                        
+                        filesContainer.appendChild(fileDiv);
+                    });
+                    
+                    messageDiv.appendChild(filesContainer);
+                }
+                
+                // Мета-информация
                 const metaDiv = document.createElement('div');
                 metaDiv.className = 'message-meta';
                 
-                // Время
                 const timeSpan = document.createElement('span');
                 timeSpan.className = 'time';
                 timeSpan.textContent = msg.time;
                 
-                // Статус для исходящих
                 if (msg.type === 'sent') {
                     const statusSpan = document.createElement('span');
                     statusSpan.className = `message-status ${msg.status || 'sent'}`;
@@ -137,7 +250,6 @@ function loadMessagesForChat(chatName) {
                     metaDiv.appendChild(timeSpan);
                 }
                 
-                messageDiv.appendChild(textDiv);
                 messageDiv.appendChild(metaDiv);
                 messagesDiv.appendChild(messageDiv);
             });

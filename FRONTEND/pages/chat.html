@@ -1,5 +1,4 @@
 <div class="chat-container">
-
     <div class="sidebar">
         <div class="user-info">
             <div class="avatar-wrapper" id="avatar-wrapper" style="cursor: pointer;">
@@ -17,17 +16,21 @@
         <button id="logout-btn" class="logout">Выйти</button>
     </div>
 
-    
     <div class="chat-area">
-        <!-- Контейнер для сообщений - пустой, сообщения добавляются через JS -->
         <div class="messages" id="messages">
-            <!-- Сообщения будут добавляться сюда через JavaScript -->
+            <!-- Сообщения добавляются через JavaScript -->
         </div>
         
         <div class="message-input">
+            <!-- Кнопка прикрепления файла -->
+            <button id="attach-btn" class="attach-btn" title="Прикрепить файл">
+                <span>📎</span>
+            </button>
+            <!-- Скрытое поле для загрузки файлов -->
+            <input type="file" id="file-upload" style="display: none;" multiple>
+            
             <input type="text" id="message-field" placeholder="Написать сообщение...">
             <button id="send-btn">Отправить</button>
         </div>
     </div>
-
 </div>

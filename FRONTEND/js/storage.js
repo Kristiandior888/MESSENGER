@@ -18,26 +18,30 @@ let chatMessages = {
     ]
 };
 
+
 // Функции для работы с хранилищем
-function saveMessage(chatName, text, type, time, status = 'sending') {
+function saveMessage(chatName, text, type, time, status = 'sending', fileIds = null, files = null) {
     if (!chatMessages[chatName]) {
         chatMessages[chatName] = [];
     }
-    chatMessages[chatName].push({ text, type, time, status });
+    
+    const message = { text, type, time, status };
+    
+    // Если есть файлы, добавляем информацию о них
+    if (files && files.length > 0) {
+        message.files = files.map(f => ({
+            id: f.id,
+            name: f.name,
+            size: f.size,
+            type: f.type
+        }));
+    }
+    
+    chatMessages[chatName].push(message);
 }
 
 function getMessages(chatName) {
     return chatMessages[chatName] || [];
-}
-
-// Функция для обновления статуса сообщения
-function updateMessageStatus(chatName, messageIndex, newStatus) {
-    if (chatMessages[chatName] && chatMessages[chatName][messageIndex]) {
-        chatMessages[chatName][messageIndex].status = newStatus;
-        console.log(`Статус сообщения ${messageIndex} обновлен на ${newStatus}`);
-        return true;
-    }
-    return false;
 }
 
 // Функция для обновления статуса последнего сообщения
@@ -51,4 +55,4 @@ function updateLastMessageStatus(chatName, newStatus) {
     return false;
 }
 
-export { chatMessages, saveMessage, getMessages, updateMessageStatus, updateLastMessageStatus };
+export { chatMessages, saveMessage, getMessages, updateLastMessageStatus };
