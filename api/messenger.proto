@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package messenger;
 
-option go_package = "./proto;messenger";
+option go_package = "messenger/api;pb";
 
 // Сервис мессенджера
 service MessengerService {
