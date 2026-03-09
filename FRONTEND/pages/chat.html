@@ -51,6 +51,31 @@
             <input type="file" id="file-upload" style="display: none;" multiple>
             
             <input type="text" id="message-field" placeholder="Написать сообщение...">
+
+
+            
+            <button id="emoji-btn" class="emoji-btn" title="Эмодзи">
+                <span>😊</span>
+            </button>
+    
+            <!-- Панель с эмодзи (скрыта по умолчанию) -->
+            <div id="emoji-panel" class="emoji-panel" style="display: none;">
+                <div class="emoji-categories">
+            <button class="emoji-category active" data-category="recent">🕒</button>
+            <button class="emoji-category" data-category="smileys">😊</button>
+            <button class="emoji-category" data-category="people">👋</button>
+            <button class="emoji-category" data-category="animals">🐻</button>
+            <button class="emoji-category" data-category="food">🍔</button>
+            <button class="emoji-category" data-category="activities">⚽</button>
+            <button class="emoji-category" data-category="travel">🚗</button>
+            <button class="emoji-category" data-category="objects">💡</button>
+            <button class="emoji-category" data-category="symbols">❤️</button>
+            <button class="emoji-category" data-category="flags">🏁</button>
+                </div>
+            <div class="emoji-container" id="emoji-container">
+            <!-- Эмодзи будут загружаться сюда -->
+        </div>
+            </div>
             <button id="send-btn">Отправить</button>
         </div>
     </div>

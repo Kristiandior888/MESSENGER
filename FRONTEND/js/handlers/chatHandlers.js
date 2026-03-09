@@ -13,6 +13,8 @@ import {
     searchState 
 } from '../utils/searchUtils.js';
 import { showCreateGroupModal, updateChatsList, showChatContextMenu } from './groupHandlers.js';
+import { renderEmojiPanel } from '../utils/emojiUtils.js';
+
 
 // НАСТРОЙКА ЭКРАНА ЧАТА
 function setupChatHandlers() {
@@ -222,6 +224,79 @@ function setupChatHandlers() {
 
     updateChatsList();
     loadMessagesForChat(state.currentChat);
+
+        // НАСТРАИВАЕМ ПАНЕЛЬ ЭМОДЗИ
+const emojiBtn = document.getElementById('emoji-btn');
+const emojiPanel = document.getElementById('emoji-panel');
+const emojiContainer = document.getElementById('emoji-container');
+const categoryBtns = document.querySelectorAll('.emoji-category');
+
+if (emojiBtn && emojiPanel && emojiContainer) {
+    // Открытие/закрытие панели
+    emojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = emojiPanel.style.display === 'flex';
+        
+        if (!isVisible) {
+            // Позиционируем панель над кнопкой
+            const btnRect = emojiBtn.getBoundingClientRect();
+            
+            // Рассчитываем позицию
+            const panelWidth = 350; // ширина панели из CSS
+            const windowWidth = window.innerWidth;
+            
+            let left = btnRect.left;
+            
+            // Если панель выходит за правый край экрана
+            if (left + panelWidth > windowWidth) {
+                left = windowWidth - panelWidth - 10; // Отступ от края 10px
+            }
+            
+            // Если панель выходит за левый край экрана
+            if (left < 10) {
+                left = 10;
+            }
+            
+            // Устанавливаем позицию
+            emojiPanel.style.position = 'fixed';
+            emojiPanel.style.bottom = (window.innerHeight - btnRect.top + 10) + 'px'; // 10px отступа сверху от кнопки
+            emojiPanel.style.left = left + 'px';
+            emojiPanel.style.display = 'flex';
+            
+            // Загружаем недавние эмодзи по умолчанию
+            renderEmojiPanel(emojiContainer, 'recent');
+        } else {
+            emojiPanel.style.display = 'none';
+        }
+    });
+    
+    // Переключение категорий
+    categoryBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            categoryBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            const category = btn.getAttribute('data-category');
+            renderEmojiPanel(emojiContainer, category);
+        });
+    });
+    
+    // Закрытие при клике вне панели
+    document.addEventListener('click', (e) => {
+        if (!emojiPanel.contains(e.target) && e.target !== emojiBtn && !emojiBtn.contains(e.target)) {
+            emojiPanel.style.display = 'none';
+        }
+    });
+    
+    // Закрытие при прокрутке
+    window.addEventListener('scroll', () => {
+        if (emojiPanel.style.display === 'flex') {
+            emojiPanel.style.display = 'none';
+        }
+    });
+}
+
+
 }
 
 // ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ВЫБРАННОГО ЧАТА
