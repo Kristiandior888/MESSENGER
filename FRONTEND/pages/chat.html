@@ -7,7 +7,12 @@
             <span id="user-email">user@company.com</span>
         </div>
 
-<!-- ПОИСК ПО СООБЩЕНИЯМ -->
+        <!-- КНОПКА СОЗДАНИЯ ГРУППЫ -->
+        <button id="create-group-btn" class="create-group-btn">
+            <span>👥</span> Создать группу
+        </button>
+
+        <!-- ПОИСК ПО СООБЩЕНИЯМ -->
         <div class="search-section">
             <div class="search-input-wrapper">
                 <input type="text" id="search-input" placeholder="Поиск по сообщениям...">
@@ -15,7 +20,7 @@
             </div>
         </div>
 
-        <!-- ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА (НОВАЯ) -->
+        <!-- ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА -->
         <div class="search-results-panel" id="search-results-panel" style="display: none;">
             <div class="search-results-header">
                 <span id="search-results-title">Результаты поиска</span>
@@ -26,11 +31,9 @@
             </div>
         </div>
 
-
-        <div class="chats-list">
-            <div class="chat-item active">Лучший коллега</div>
-            <div class="chat-item">Команда ы</div>
-            <div class="chat-item">Проект по захвату мира</div>
+        <!-- СПИСОК ЧАТОВ - ПОЛНОСТЬЮ ПУСТОЙ! -->
+        <div class="chats-list" id="chats-list">
+            <!-- Чаты будут созданы через JavaScript -->
         </div>
 
         <button id="logout-btn" class="logout">Выйти</button>
@@ -38,15 +41,13 @@
 
     <div class="chat-area">
         <div class="messages" id="messages">
-<!-- Сообщения добавляются через JavaScript -->
+            <!-- Сообщения добавляются через JavaScript -->
         </div>
         
         <div class="message-input">
-<!-- Кнопка прикрепления файла -->
             <button id="attach-btn" class="attach-btn" title="Прикрепить файл">
                 <span>📎</span>
             </button>
-<!-- Скрытое поле для загрузки файлов -->
             <input type="file" id="file-upload" style="display: none;" multiple>
             
             <input type="text" id="message-field" placeholder="Написать сообщение...">

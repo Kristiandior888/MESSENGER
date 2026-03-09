@@ -1,0 +1,35 @@
+<div class="modal-overlay" id="group-info-modal">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modal-group-name">Название группы</h3>
+            <button class="modal-close" id="close-group-info">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="group-settings">
+                <h4>Настройки группы</h4>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="group-notifications" checked>
+                        <span>Уведомления</span>
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="group-pinned">
+                        <span>Закрепить чат</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="group-participants">
+                <h4>Участники (<span id="participants-count">0</span>)</h4>
+                <div class="participants-list" id="participants-list">
+                    <!-- Сюда будут добавляться участники через JS -->
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary" id="close-group-info-btn">Закрыть</button>
+        </div>
+    </div>
+</div>
