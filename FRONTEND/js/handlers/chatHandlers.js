@@ -4,6 +4,15 @@ import { addMessage, updateLastMessageStatusUI } from '../utils/messageUtils.js'
 import { state } from '../app.js';
 import { getMessages, updateLastMessageStatus } from '../storage.js';
 import { saveFileToStorage } from '../utils/fileUtils.js';
+import { 
+    searchMessages, 
+    highlightSearchResults, 
+    nextResult, 
+    prevResult, 
+    clearSearch,
+    updateSearchUI,
+    renderSearchResults
+} from '../utils/searchUtils.js';
 
 // НАСТРОЙКА ЭКРАНА ЧАТА
 function setupChatHandlers() {
@@ -174,6 +183,49 @@ if (sendBtn && messageField) {
 
     // ЗАГРУЖАЕМ СООБЩЕНИЯ ДЛЯ ТЕКУЩЕГО ЧАТА
     loadMessagesForChat(state.currentChat);
+
+
+
+// НАСТРАИВАЕМ ПОИСК
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+const closeSearchBtn = document.getElementById('close-search-results');
+
+if (searchInput && searchBtn) {
+    // Поиск при нажатии на кнопку
+    searchBtn.addEventListener('click', () => {
+        const query = searchInput.value.trim();
+        if (query) {
+            searchMessages(query);
+            highlightSearchResults();
+            renderSearchResults();
+        } else {
+            clearSearch();
+        }
+    });
+    
+    // Поиск при нажатии Enter
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            const query = searchInput.value.trim();
+            if (query) {
+                searchMessages(query);
+                highlightSearchResults();
+                renderSearchResults();
+            } else {
+                clearSearch();
+            }
+        }
+    });
+    
+    // Закрытие результатов поиска
+    if (closeSearchBtn) {
+        closeSearchBtn.addEventListener('click', () => {
+            clearSearch();
+            if (searchInput) searchInput.value = '';
+        });
+    }
+}
 }
 
 // ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ВЫБРАННОГО ЧАТА
@@ -255,6 +307,33 @@ function loadMessagesForChat(chatName) {
             });
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
+    }
+
+
+    // ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ВЫБРАННОГО ЧАТА
+    function loadMessagesForChat(chatName) {
+    const messagesDiv = document.getElementById('messages');
+    if (messagesDiv) {
+        messagesDiv.innerHTML = '';
+
+        const messages = getMessages(chatName);
+
+        if (messages.length > 0) {
+            messages.forEach(msg => {
+                // ... существующий код создания сообщений ...
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            
+            // ВОССТАНАВЛИВАЕМ ПОДСВЕТКУ ПОИСКА
+            // После загрузки сообщений, если есть активный поиск, восстанавливаем его
+            setTimeout(() => {
+                if (searchState.query) {
+                    renderSearchResults();
+                    highlightSearchResults();
+                    }
+            }, 100);
+        }
+    }
     }
 }
 

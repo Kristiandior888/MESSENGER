@@ -7,6 +7,26 @@
             <span id="user-email">user@company.com</span>
         </div>
 
+<!-- ПОИСК ПО СООБЩЕНИЯМ -->
+        <div class="search-section">
+            <div class="search-input-wrapper">
+                <input type="text" id="search-input" placeholder="Поиск по сообщениям...">
+                <button id="search-btn" class="search-btn">🔍</button>
+            </div>
+        </div>
+
+        <!-- ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА (НОВАЯ) -->
+        <div class="search-results-panel" id="search-results-panel" style="display: none;">
+            <div class="search-results-header">
+                <span id="search-results-title">Результаты поиска</span>
+                <button id="close-search-results" class="close-search-btn">✕</button>
+            </div>
+            <div class="search-results-list" id="search-results-list">
+                <!-- Сюда будут добавляться результаты -->
+            </div>
+        </div>
+
+
         <div class="chats-list">
             <div class="chat-item active">Лучший коллега</div>
             <div class="chat-item">Команда ы</div>
@@ -18,15 +38,15 @@
 
     <div class="chat-area">
         <div class="messages" id="messages">
-            <!-- Сообщения добавляются через JavaScript -->
+<!-- Сообщения добавляются через JavaScript -->
         </div>
         
         <div class="message-input">
-            <!-- Кнопка прикрепления файла -->
+<!-- Кнопка прикрепления файла -->
             <button id="attach-btn" class="attach-btn" title="Прикрепить файл">
                 <span>📎</span>
             </button>
-            <!-- Скрытое поле для загрузки файлов -->
+<!-- Скрытое поле для загрузки файлов -->
             <input type="file" id="file-upload" style="display: none;" multiple>
             
             <input type="text" id="message-field" placeholder="Написать сообщение...">

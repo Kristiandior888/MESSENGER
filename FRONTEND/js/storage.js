@@ -54,5 +54,32 @@ function updateLastMessageStatus(chatName, newStatus) {
     }
     return false;
 }
+// Поиск по сообщениям в конкретном чате
+function searchInMessages(chatName, query) {
+    const messages = chatMessages[chatName] || [];
+    const searchQuery = query.toLowerCase();
+    
+    return messages.filter(msg => {
+        // Поиск в тексте
+        if (msg.text && msg.text.toLowerCase().includes(searchQuery)) {
+            return true;
+        }
+        
+        // Поиск в названиях файлов
+        if (msg.files) {
+            return msg.files.some(file => 
+                file.name.toLowerCase().includes(searchQuery)
+            );
+        }
+        
+        return false;
+    });
+}
 
-export { chatMessages, saveMessage, getMessages, updateLastMessageStatus };
+
+
+export { chatMessages, 
+    saveMessage,
+    getMessages, 
+    updateLastMessageStatus,
+    searchInMessages  };
