@@ -326,7 +326,7 @@ function updateChatsList() {
             chatItem.className = `chat-item ${state.currentChat === chat.id ? 'active' : ''}`;
             chatItem.setAttribute('data-chat-id', chat.id);
             
-            const icon = chat.type === 'group' ? '👥 ' : '👤 ';
+            const icon = chat.type = ' ';
             const pinIcon = chat.settings?.pinned ? '📌 ' : '';
             
             // Только название чата, никаких кнопок!

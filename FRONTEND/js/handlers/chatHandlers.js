@@ -145,14 +145,6 @@ function setupChatHandlers() {
         });
     }
 
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            state.isAuthenticated = false;
-            state.currentUser = null;
-            showScreen('login');
-        });
-    }
 
     const chatItems = document.querySelectorAll('.chat-item');
     chatItems.forEach(item => {

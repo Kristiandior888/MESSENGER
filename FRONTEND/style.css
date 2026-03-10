@@ -1519,3 +1519,252 @@ body {
     color: #d4af37;
 }
 
+/* =======================================
+   КНОПКИ ДЕЙСТВИЙ В ПРОФИЛЕ
+   ======================================= */
+
+.profile-actions {
+    width: 100%;
+    max-width: 400px;
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+}
+
+.action-btn.primary {
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #d4af37;
+}
+
+.action-btn.primary:hover {
+    background: #d4af37;
+    color: #1a1e24;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+}
+
+.action-btn.danger {
+    background: rgba(224, 90, 90, 0.1);
+    border: 1px solid rgba(224, 90, 90, 0.3);
+    color: #e05a5a;
+}
+
+.action-btn.danger:hover {
+    background: #e05a5a;
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(224, 90, 90, 0.3);
+}
+
+.action-icon {
+    font-size: 1.2rem;
+}
+
+/* =======================================
+   ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА
+   ======================================= */
+
+.search-results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    margin-bottom: 10px;
+}
+
+.search-results-count {
+    color: #d4af37;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.search-query {
+    color: #a0a8b4;
+    font-size: 0.85rem;
+    font-style: italic;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.search-clear-btn {
+    background: transparent;
+    border: none;
+    color: #a0a8b4;
+    font-size: 16px;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.search-clear-btn:hover {
+    background: rgba(224, 90, 90, 0.1);
+    color: #e05a5a;
+    transform: rotate(90deg);
+}
+
+.search-date-separator {
+    font-size: 0.75rem;
+    color: #a0a8b4;
+    padding: 8px 15px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-top: 10px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.search-result-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 8px;
+    margin: 2px 8px;
+}
+
+.search-result-item:hover {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.search-result-item.current-result {
+    background: rgba(212, 175, 55, 0.15);
+    border-left: 3px solid #d4af37;
+}
+
+.search-result-content {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.search-result-icon {
+    font-size: 1.2rem;
+    min-width: 24px;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.search-result-info {
+    flex: 1;
+}
+
+.search-result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.search-result-sender {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #d4af37;
+}
+
+.search-result-time {
+    font-size: 0.7rem;
+    color: #a0a8b4;
+    text-transform: uppercase;
+}
+
+.search-result-text {
+    font-size: 0.9rem;
+    color: #e0e0e0;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.search-result-text.system {
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.search-result-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9rem;
+    color: #a0a8b4;
+}
+
+.search-result-file .file-name {
+    color: #d4af37;
+    font-weight: 500;
+}
+
+.search-back-button {
+    padding: 15px;
+    margin: 15px 8px;
+    text-align: center;
+    background: rgba(212, 175, 55, 0.1);
+    border-radius: 8px;
+    color: #d4af37;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.search-back-button:hover {
+    background: rgba(212, 175, 55, 0.2);
+    transform: translateY(-1px);
+}
+
+.search-no-results {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.no-results-text {
+    font-size: 1.1rem;
+    color: #a0a8b4;
+    margin-bottom: 5px;
+}
+
+.no-results-query {
+    font-size: 0.9rem;
+    color: #6f7a88;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+/* Анимация подсветки при клике */
+@keyframes flash {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(212, 175, 55, 0.3); }
+}
+
+.message.highlight-flash {
+    animation: flash 1.5s ease;
+}

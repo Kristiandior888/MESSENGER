@@ -2,6 +2,7 @@ import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
 import { THEMES, applyTheme, saveTheme, getCurrentTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
+import { showCreateGroupModal } from './groupHandlers.js';
 
 // НАСТРОЙКА СТРАНИЦЫ ПРОФИЛЯ
 function setupProfileHandlers() {
@@ -97,7 +98,30 @@ function setupProfileHandlers() {
             }
         });
     }
+
+    // НАСТРАИВАЕМ КНОПКУ "СОЗДАТЬ ГРУППУ"
+    const createGroupBtn = document.getElementById('create-group-btn');
+    if (createGroupBtn) {
+        createGroupBtn.addEventListener('click', () => {
+            showCreateGroupModal();
+        });
+    }
     
+    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ" В ПРОФИЛЕ
+    const logoutProfileBtn = document.getElementById('logout-profile-btn');
+    if (logoutProfileBtn) {
+        logoutProfileBtn.addEventListener('click', () => {
+            console.log('Выход из системы через профиль');
+            
+            // Сбрасываем состояние авторизации
+            state.isAuthenticated = false;
+            state.currentUser = null;
+            
+            // Возвращаемся на экран логина
+            showScreen('login');
+        });
+    }
+
     // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {

@@ -171,16 +171,27 @@ function renderSearchResults() {
     const panel = document.getElementById('search-results-panel');
     const list = document.getElementById('search-results-list');
     const chatsList = document.getElementById('chats-list');
+    const searchInput = document.getElementById('search-input');
     
     if (!panel || !list) return;
     
     if (searchState.results.length > 0) {
+        // Показываем панель результатов, скрываем список чатов
         panel.style.display = 'flex';
         if (chatsList) {
             chatsList.style.display = 'none';
         }
         
         list.innerHTML = '';
+        
+        // Заголовок с количеством результатов
+        const header = document.createElement('div');
+        header.className = 'search-results-header';
+        header.innerHTML = `
+            <span class="search-results-count">Найдено: ${searchState.results.length}</span>
+            <span class="search-query">"${searchState.query}"</span>
+        `;
+        list.appendChild(header);
         
         // Группируем результаты по датам
         Object.entries(searchState.groupedResults).forEach(([date, messages]) => {
@@ -199,51 +210,131 @@ function renderSearchResults() {
                 resultItem.className = `search-result-item ${originalIndex === searchState.currentIndex ? 'current-result' : ''}`;
                 resultItem.setAttribute('data-message-index', msg.originalIndex);
                 
-                // Определяем контент для отображения
+                // Определяем иконку в зависимости от типа
+                let icon = '';
                 let contentHtml = '';
+                
                 if (result.matchType === 'file') {
+                    icon = '📎';
                     contentHtml = `
                         <div class="search-result-file">
-                            <span class="search-result-file-icon">📎</span>
-                            <span>${highlightText(result.fileName, searchState.query)}</span>
+                            <span class="file-icon">📎</span>
+                            <span class="file-name">${highlightText(result.fileName, searchState.query)}</span>
                         </div>
                     `;
+                } else if (msg.type === 'system') {
+                    icon = '📢';
+                    contentHtml = `<div class="search-result-text system">${highlightText(msg.text, searchState.query)}</div>`;
                 } else {
+                    icon = msg.type === 'sent' ? '📤' : '📥';
                     contentHtml = `<div class="search-result-text">${highlightText(msg.text, searchState.query)}</div>`;
                 }
                 
+                // Получаем имя отправителя
+                let senderName = '';
+                if (msg.type === 'sent') {
+                    senderName = 'Вы';
+                } else if (msg.type === 'system') {
+                    senderName = 'Система';
+                } else {
+                    // Здесь можно подставить имя из контактов
+                    senderName = msg.senderName || 'Собеседник';
+                }
+                
                 resultItem.innerHTML = `
-                    <div class="search-result-date">${date}</div>
                     <div class="search-result-content">
-                        <img src="images/default-avatar.png" alt="avatar" class="search-result-avatar">
+                        <div class="search-result-icon">${icon}</div>
                         <div class="search-result-info">
-                            <div class="search-result-name">${msg.type === 'sent' ? 'Я' : 'Собеседник'}</div>
+                            <div class="search-result-header">
+                                <span class="search-result-sender">${senderName}</span>
+                                <span class="search-result-time">${msg.time}</span>
+                            </div>
                             ${contentHtml}
                         </div>
-                        <div class="search-result-time">${msg.time}</div>
                     </div>
                 `;
                 
+                // При клике переходим к сообщению
                 resultItem.addEventListener('click', () => {
                     searchState.currentIndex = originalIndex;
                     highlightSearchResults();
                     renderSearchResults();
+                    
+                    // Прокручиваем к сообщению и подсвечиваем
+                    const messageElement = document.querySelectorAll('.message')[msg.originalIndex];
+                    if (messageElement) {
+                        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        messageElement.classList.add('highlight-flash');
+                        setTimeout(() => {
+                            messageElement.classList.remove('highlight-flash');
+                        }, 1500);
+                    }
                 });
                 
                 list.appendChild(resultItem);
             });
         });
+        
+        // Добавляем кнопку "Назад к чатам"
+        const backButton = document.createElement('div');
+        backButton.className = 'search-back-button';
+        backButton.innerHTML = '← Назад к списку чатов';
+        backButton.addEventListener('click', () => {
+            clearSearch();
+            panel.style.display = 'none';
+            if (chatsList) {
+                chatsList.style.display = 'block';
+            }
+            if (searchInput) {
+                searchInput.value = '';
+            }
+        });
+        list.appendChild(backButton);
+        
+        // Обработчик для кнопки очистки
+        const clearBtn = document.getElementById('clear-search-from-panel');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                clearSearch();
+                panel.style.display = 'none';
+                if (chatsList) {
+                    chatsList.style.display = 'block';
+                }
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+            });
+        }
+        
     } else if (searchState.query) {
         // Нет результатов
         panel.style.display = 'flex';
         if (chatsList) {
             chatsList.style.display = 'none';
         }
+        
         list.innerHTML = `
-            <div style="padding: 20px; text-align: center; color: #a0a8b4;">
-                Ничего не найдено по запросу "${searchState.query}"
+            <div class="search-no-results">
+                <div class="no-results-icon">🔍</div>
+                <div class="no-results-text">Ничего не найдено</div>
+                <div class="no-results-query">по запросу "${searchState.query}"</div>
+                <button class="search-back-button" id="back-from-no-results">← Назад к списку чатов</button>
             </div>
         `;
+        
+        const backBtn = document.getElementById('back-from-no-results');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                clearSearch();
+                panel.style.display = 'none';
+                if (chatsList) {
+                    chatsList.style.display = 'block';
+                }
+                if (searchInput) {
+                    searchInput.value = '';
+                }
+            });
+        }
     } else {
         panel.style.display = 'none';
         if (chatsList) {
@@ -251,6 +342,8 @@ function renderSearchResults() {
         }
     }
 }
+
+
 
 // Подсветка искомого текста
 function highlightText(text, query) {
