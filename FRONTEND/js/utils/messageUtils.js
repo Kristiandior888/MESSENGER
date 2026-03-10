@@ -39,7 +39,7 @@ function addMessage(text, type, saveToStorage = true, status = 'sent', files = n
         if (text) {
             const textDiv = document.createElement('div');
             textDiv.className = 'text';
-            textDiv.textContent = text;
+            textDiv.innerHTML = processEmojiText(text); // ← используем innerHTML вместо textContent
             messageDiv.appendChild(textDiv);
         }
         
@@ -121,5 +121,30 @@ function updateLastMessageStatusUI(newStatus) {
         }
     }
 }
+
+// Функция для обработки текста с эмодзи
+function processEmojiText(text) {
+    // Регулярное выражение для поиска эмодзи
+    const emojiRegex = /[\u{1F300}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
+    
+    // Разбиваем текст на части
+    const parts = text.split(emojiRegex);
+    const matches = text.match(emojiRegex) || [];
+    
+    if (matches.length === 0) return text;
+    
+    // Собираем обратно с оберткой для эмодзи
+    let result = '';
+    for (let i = 0; i < matches.length; i++) {
+        result += parts[i];
+        result += `<span class="emoji-char">${matches[i]}</span>`;
+    }
+    result += parts[parts.length - 1];
+    
+    return result;
+}
+
+
+
 
 export { addMessage, updateLastMessageStatusUI };

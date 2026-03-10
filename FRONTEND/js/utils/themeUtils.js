@@ -52,7 +52,49 @@ function applyTheme(theme) {
     
     currentTheme = theme;
     console.log(`Тема применена: ${theme}`);
+
+    // Обновляем CSS-переменные для панели эмодзи
+    updateEmojiPanelColors(theme);
+    
+    console.log(`Тема применена: ${theme}`);
 }
+
+
+// Функция обновления цветов панели эмодзи
+function updateEmojiPanelColors(theme) {
+    const root = document.documentElement;
+    
+    if (theme === THEMES.LIGHT) {
+        root.style.setProperty('--emoji-panel-bg', '#fcf9f5');
+        root.style.setProperty('--emoji-panel-border', '#e8e0d5');
+        root.style.setProperty('--emoji-category-color', '#8b7a62');
+        root.style.setProperty('--emoji-category-hover-bg', '#ffffff');
+        root.style.setProperty('--emoji-category-hover-color', '#5c4e3d');
+        root.style.setProperty('--emoji-category-active-bg', 'rgba(184, 139, 74, 0.1)');
+        root.style.setProperty('--emoji-category-active-color', '#b88b4a');
+        root.style.setProperty('--emoji-scrollbar-track', '#fcf9f5');
+        root.style.setProperty('--emoji-scrollbar-thumb', '#d4c5b3');
+        root.style.setProperty('--emoji-scrollbar-thumb-hover', '#b88b4a');
+        root.style.setProperty('--emoji-item-bg', 'transparent');
+        root.style.setProperty('--emoji-item-hover-bg', '#ffffff');
+        root.style.setProperty('--emoji-item-color', '#4a4a4a');
+    } else {
+        root.style.setProperty('--emoji-panel-bg', '#2a2f38');
+        root.style.setProperty('--emoji-panel-border', '#3a424c');
+        root.style.setProperty('--emoji-category-color', '#a0a8b4');
+        root.style.setProperty('--emoji-category-hover-bg', '#3a424c');
+        root.style.setProperty('--emoji-category-hover-color', '#d4af37');
+        root.style.setProperty('--emoji-category-active-bg', 'rgba(212, 175, 55, 0.15)');
+        root.style.setProperty('--emoji-category-active-color', '#d4af37');
+        root.style.setProperty('--emoji-scrollbar-track', '#2a2f38');
+        root.style.setProperty('--emoji-scrollbar-thumb', '#4a535f');
+        root.style.setProperty('--emoji-scrollbar-thumb-hover', '#d4af37');
+        root.style.setProperty('--emoji-item-bg', 'transparent');
+        root.style.setProperty('--emoji-item-hover-bg', '#3a424c');
+        root.style.setProperty('--emoji-item-color', '#ffffff');
+    }
+}
+
 
 // Сохранить тему
 function saveTheme(theme) {

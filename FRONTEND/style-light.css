@@ -9,6 +9,26 @@
     box-sizing: border-box;
 }
 
+
+:root {
+    --message-font-size: 14px;
+    
+    /* Переменные для панели эмодзи - светлая тема */
+    --emoji-panel-bg: #fcf9f5;
+    --emoji-panel-border: #e8e0d5;
+    --emoji-category-color: #8b7a62;
+    --emoji-category-hover-bg: #ffffff;
+    --emoji-category-hover-color: #5c4e3d;
+    --emoji-category-active-bg: rgba(184, 139, 74, 0.1);
+    --emoji-category-active-color: #b88b4a;
+    --emoji-scrollbar-track: #fcf9f5;
+    --emoji-scrollbar-thumb: #d4c5b3;
+    --emoji-scrollbar-thumb-hover: #b88b4a;
+    --emoji-item-bg: transparent;
+    --emoji-item-hover-bg: #ffffff;
+    --emoji-item-color: #4a4a4a;
+}
+
 body {
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     background-color: #faf7f2;
@@ -1241,19 +1261,29 @@ body {
     text-align: center;
 }
 
-/* ПАНЕЛЬ ЭМОДЗИ */
+/* =======================================
+   ПАНЕЛЬ ЭМОДЗИ
+   ======================================= */
+
+:root {
+    --emoji-size: 26px; /* фиксированный размер смайликов в сообщениях */
+}
+
 .emoji-panel {
     position: fixed;
+    bottom: 80px;
+    right: 20px;
     width: 350px;
-    height: 300px;
-    background: #ffffff;
-    border: 1px solid #e8e0d5;
+    height: 400px;
+    background: var(--emoji-panel-bg, #1e242b);
+    border: 1px solid var(--emoji-panel-border, #3a424c);
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
     z-index: 10000;
     display: none;
     flex-direction: column;
     overflow: hidden;
+    backdrop-filter: blur(10px);
     animation: emojiPanelFadeIn 0.2s ease;
 }
 
@@ -1272,13 +1302,13 @@ body {
 .emoji-categories {
     display: flex;
     padding: 8px;
-    background: #f8f1e9;
-    border-bottom: 1px solid #e8e0d5;
+    background: var(--emoji-panel-bg, #1e242b);
+    border-bottom: 1px solid var(--emoji-panel-border, #3a424c);
     overflow-x: auto;
     gap: 5px;
     flex-shrink: 0;
     scrollbar-width: thin;
-    scrollbar-color: #d4c5b3 #ffffff;
+    scrollbar-color: var(--emoji-scrollbar-thumb, #4a535f) var(--emoji-scrollbar-track, #1e242b);
 }
 
 .emoji-categories::-webkit-scrollbar {
@@ -1286,22 +1316,22 @@ body {
 }
 
 .emoji-categories::-webkit-scrollbar-track {
-    background: #ffffff;
+    background: var(--emoji-scrollbar-track, #1e242b);
 }
 
 .emoji-categories::-webkit-scrollbar-thumb {
-    background: #d4c5b3;
+    background: var(--emoji-scrollbar-thumb, #4a535f);
     border-radius: 4px;
 }
 
 .emoji-categories::-webkit-scrollbar-thumb:hover {
-    background: #b88b4a;
+    background: var(--emoji-scrollbar-thumb-hover, #d4af37);
 }
 
 .emoji-category {
     background: transparent;
     border: none;
-    color: #8b7a62;
+    color: var(--emoji-category-color, #a0a8b4);
     font-size: 18px;
     padding: 5px 8px;
     cursor: pointer;
@@ -1312,13 +1342,13 @@ body {
 }
 
 .emoji-category:hover {
-    background: #ffffff;
-    color: #5c4e3d;
+    background: var(--emoji-category-hover-bg, #3a424c);
+    color: var(--emoji-category-hover-color, #d4af37);
 }
 
 .emoji-category.active {
-    background: rgba(184, 139, 74, 0.1);
-    color: #b88b4a;
+    background: var(--emoji-category-active-bg, rgba(212, 175, 55, 0.15));
+    color: var(--emoji-category-active-color, #d4af37);
 }
 
 /* Контейнер с эмодзи */
@@ -1330,7 +1360,7 @@ body {
     grid-template-columns: repeat(8, 1fr);
     gap: 5px;
     scrollbar-width: thin;
-    scrollbar-color: #d4c5b3 #ffffff;
+    scrollbar-color: var(--emoji-scrollbar-thumb, #4a535f) var(--emoji-scrollbar-track, #1e242b);
 }
 
 .emoji-container::-webkit-scrollbar {
@@ -1338,12 +1368,110 @@ body {
 }
 
 .emoji-container::-webkit-scrollbar-track {
-    background: #ffffff;
+    background: var(--emoji-scrollbar-track, #1e242b);
 }
 
 .emoji-container::-webkit-scrollbar-thumb {
-    background: #d4c5b3;
+    background: var(--emoji-scrollbar-thumb, #4a535f);
     border-radius: 6px;
+}
+
+.emoji-container::-webkit-scrollbar-thumb:hover {
+    background: var(--emoji-scrollbar-thumb-hover, #d4af37);
+}
+
+/* Элемент эмодзи в панели выбора */
+.emoji-item {
+    background: var(--emoji-item-bg, transparent);
+    border: none;
+    color: var(--emoji-item-color, #ffffff);
+    font-size: 24px;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.emoji-item:hover {
+    background: var(--emoji-item-hover-bg, #3a424c);
+    transform: scale(1.2);
+}
+
+/* =======================================
+   ФИКСИРОВАННЫЙ РАЗМЕР СМАЙЛИКОВ В СООБЩЕНИЯХ
+   ======================================= */
+
+/* Все смайлики в сообщениях - фиксированный размер 26px */
+.message .text .emoji,
+.message .text .emoji-char,
+.message .text [class*="emoji"] {
+    font-size: var(--emoji-size, 26px) !important;
+    line-height: 1 !important;
+    display: inline-block !important;
+    vertical-align: middle !important;
+    height: auto !important;
+    width: auto !important;
+    min-width: 26px;
+    min-height: 26px;
+    transform: translateY(-1px);
+}
+
+/* Для смайликов-картинок */
+.message .text img.emoji,
+.message .text img[alt*="emoji"] {
+    width: var(--emoji-size, 26px) !important;
+    height: var(--emoji-size, 26px) !important;
+    vertical-align: middle !important;
+}
+
+/* Текст сообщения (не влияет на смайлики) */
+.message .text {
+    font-size: var(--message-font-size, 14px);
+    line-height: 1.5;
+}
+
+/* =======================================
+   ТУЛТИП ДЛЯ ЭМОДЗИ
+   ======================================= */
+
+.emoji-tooltip {
+    position: fixed;
+    background: #1e242b;
+    color: #e0e0e0;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    border: 1px solid #3a424c;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    z-index: 10003;
+    pointer-events: none;
+    animation: tooltipFadeIn 0.15s ease;
+}
+
+@keyframes tooltipFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 5px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.emoji-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 4px;
+    border-style: solid;
+    border-color: #1e242b transparent transparent transparent;
 }
 
 /* =======================================
@@ -1666,4 +1794,414 @@ body {
 
 .message.highlight-flash {
     animation: flash 1.5s ease;
+}
+/* =======================================
+   СТРАНИЦА НАСТРОЕК
+   ======================================= */
+
+.settings-container {
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(135deg, #1a1e24 0%, #2d343c 100%);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* Светлая тема - свои цвета */
+body.light-theme .settings-container {
+    background: linear-gradient(135deg, #f5f0e8 0%, #faf7f2 100%);
+}
+
+.settings-header {
+    padding: 24px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+    background: rgba(26, 30, 36, 0.9);
+    backdrop-filter: blur(10px);
+}
+
+.settings-header h2 {
+    color: #d4af37;
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 300;
+    letter-spacing: 2px;
+}
+
+.close-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    color: #ffffff;
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.close-btn:hover {
+    background: #d4af37;
+    border-color: #d4af37;
+    transform: rotate(90deg);
+}
+
+.settings-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.settings-section {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.settings-section h3 {
+    color: #d4af37;
+    font-size: 1.2rem;
+    font-weight: 500;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.settings-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.settings-item:last-child {
+    border-bottom: none;
+}
+
+.settings-item-label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.settings-item-label span:first-child {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.settings-item-description {
+    color: #a0a8b4;
+    font-size: 0.85rem;
+}
+
+/* Контрол размера шрифта */
+.font-size-control {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 5px 10px;
+    border-radius: 30px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.font-size-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid rgba(212, 175, 55, 0.5);
+    color: #d4af37;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.font-size-btn:hover {
+    background: #d4af37;
+    color: #1a1e24;
+    transform: scale(1.05);
+}
+
+.font-size-value {
+    color: #ffffff;
+    font-size: 1rem;
+    font-weight: 500;
+    min-width: 50px;
+    text-align: center;
+}
+
+/* Предпросмотр сообщений */
+.font-preview {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 10px;
+    width: 300px;
+}
+
+.preview-message {
+    max-width: 100%;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    border-radius: 18px;
+    position: relative;
+}
+
+.preview-message.received {
+    background: rgba(45, 52, 60, 0.8);
+    color: #e0e0e0;
+    align-self: flex-start;
+    margin-right: auto;
+    border-bottom-left-radius: 5px;
+}
+
+.preview-message.sent {
+    background: linear-gradient(135deg, #d4af37 0%, #b38f2c 100%);
+    color: #ffffff;
+    align-self: flex-end;
+    margin-left: auto;
+    border-bottom-right-radius: 5px;
+}
+
+.preview-message .text {
+    font-size: inherit;
+    margin-bottom: 5px;
+}
+
+.preview-message .message-meta {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+    font-size: 0.7rem;
+}
+
+/* Переключатель (switch) */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 52px;
+    height: 26px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: 0.3s;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 2px;
+    background-color: #d4af37;
+    transition: 0.3s;
+}
+
+input:checked + .slider {
+    background-color: rgba(212, 175, 55, 0.2);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+
+/* Кнопка настроек в профиле */
+.settings-btn {
+    width: 100%;
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(212, 175, 55, 0.1);
+    color: #d4af37;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+    margin-bottom: 12px;
+}
+
+.settings-btn:hover {
+    background: #d4af37;
+    color: #1a1e24;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+}
+
+.settings-btn .icon {
+    font-size: 1.2rem;
+}
+/* =======================================
+   КНОПКА ПРИМЕНЕНИЯ НАСТРОЕК
+   ======================================= */
+
+.settings-apply-container {
+    padding: 20px 30px 30px;
+    display: flex;
+    justify-content: center;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.apply-settings-btn {
+    background: linear-gradient(135deg, #d4af37 0%, #b38f2c 100%);
+    color: #1a1e24;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 30px; /* уменьшил горизонтальные отступы */
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* добавил шрифт как в мессенджере */
+    font-size: 1rem; /* уменьшил размер шрифта */
+    font-weight: 500; /* сделал нормальную жирность */
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* уменьшил gap */
+    transition: all 0.3s;
+    width: auto; /* убрал max-width и сделал авто */
+    min-width: 200px; /* минимальная ширина */
+    white-space: nowrap; /* ЗАПРЕЩАЕТ ПЕРЕНОС ТЕКСТА */
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.3);
+}
+
+.apply-settings-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(212, 175, 55, 0.5);
+}
+
+.apply-settings-btn:active {
+    transform: translateY(0);
+}
+
+.apply-icon {
+    font-size: 1.2rem; /* уменьшил размер иконки */
+    font-weight: normal;
+    display: inline-block;
+    flex-shrink: 0; /* иконка не сжимается */
+}
+
+/* Для светлой темы - чуть другие цвета */
+body.light-theme .apply-settings-btn {
+    background: linear-gradient(135deg, #e6b800 0%, #d4a500 100%);
+    color: #ffffff;
+}
+/* =======================================
+   УВЕДОМЛЕНИЕ ОБ УСПЕШНОМ ПРИМЕНЕНИИ
+   ======================================= */
+
+.settings-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: linear-gradient(135deg, #d4af37 0%, #b38f2c 100%);
+    color: #1a1e24;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: 600;
+    font-size: 1rem;
+    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
+    z-index: 10000;
+    transition: transform 0.3s ease;
+    text-align: center;
+}
+
+.settings-notification.show {
+    transform: translateX(-50%) translateY(0);
+}
+
+body.light-theme .settings-notification {
+    background: linear-gradient(135deg, #e6b800 0%, #d4a500 100%);
+    color: #ffffff;
+}
+
+
+/* Кнопка настроек в профиле - теперь как остальные кнопки */
+.settings-btn {
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto 8px auto; /* центрируем и добавляем отступ снизу */
+    padding: 16px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background: rgba(212, 175, 55, 0.1);
+    color: #d4af37;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: all 0.3s;
+}
+
+.settings-btn:hover {
+    background: #d4af37;
+    color: #1a1e24;
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(212, 175, 55, 0.3);
+}
+
+.settings-btn .icon {
+    font-size: 1.2rem;
+}
+
+/* Для светлой темы */
+body.light-theme .settings-btn {
+    border: 1px solid rgba(230, 184, 0, 0.3);
+    background: rgba(230, 184, 0, 0.1);
+    color: #b88b00;
+}
+
+body.light-theme .settings-btn:hover {
+    background: #e6b800;
+    color: #ffffff;
 }

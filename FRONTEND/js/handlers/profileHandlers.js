@@ -39,7 +39,6 @@ function setupProfileHandlers() {
     const darkThemeOption = document.getElementById('theme-dark');
     const lightThemeOption = document.getElementById('theme-light');
     
-    // Обновляем UI переключателя в соответствии с текущей темой
     updateThemeSwitcherUI();
     
     if (darkThemeOption) {
@@ -98,7 +97,15 @@ function setupProfileHandlers() {
             }
         });
     }
-
+    
+    // НАСТРАИВАЕМ КНОПКУ НАСТРОЕК
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            showScreen('settings');
+        });
+    }
+    
     // НАСТРАИВАЕМ КНОПКУ "СОЗДАТЬ ГРУППУ"
     const createGroupBtn = document.getElementById('create-group-btn');
     if (createGroupBtn) {
@@ -107,21 +114,19 @@ function setupProfileHandlers() {
         });
     }
     
-    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ" В ПРОФИЛЕ
+    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ"
     const logoutProfileBtn = document.getElementById('logout-profile-btn');
     if (logoutProfileBtn) {
         logoutProfileBtn.addEventListener('click', () => {
             console.log('Выход из системы через профиль');
             
-            // Сбрасываем состояние авторизации
             state.isAuthenticated = false;
             state.currentUser = null;
             
-            // Возвращаемся на экран логина
             showScreen('login');
         });
     }
-
+    
     // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {

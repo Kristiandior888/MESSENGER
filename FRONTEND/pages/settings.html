@@ -1,0 +1,104 @@
+<div class="settings-container">
+    <div class="settings-header">
+        <h2>Настройки</h2>
+        <button id="close-settings-btn" class="close-btn">✕</button>
+    </div>
+    
+    <div class="settings-content">
+        <div class="settings-section">
+            <h3>Оформление</h3>
+            
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <span>Размер шрифта сообщений</span>
+                    <span class="settings-item-description">Изменяет размер текста и смайликов в чатах</span>
+                </div>
+                <div class="font-size-control">
+                    <button id="font-size-decrease" class="font-size-btn">−</button>
+                    <span id="font-size-value" class="font-size-value">14px</span>
+                    <button id="font-size-increase" class="font-size-btn">+</button>
+                </div>
+            </div>
+            
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <span>Предпросмотр</span>
+                    <span class="settings-item-description">Как будут выглядеть сообщения</span>
+                </div>
+                <div class="font-preview">
+                    <div class="preview-message received">
+                        <div class="text">Привет! Как дела?</div>
+                        <div class="message-meta">
+                            <span class="time">14:30</span>
+                        </div>
+                    </div>
+                    <div class="preview-message sent">
+                        <div class="text">Отлично! 😊 👍</div>
+                        <div class="message-meta">
+                            <span class="time">14:31</span>
+                            <span class="message-status read"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Уведомления</h3>
+            
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <span>Звук новых сообщений</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="sound-notifications" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <span>Всплывающие уведомления</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="popup-notifications" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="settings-section">
+            <h3>Дополнительно</h3>
+            
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <span>Показывать время сообщений</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="show-time" checked>
+                    <span class="slider round"></span>
+                </label>
+            </div>
+            
+            <div class="settings-item">
+                <div class="settings-item-label">
+                    <span>Компактный режим</span>
+                    <span class="settings-item-description">Уменьшить отступы между сообщениями</span>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" id="compact-mode">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+        </div>
+        
+                  <!-- Кнопка применения настроек -->
+        <div class="settings-apply-container">
+            <button id="apply-settings-btn" class="apply-settings-btn">
+                <span class="apply-icon">✓</span>
+                Применить настройки
+            </button>
+        </div>
+
+    </div>
+</div>
