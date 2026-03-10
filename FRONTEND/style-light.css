@@ -1,26 +1,22 @@
 /* =======================================
-   СБРОС СТИЛЕЙ И БАЗОВЫЕ НАСТРОЙКИ
+   СВЕТЛАЯ ТЕМА (ЗОЛОТИСТО-БЕЖЕВАЯ)
    ======================================= */
-   
-/* Убираем все отступы и отключаем стандартные рамки */
+
+/* СБРОС СТИЛЕЙ И БАЗОВЫЕ НАСТРОЙКИ */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-/* Основные настройки для всего документа */
 body {
     font-family: 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    background-color: #1a1e24;
-    color: #e0e0e0;
+    background-color: #faf7f2;
+    color: #5c4e3d;
     line-height: 1.5;
 }
 
-/* =======================================
-   КОНТЕЙНЕР ПРИЛОЖЕНИЯ
-   ======================================= */
-   
+/* КОНТЕЙНЕР ПРИЛОЖЕНИЯ */
 #app {
     height: 100vh;
     width: 100vw;
@@ -33,10 +29,7 @@ body {
     display: flex;
 }
 
-/* =======================================
-   ЭКРАН АВТОРИЗАЦИИ
-   ======================================= */
-
+/* ЭКРАН АВТОРИЗАЦИИ */
 .login-container {
     width: 100%;
     height: 100%;
@@ -44,8 +37,8 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(145deg, #222831 0%, #2d343c 100%);
-    color: #ffffff;
+    background: linear-gradient(145deg, #f5efe6 0%, #f8f1e9 100%);
+    color: #5c4e3d;
 }
 
 .login-container h1 {
@@ -54,14 +47,14 @@ body {
     letter-spacing: 2px;
     margin-bottom: 1rem;
     text-transform: uppercase;
-    color: #d4af37;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    color: #b88b4a;
+    text-shadow: 0 2px 4px rgba(184, 139, 74, 0.15);
 }
 
 .login-container p {
     font-size: 1.2rem;
     margin-bottom: 3rem;
-    color: #a0a8b4;
+    color: #8b7a62;
     letter-spacing: 0.5px;
 }
 
@@ -71,9 +64,9 @@ body {
     font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #ffffff;
+    color: #b88b4a;
     background: transparent;
-    border: 2px solid #d4af37;
+    border: 2px solid #b88b4a;
     border-radius: 30px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -81,34 +74,32 @@ body {
 }
 
 #login-btn:hover {
-    background: #d4af37;
-    color: #222831;
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+    background: #b88b4a;
+    color: #ffffff;
+    box-shadow: 0 0 15px rgba(184, 139, 74, 0.3);
 }
 
 #login-btn:disabled {
     opacity: 0.7;
     cursor: not-allowed;
-    border-color: #a0a8b4;
+    border-color: #b8a58b;
+    color: #b8a58b;
 }
 
-/* =======================================
-   ИНТЕРФЕЙС ЧАТА
-   ======================================= */
-
+/* ИНТЕРФЕЙС ЧАТА */
 .chat-container {
     display: flex;
     width: 100%;
     height: 100%;
-    background-color: #1e242b;
+    background-color: #faf7f2;
     overflow: hidden;
 }
 
-/* ----- БОКОВАЯ ПАНЕЛЬ (СЛЕВА) ----- */
+/* БОКОВАЯ ПАНЕЛЬ (СЛЕВА) */
 .sidebar {
     width: 280px;
-    background-color: #252b33;
-    border-right: 1px solid #3a424c;
+    background-color: #ffffff;
+    border-right: 1px solid #e8e0d5;
     display: flex;
     flex-direction: column;
     backdrop-filter: blur(10px);
@@ -121,11 +112,11 @@ body {
 
 .user-info {
     padding: 20px;
-    border-bottom: 1px solid #3a424c;
+    border-bottom: 1px solid #e8e0d5;
     display: flex;
     align-items: center;
     gap: 15px;
-    background-color: #252b33;
+    background-color: #ffffff;
     position: sticky;
     top: 0;
     z-index: 10;
@@ -136,12 +127,12 @@ body {
     height: 48px;
     border-radius: 50%;
     object-fit: cover;
-    border: 2px solid #d4af37;
+    border: 2px solid #b88b4a;
 }
 
 #user-email {
     font-size: 0.95rem;
-    color: #c0c8d2;
+    color: #7f6e58;
     font-weight: 500;
     word-break: break-all;
 }
@@ -159,19 +150,19 @@ body {
     border-radius: 10px;
     cursor: pointer;
     transition: background-color 0.2s;
-    color: #d0d8e2;
+    color: #6b5d4b;
     font-weight: 400;
     border-left: 3px solid transparent;
 }
 
 .chat-item:hover {
-    background-color: #323a45;
+    background-color: #f5efe6;
 }
 
 .chat-item.active {
-    background-color: #2d363f;
-    border-left: 3px solid #d4af37;
-    color: #ffffff;
+    background-color: #f8f1e9;
+    border-left: 3px solid #b88b4a;
+    color: #4a3f31;
     font-weight: 500;
 }
 
@@ -179,8 +170,8 @@ body {
     margin: 15px;
     padding: 12px;
     background: transparent;
-    color: #e05a5a;
-    border: 1px solid #e05a5a;
+    color: #d18f7a;
+    border: 1px solid #d18f7a;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
@@ -190,16 +181,16 @@ body {
 }
 
 .logout:hover {
-    background: #e05a5a;
+    background: #d18f7a;
     color: #ffffff;
 }
 
-/* ----- ОСНОВНАЯ ОБЛАСТЬ ЧАТА (СПРАВА) ----- */
+/* ОСНОВНАЯ ОБЛАСТЬ ЧАТА (СПРАВА) */
 .chat-area {
     flex: 1;
     display: flex;
     flex-direction: column;
-    background-color: #1a1e24;
+    background-color: #faf7f2;
     height: 100vh;
     overflow: hidden;
 }
@@ -214,7 +205,7 @@ body {
     max-height: calc(100vh - 100px);
 }
 
-/* ----- СТИЛИ СООБЩЕНИЙ (ОБЪЕДИНЕНЫ) ----- */
+/* СТИЛИ СООБЩЕНИЙ (ОБЪЕДИНЕНЫ) */
 .message {
     max-width: 70%;
     padding: 12px 18px;
@@ -228,18 +219,20 @@ body {
 .message.received {
     align-self: flex-start;
     margin-right: auto;
-    background-color: #2d343c;
-    color: #e0e0e0;
+    background-color: #ffffff;
+    color: #5c4e3d;
     border-bottom-left-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
 }
 
 .message.sent {
     align-self: flex-end;
     margin-left: auto;
-    background: linear-gradient(135deg, #3a424c 0%, #2d343c 100%);
-    color: #ffffff;
+    background: linear-gradient(135deg, #fff5e6 0%, #fef7e9 100%);
+    color: #5c4e3d;
     border-bottom-right-radius: 5px;
-    border: 1px solid #4a535f;
+    border: 1px solid #f0e2d1;
+    box-shadow: 0 2px 5px rgba(184, 139, 74, 0.1);
 }
 
 .message .text {
@@ -247,7 +240,6 @@ body {
     margin-bottom: 5px;
 }
 
-/* Мета-информация сообщения (время + статус) */
 .message-meta {
     display: flex;
     align-items: center;
@@ -258,12 +250,12 @@ body {
 }
 
 .message .time {
-    opacity: 0.7;
+    opacity: 0.6;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: #8b7a62;
 }
 
-/* Статусы сообщений */
 .message-status {
     font-size: 12px;
     line-height: 1;
@@ -281,7 +273,7 @@ body {
 }
 
 .message-status.sending {
-    color: #a0a8b4;
+    color: #b8a58b;
     animation: rotate 1.5s linear infinite;
     display: inline-block;
 }
@@ -291,7 +283,7 @@ body {
 }
 
 .message-status.sent {
-    color: #a0a8b4;
+    color: #b8a58b;
 }
 
 .message-status.sent::before {
@@ -299,7 +291,7 @@ body {
 }
 
 .message-status.delivered {
-    color: #d4af37;
+    color: #b88b4a;
 }
 
 .message-status.delivered::before {
@@ -308,7 +300,7 @@ body {
 }
 
 .message-status.read {
-    color: #4CAF50;
+    color: #7fa88c;
 }
 
 .message-status.read::before {
@@ -316,11 +308,10 @@ body {
     letter-spacing: 2px;
 }
 
-/* Подсветка сообщений при поиске */
 .message.highlight {
     animation: highlight-pulse 2s ease;
-    border: 2px solid #d4af37;
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+    border: 2px solid #b88b4a;
+    box-shadow: 0 0 10px rgba(184, 139, 74, 0.2);
 }
 
 @keyframes highlight-pulse {
@@ -330,16 +321,16 @@ body {
 }
 
 .message.current-result {
-    border: 2px solid #d4af37;
-    background: rgba(212, 175, 55, 0.1);
+    border: 2px solid #b88b4a;
+    background: rgba(184, 139, 74, 0.05);
 }
 
-/* ----- ПАНЕЛЬ ВВОДА СООБЩЕНИЯ ----- */
+/* ПАНЕЛЬ ВВОДА СООБЩЕНИЯ */
 .message-input {
     display: flex;
     padding: 20px;
-    background-color: #252b33;
-    border-top: 1px solid #3a424c;
+    background-color: #ffffff;
+    border-top: 1px solid #e8e0d5;
     gap: 10px;
     align-items: center;
 }
@@ -349,8 +340,8 @@ body {
     height: 40px;
     border-radius: 50%;
     background: transparent;
-    border: 1px solid #3a424c;
-    color: #a0a8b4;
+    border: 1px solid #e8e0d5;
+    color: #8b7a62;
     font-size: 20px;
     cursor: pointer;
     display: flex;
@@ -360,33 +351,33 @@ body {
 }
 
 .attach-btn:hover {
-    border-color: #d4af37;
-    color: #d4af37;
+    border-color: #b88b4a;
+    color: #b88b4a;
     transform: scale(1.05);
 }
 
 .attach-btn.has-files {
-    background-color: rgba(212, 175, 55, 0.2);
-    border-color: #d4af37;
+    background-color: rgba(184, 139, 74, 0.1);
+    border-color: #b88b4a;
 }
 
 #message-field {
     flex: 1;
     padding: 12px 20px;
-    background-color: #1a1e24;
-    border: 1px solid #3a424c;
+    background-color: #faf7f2;
+    border: 1px solid #e8e0d5;
     border-radius: 25px;
-    color: #ffffff;
+    color: #5c4e3d;
     font-size: 1rem;
     outline: none;
 }
 
 #message-field:focus {
-    border-color: #d4af37;
+    border-color: #b88b4a;
 }
 
 #message-field::placeholder {
-    color: #6f7a88;
+    color: #b8a58b;
     font-style: italic;
 }
 
@@ -394,8 +385,8 @@ body {
     padding: 0 25px;
     height: 40px;
     background: transparent;
-    color: #d4af37;
-    border: 2px solid #d4af37;
+    color: #b88b4a;
+    border: 2px solid #b88b4a;
     border-radius: 25px;
     font-weight: 600;
     cursor: pointer;
@@ -403,11 +394,11 @@ body {
 }
 
 #send-btn:hover {
-    background: #d4af37;
-    color: #1a1e24;
+    background: #b88b4a;
+    color: #ffffff;
 }
 
-/* ----- ОТОБРАЖЕНИЕ ФАЙЛОВ В СООБЩЕНИЯХ ----- */
+/* ОТОБРАЖЕНИЕ ФАЙЛОВ В СООБЩЕНИЯХ */
 .message-files {
     margin-top: 8px;
     display: flex;
@@ -417,7 +408,7 @@ body {
 
 .message-file {
     padding: 8px 12px;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.02);
     border-radius: 8px;
     display: flex;
     align-items: center;
@@ -427,7 +418,7 @@ body {
 }
 
 .message-file:hover {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.03);
 }
 
 .file-icon {
@@ -445,38 +436,38 @@ body {
     margin-bottom: 2px;
     word-break: break-all;
     font-size: 0.9rem;
+    color: #5c4e3d;
 }
 
 .file-size {
     font-size: 11px;
-    opacity: 0.7;
+    opacity: 0.6;
+    color: #8b7a62;
 }
 
 .download-hint {
     font-size: 16px;
-    opacity: 0.5;
+    opacity: 0.4;
     transition: opacity 0.2s;
+    color: #8b7a62;
 }
 
 .message-file:hover .download-hint {
     opacity: 1;
 }
 
-/* =======================================
-   ПОИСК ПО СООБЩЕНИЯМ
-   ======================================= */
-
+/* ПОИСК ПО СООБЩЕНИЯМ */
 .search-section {
     padding: 10px 15px;
-    border-bottom: 1px solid #3a424c;
+    border-bottom: 1px solid #e8e0d5;
 }
 
 .search-input-wrapper {
     display: flex;
     align-items: center;
-    background-color: #1a1e24;
+    background-color: #faf7f2;
     border-radius: 20px;
-    border: 1px solid #3a424c;
+    border: 1px solid #e8e0d5;
     overflow: hidden;
 }
 
@@ -485,13 +476,13 @@ body {
     background: transparent;
     border: none;
     padding: 8px 12px;
-    color: #ffffff;
+    color: #5c4e3d;
     font-size: 0.9rem;
     outline: none;
 }
 
 #search-input::placeholder {
-    color: #6f7a88;
+    color: #b8a58b;
     font-style: italic;
 }
 
@@ -499,14 +490,14 @@ body {
     background: transparent;
     border: none;
     padding: 8px 12px;
-    color: #a0a8b4;
+    color: #8b7a62;
     cursor: pointer;
     font-size: 16px;
     transition: color 0.2s;
 }
 
 .search-btn:hover {
-    color: #d4af37;
+    color: #b88b4a;
 }
 
 .search-results {
@@ -515,12 +506,12 @@ body {
     align-items: center;
     justify-content: space-between;
     font-size: 0.85rem;
-    color: #a0a8b4;
+    color: #8b7a62;
     padding: 0 5px;
 }
 
 #search-count {
-    color: #d4af37;
+    color: #b88b4a;
     font-weight: 500;
 }
 
@@ -531,8 +522,8 @@ body {
 
 .search-nav-btn {
     background: transparent;
-    border: 1px solid #3a424c;
-    color: #a0a8b4;
+    border: 1px solid #e8e0d5;
+    color: #8b7a62;
     width: 24px;
     height: 24px;
     border-radius: 4px;
@@ -545,8 +536,8 @@ body {
 }
 
 .search-nav-btn:hover:not(:disabled) {
-    border-color: #d4af37;
-    color: #d4af37;
+    border-color: #b88b4a;
+    color: #b88b4a;
 }
 
 .search-nav-btn:disabled {
@@ -556,8 +547,8 @@ body {
 
 .search-clear-btn {
     background: transparent;
-    border: 1px solid #3a424c;
-    color: #e05a5a;
+    border: 1px solid #e8e0d5;
+    color: #d18f7a;
     width: 24px;
     height: 24px;
     border-radius: 4px;
@@ -570,14 +561,14 @@ body {
 }
 
 .search-clear-btn:hover {
-    border-color: #e05a5a;
-    background: rgba(224, 90, 90, 0.1);
+    border-color: #d18f7a;
+    background: rgba(209, 143, 122, 0.05);
 }
 
-/* ----- ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА ----- */
+/* ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА */
 .search-results-panel {
-    background-color: #1e242b;
-    border-bottom: 1px solid #3a424c;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e8e0d5;
     max-height: 300px;
     overflow: hidden;
     display: flex;
@@ -589,12 +580,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #252b33;
-    border-bottom: 1px solid #3a424c;
+    background-color: #f8f1e9;
+    border-bottom: 1px solid #e8e0d5;
 }
 
 #search-results-title {
-    color: #d4af37;
+    color: #b88b4a;
     font-weight: 500;
     font-size: 0.9rem;
 }
@@ -602,7 +593,7 @@ body {
 .close-search-btn {
     background: transparent;
     border: none;
-    color: #a0a8b4;
+    color: #8b7a62;
     cursor: pointer;
     font-size: 14px;
     width: 24px;
@@ -614,8 +605,8 @@ body {
 }
 
 .close-search-btn:hover {
-    color: #e05a5a;
-    background: rgba(224, 90, 90, 0.1);
+    color: #d18f7a;
+    background: rgba(209, 143, 122, 0.05);
 }
 
 .search-results-list {
@@ -629,22 +620,22 @@ body {
     cursor: pointer;
     border-left: 3px solid transparent;
     transition: background-color 0.2s;
-    border-bottom: 1px solid rgba(58, 66, 76, 0.3);
+    border-bottom: 1px solid rgba(232, 224, 213, 0.5);
 }
 
 .search-result-item:hover {
-    background-color: #252b33;
-    border-left-color: #d4af37;
+    background-color: #f8f1e9;
+    border-left-color: #b88b4a;
 }
 
 .search-result-item.current-result {
-    background-color: rgba(212, 175, 55, 0.1);
-    border-left-color: #d4af37;
+    background-color: rgba(184, 139, 74, 0.05);
+    border-left-color: #b88b4a;
 }
 
 .search-result-date {
     font-size: 0.7rem;
-    color: #a0a8b4;
+    color: #8b7a62;
     margin-bottom: 4px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -670,33 +661,33 @@ body {
 .search-result-name {
     font-weight: 600;
     font-size: 0.85rem;
-    color: #d4af37;
+    color: #b88b4a;
     margin-bottom: 2px;
 }
 
 .search-result-text {
     font-size: 0.9rem;
-    color: #e0e0e0;
+    color: #5c4e3d;
     margin-bottom: 2px;
     word-break: break-word;
 }
 
 .search-result-text .highlight {
-    background-color: rgba(212, 175, 55, 0.3);
-    color: #ffffff;
+    background-color: rgba(184, 139, 74, 0.2);
+    color: #4a3f31;
     padding: 0 2px;
     border-radius: 2px;
 }
 
 .search-result-time {
     font-size: 0.7rem;
-    color: #6f7a88;
+    color: #b8a58b;
     text-align: right;
 }
 
 .search-result-file {
     font-size: 0.8rem;
-    color: #a0a8b4;
+    color: #8b7a62;
     display: flex;
     align-items: center;
     gap: 5px;
@@ -709,20 +700,17 @@ body {
 .search-date-separator {
     padding: 8px 15px;
     font-size: 0.75rem;
-    color: #a0a8b4;
-    background-color: rgba(0, 0, 0, 0.2);
+    color: #8b7a62;
+    background-color: rgba(0, 0, 0, 0.02);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-/* =======================================
-   СТРАНИЦА ПРОФИЛЯ
-   ======================================= */
-
+/* СТРАНИЦА ПРОФИЛЯ */
 .profile-container {
     width: 100%;
     height: 100vh;
-    background: linear-gradient(145deg, #222831 0%, #2d343c 100%);
+    background: linear-gradient(145deg, #f5efe6 0%, #f8f1e9 100%);
     display: flex;
     flex-direction: column;
 }
@@ -732,18 +720,18 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #3a424c;
+    border-bottom: 1px solid #e8e0d5;
 }
 
 .profile-header h2 {
-    color: #d4af37;
+    color: #b88b4a;
     margin: 0;
 }
 
 .close-btn {
     background: transparent;
-    border: 1px solid #a0a8b4;
-    color: #a0a8b4;
+    border: 1px solid #b8a58b;
+    color: #b8a58b;
     font-size: 20px;
     width: 36px;
     height: 36px;
@@ -756,8 +744,8 @@ body {
 }
 
 .close-btn:hover {
-    border-color: #d4af37;
-    color: #d4af37;
+    border-color: #b88b4a;
+    color: #b88b4a;
 }
 
 .profile-content {
@@ -787,7 +775,7 @@ body {
     height: 150px;
     border-radius: 50%;
     object-fit: cover;
-    border: 3px solid #d4af37;
+    border: 3px solid #b88b4a;
     transition: filter 0.3s;
 }
 
@@ -798,8 +786,8 @@ body {
     width: 100%;
     height: 100%;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
+    background: rgba(255, 255, 255, 0.8);
+    color: #5c4e3d;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -813,11 +801,11 @@ body {
 }
 
 .current-avatar:hover .profile-avatar {
-    filter: brightness(0.7);
+    filter: brightness(0.95);
 }
 
 .avatar-hint {
-    color: #a0a8b4;
+    color: #8b7a62;
     font-size: 14px;
     max-width: 300px;
 }
@@ -825,15 +813,16 @@ body {
 .info-section {
     width: 100%;
     max-width: 400px;
-    background: #1a1e24;
+    background: #ffffff;
     border-radius: 10px;
     padding: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
 }
 
 .info-row {
     display: flex;
     padding: 15px 0;
-    border-bottom: 1px solid #3a424c;
+    border-bottom: 1px solid #e8e0d5;
 }
 
 .info-row:last-child {
@@ -842,26 +831,23 @@ body {
 
 .info-row label {
     width: 100px;
-    color: #a0a8b4;
+    color: #8b7a62;
     font-weight: 500;
 }
 
 .info-row span {
     flex: 1;
-    color: #ffffff;
+    color: #5c4e3d;
 }
 
-/* =======================================
-   МОДАЛЬНЫЕ ОКНА (общие стили)
-   ======================================= */
-
+/* МОДАЛЬНЫЕ ОКНА (общие стили) */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -869,27 +855,27 @@ body {
 }
 
 .modal-container {
-    background: #1e242b;
+    background: #ffffff;
     border-radius: 12px;
     width: 90%;
     max-width: 500px;
     max-height: 80vh;
     display: flex;
     flex-direction: column;
-    border: 1px solid #3a424c;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border: 1px solid #e8e0d5;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .modal-header {
     padding: 15px 20px;
-    border-bottom: 1px solid #3a424c;
+    border-bottom: 1px solid #e8e0d5;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .modal-header h3 {
-    color: #d4af37;
+    color: #b88b4a;
     margin: 0;
     font-weight: 500;
 }
@@ -897,7 +883,7 @@ body {
 .modal-close {
     background: transparent;
     border: none;
-    color: #a0a8b4;
+    color: #8b7a62;
     font-size: 18px;
     cursor: pointer;
     width: 30px;
@@ -909,8 +895,8 @@ body {
 }
 
 .modal-close:hover {
-    color: #e05a5a;
-    background: rgba(224, 90, 90, 0.1);
+    color: #d18f7a;
+    background: rgba(209, 143, 122, 0.05);
 }
 
 .modal-body {
@@ -920,7 +906,7 @@ body {
 
 .modal-footer {
     padding: 15px 20px;
-    border-top: 1px solid #3a424c;
+    border-top: 1px solid #e8e0d5;
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -934,30 +920,30 @@ body {
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    color: #a0a8b4;
+    color: #8b7a62;
     font-size: 0.9rem;
 }
 
 .form-input {
     width: 100%;
     padding: 10px 12px;
-    background: #1a1e24;
-    border: 1px solid #3a424c;
+    background: #faf7f2;
+    border: 1px solid #e8e0d5;
     border-radius: 6px;
-    color: #ffffff;
+    color: #5c4e3d;
     font-size: 0.95rem;
     outline: none;
 }
 
 .form-input:focus {
-    border-color: #d4af37;
+    border-color: #b88b4a;
 }
 
 /* Кнопки модальных окон */
 .btn-primary {
     padding: 8px 16px;
-    background: #d4af37;
-    color: #1a1e24;
+    background: #b88b4a;
+    color: #ffffff;
     border: none;
     border-radius: 6px;
     font-weight: 600;
@@ -966,7 +952,7 @@ body {
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #e5c158;
+    background: #c99b5c;
     transform: scale(1.02);
 }
 
@@ -978,23 +964,23 @@ body {
 .btn-secondary {
     padding: 8px 16px;
     background: transparent;
-    color: #a0a8b4;
-    border: 1px solid #3a424c;
+    color: #8b7a62;
+    border: 1px solid #e8e0d5;
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
 }
 
 .btn-secondary:hover {
-    border-color: #d4af37;
-    color: #d4af37;
+    border-color: #b88b4a;
+    color: #b88b4a;
 }
 
-/* ----- СПИСОК КОНТАКТОВ (общий для модальных окон) ----- */
+/* СПИСОК КОНТАКТОВ (общий для модальных окон) */
 .contacts-list {
     max-height: 200px;
     overflow-y: auto;
-    border: 1px solid #3a424c;
+    border: 1px solid #e8e0d5;
     border-radius: 6px;
     margin-top: 10px;
 }
@@ -1004,16 +990,16 @@ body {
     align-items: center;
     padding: 10px;
     cursor: pointer;
-    border-bottom: 1px solid rgba(58, 66, 76, 0.5);
+    border-bottom: 1px solid rgba(232, 224, 213, 0.5);
     transition: background 0.2s;
 }
 
 .contact-item:hover {
-    background: #252b33;
+    background: #f8f1e9;
 }
 
 .contact-item.selected {
-    background: rgba(212, 175, 55, 0.1);
+    background: rgba(184, 139, 74, 0.05);
 }
 
 .contact-avatar {
@@ -1030,29 +1016,29 @@ body {
 
 .contact-name {
     font-weight: 500;
-    color: #e0e0e0;
+    color: #5c4e3d;
 }
 
 .contact-email {
     font-size: 0.8rem;
-    color: #6f7a88;
+    color: #b8a58b;
 }
 
 .contact-checkbox {
     margin-left: 10px;
-    color: #d4af37;
+    color: #b88b4a;
 }
 
 .selected-contacts {
     margin-top: 15px;
     padding: 10px;
-    background: #1a1e24;
+    background: #faf7f2;
     border-radius: 6px;
 }
 
 .selected-title {
     font-size: 0.85rem;
-    color: #a0a8b4;
+    color: #8b7a62;
     margin-bottom: 8px;
 }
 
@@ -1067,23 +1053,24 @@ body {
     align-items: center;
     gap: 5px;
     padding: 4px 8px;
-    background: #252b33;
+    background: #ffffff;
     border-radius: 16px;
     font-size: 0.85rem;
-    color: #e0e0e0;
+    color: #5c4e3d;
+    border: 1px solid #e8e0d5;
 }
 
 .selected-tag-remove {
     background: transparent;
     border: none;
-    color: #e05a5a;
+    color: #d18f7a;
     cursor: pointer;
     font-size: 14px;
     padding: 0 2px;
 }
 
 .selected-tag-remove:hover {
-    color: #ff6b6b;
+    color: #c97b64;
 }
 
 /* Кнопка создания группы */
@@ -1091,8 +1078,8 @@ body {
     width: 100%;
     padding: 10px;
     background: transparent;
-    border: 1px dashed #3a424c;
-    color: #a0a8b4;
+    border: 1px dashed #e8e0d5;
+    color: #8b7a62;
     border-radius: 6px;
     margin-bottom: 10px;
     cursor: pointer;
@@ -1104,21 +1091,21 @@ body {
 }
 
 .create-group-btn:hover {
-    border-color: #d4af37;
-    color: #d4af37;
-    background: rgba(212, 175, 55, 0.05);
+    border-color: #b88b4a;
+    color: #b88b4a;
+    background: rgba(184, 139, 74, 0.02);
 }
 
 /* Информация о группе */
 .group-settings {
     margin-bottom: 20px;
     padding: 15px;
-    background: #1a1e24;
+    background: #faf7f2;
     border-radius: 8px;
 }
 
 .group-settings h4 {
-    color: #d4af37;
+    color: #b88b4a;
     margin-bottom: 15px;
     font-weight: 500;
 }
@@ -1133,7 +1120,7 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #e0e0e0;
+    color: #5c4e3d;
     cursor: pointer;
 }
 
@@ -1141,11 +1128,11 @@ body {
     width: 16px;
     height: 16px;
     cursor: pointer;
-    accent-color: #d4af37;
+    accent-color: #b88b4a;
 }
 
 .group-participants h4 {
-    color: #d4af37;
+    color: #b88b4a;
     margin-bottom: 15px;
     font-weight: 500;
 }
@@ -1153,7 +1140,7 @@ body {
 .participants-list {
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid #3a424c;
+    border: 1px solid #e8e0d5;
     border-radius: 8px;
 }
 
@@ -1161,7 +1148,7 @@ body {
     display: flex;
     align-items: center;
     padding: 10px;
-    border-bottom: 1px solid rgba(58, 66, 76, 0.5);
+    border-bottom: 1px solid rgba(232, 224, 213, 0.5);
 }
 
 .participant-item:last-child {
@@ -1182,32 +1169,29 @@ body {
 
 .participant-name {
     font-weight: 500;
-    color: #e0e0e0;
+    color: #5c4e3d;
     margin-bottom: 2px;
 }
 
 .creator-badge {
-    color: #d4af37;
+    color: #b88b4a;
     margin-left: 5px;
 }
 
 .participant-email {
     font-size: 0.8rem;
-    color: #6f7a88;
+    color: #b8a58b;
 }
 
-/* =======================================
-   КОНТЕКСТНОЕ МЕНЮ
-   ======================================= */
-
+/* КОНТЕКСТНОЕ МЕНЮ */
 .chat-context-menu {
     position: fixed;
-    background: #1e242b;
-    border: 1px solid #3a424c;
+    background: #ffffff;
+    border: 1px solid #e8e0d5;
     border-radius: 8px;
     padding: 8px 0;
     z-index: 2000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     min-width: 200px;
     font-size: 0.9rem;
 }
@@ -1219,41 +1203,36 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    color: #5c4e3d;
 }
 
 .context-menu-item:hover {
-    background: #2d343c;
+    background: #f8f1e9;
 }
 
-/* =======================================
-   ПОЛОСЫ ПРОКРУТКИ
-   ======================================= */
-
+/* ПОЛОСЫ ПРОКРУТКИ */
 ::-webkit-scrollbar {
     width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-    background: #252b33;
+    background: #f8f1e9;
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #4a535f;
+    background: #d4c5b3;
     border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: #d4af37;
+    background: #b88b4a;
 }
 
-/* =======================================
-   ДОПОЛНИТЕЛЬНЫЕ ЭЛЕМЕНТЫ
-   ======================================= */
-
+/* ДОПОЛНИТЕЛЬНЫЕ ЭЛЕМЕНТЫ */
 .unread-badge {
     display: inline-block;
-    background: #d4af37;
-    color: #1a1e24;
+    background: #b88b4a;
+    color: #ffffff;
     padding: 2px 6px;
     border-radius: 10px;
     font-size: 0.7rem;
@@ -1262,18 +1241,15 @@ body {
     text-align: center;
 }
 
-/* =======================================
-   ПАНЕЛЬ ЭМОДЗИ
-   ======================================= */
-
+/* ПАНЕЛЬ ЭМОДЗИ */
 .emoji-panel {
     position: fixed;
     width: 350px;
     height: 300px;
-    background: #1e242b;
-    border: 1px solid #3a424c;
+    background: #ffffff;
+    border: 1px solid #e8e0d5;
     border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     z-index: 10000;
     display: none;
     flex-direction: column;
@@ -1296,13 +1272,13 @@ body {
 .emoji-categories {
     display: flex;
     padding: 8px;
-    background: #252b33;
-    border-bottom: 1px solid #3a424c;
+    background: #f8f1e9;
+    border-bottom: 1px solid #e8e0d5;
     overflow-x: auto;
     gap: 5px;
     flex-shrink: 0;
     scrollbar-width: thin;
-    scrollbar-color: #4a535f #1e242b;
+    scrollbar-color: #d4c5b3 #ffffff;
 }
 
 .emoji-categories::-webkit-scrollbar {
@@ -1310,22 +1286,22 @@ body {
 }
 
 .emoji-categories::-webkit-scrollbar-track {
-    background: #1e242b;
+    background: #ffffff;
 }
 
 .emoji-categories::-webkit-scrollbar-thumb {
-    background: #4a535f;
+    background: #d4c5b3;
     border-radius: 4px;
 }
 
 .emoji-categories::-webkit-scrollbar-thumb:hover {
-    background: #d4af37;
+    background: #b88b4a;
 }
 
 .emoji-category {
     background: transparent;
     border: none;
-    color: #a0a8b4;
+    color: #8b7a62;
     font-size: 18px;
     padding: 5px 8px;
     cursor: pointer;
@@ -1336,13 +1312,13 @@ body {
 }
 
 .emoji-category:hover {
-    background: #2d343c;
-    color: #ffffff;
+    background: #ffffff;
+    color: #5c4e3d;
 }
 
 .emoji-category.active {
-    background: rgba(212, 175, 55, 0.2);
-    color: #d4af37;
+    background: rgba(184, 139, 74, 0.1);
+    color: #b88b4a;
 }
 
 /* Контейнер с эмодзи */
@@ -1354,7 +1330,7 @@ body {
     grid-template-columns: repeat(8, 1fr);
     gap: 5px;
     scrollbar-width: thin;
-    scrollbar-color: #4a535f #1e242b;
+    scrollbar-color: #d4c5b3 #ffffff;
 }
 
 .emoji-container::-webkit-scrollbar {
@@ -1362,88 +1338,12 @@ body {
 }
 
 .emoji-container::-webkit-scrollbar-track {
-    background: #1e242b;
+    background: #ffffff;
 }
 
 .emoji-container::-webkit-scrollbar-thumb {
-    background: #4a535f;
+    background: #d4c5b3;
     border-radius: 6px;
-}
-
-.emoji-container::-webkit-scrollbar-thumb:hover {
-    background: #d4af37;
-}
-
-/* Элемент эмодзи */
-.emoji-item {
-    font-size: 24px;
-    padding: 5px;
-    text-align: center;
-    cursor: pointer;
-    border-radius: 6px;
-    transition: all 0.2s;
-    user-select: none;
-    position: relative;
-    margin-top: 8px;
-}
-
-.emoji-item:hover {
-    background: #2d343c;
-    transform: scale(1.1);
-    z-index: 10002;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-    .emoji-panel {
-        width: 280px;
-    }
-    
-    .emoji-container {
-        grid-template-columns: repeat(6, 1fr);
-    }
-}
-
-/* =======================================
-   ДИНАМИЧЕСКИЙ ТУЛТИП ДЛЯ ЭМОДЗИ (JS)
-   ======================================= */
-
-.emoji-tooltip {
-    position: fixed;
-    background: #1e242b;
-    color: #e0e0e0;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    white-space: nowrap;
-    border: 1px solid #3a424c;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    z-index: 10003;
-    pointer-events: none;
-    animation: tooltipFadeIn 0.15s ease;
-}
-
-@keyframes tooltipFadeIn {
-    from {
-        opacity: 0;
-        transform: translate(-50%, 5px);
-    }
-    to {
-        opacity: 1;
-        transform: translate(-50%, 0);
-    }
-}
-
-/* Добавляем стрелочку к тултипу */
-.emoji-tooltip::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border-width: 4px;
-    border-style: solid;
-    border-color: #1e242b transparent transparent transparent;
 }
 
 /* =======================================
@@ -1462,10 +1362,10 @@ body {
 }
 
 .theme-switcher h3 {
-    color: #ffffff;
+    color: #2b1a1a;
     margin-bottom: 20px;
     font-size: 1.2rem;
-    font-weight: 400;
+    font-weight: 650;
     letter-spacing: 1px;
     text-align: center;
 }
@@ -1510,7 +1410,7 @@ body {
 }
 
 .theme-name {
-    color: #ffffff;
+    color: #1d1717;
     font-size: 1rem;
     font-weight: 500;
 }
@@ -1518,4 +1418,3 @@ body {
 .theme-option.active .theme-name {
     color: #d4af37;
 }
-

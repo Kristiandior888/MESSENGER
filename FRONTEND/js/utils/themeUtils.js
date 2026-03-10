@@ -1,0 +1,114 @@
+// Утилиты для управления темой
+
+const THEME_STORAGE_KEY = 'app_theme';
+
+// Доступные темы
+const THEMES = {
+    DARK: 'dark',
+    LIGHT: 'light'
+};
+
+// Текущая тема
+let currentTheme = THEMES.DARK;
+
+// Загрузить сохраненную тему
+function loadSavedTheme() {
+    try {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        if (savedTheme && Object.values(THEMES).includes(savedTheme)) {
+            currentTheme = savedTheme;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки темы:', error);
+    }
+    return currentTheme;
+}
+
+// Применить тему
+function applyTheme(theme) {
+    const linkElement = document.getElementById('theme-style');
+    
+    if (!linkElement) {
+        // Если элемента нет, создаем его
+        const newLink = document.createElement('link');
+        newLink.id = 'theme-style';
+        newLink.rel = 'stylesheet';
+        
+        if (theme === THEMES.LIGHT) {
+            newLink.href = 'style-light.css';
+        } else {
+            newLink.href = 'style.css'; // темная тема по умолчанию
+        }
+        
+        document.head.appendChild(newLink);
+    } else {
+        // Обновляем существующий элемент
+        if (theme === THEMES.LIGHT) {
+            linkElement.href = 'style-light.css';
+        } else {
+            linkElement.href = 'style.css';
+        }
+    }
+    
+    currentTheme = theme;
+    console.log(`Тема применена: ${theme}`);
+}
+
+// Сохранить тему
+function saveTheme(theme) {
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        currentTheme = theme;
+        console.log(`Тема сохранена: ${theme}`);
+        return true;
+    } catch (error) {
+        console.error('Ошибка сохранения темы:', error);
+        return false;
+    }
+}
+
+// Переключить тему
+function toggleTheme() {
+    const newTheme = currentTheme === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK;
+    applyTheme(newTheme);
+    saveTheme(newTheme);
+    return newTheme;
+}
+
+// Получить текущую тему
+function getCurrentTheme() {
+    return currentTheme;
+}
+
+// Обновить активный класс в переключателе тем
+function updateThemeSwitcherUI() {
+    const darkOption = document.getElementById('theme-dark');
+    const lightOption = document.getElementById('theme-light');
+    
+    if (darkOption && lightOption) {
+        if (currentTheme === THEMES.DARK) {
+            darkOption.classList.add('active');
+            lightOption.classList.remove('active');
+        } else {
+            lightOption.classList.add('active');
+            darkOption.classList.remove('active');
+        }
+    }
+}
+
+// Инициализация темы при загрузке
+function initTheme() {
+    loadSavedTheme();
+    applyTheme(currentTheme);
+}
+
+export {
+    THEMES,
+    loadSavedTheme,
+    applyTheme,
+    saveTheme,
+    toggleTheme,
+    getCurrentTheme,
+    updateThemeSwitcherUI,
+    initTheme
+};

@@ -1,6 +1,7 @@
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
+import { THEMES, applyTheme, saveTheme, getCurrentTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
 
 // НАСТРОЙКА СТРАНИЦЫ ПРОФИЛЯ
 function setupProfileHandlers() {
@@ -21,12 +22,9 @@ function setupProfileHandlers() {
     
     // Загружаем сохраненный аватар
     if (profileAvatar) {
-        // Сначала проверяем в состоянии
         if (state.userAvatar) {
             profileAvatar.src = state.userAvatar;
-        } 
-        // Потом проверяем в localStorage
-        else {
+        } else {
             const savedAvatar = localStorage.getItem('userAvatar');
             if (savedAvatar) {
                 state.userAvatar = savedAvatar;
@@ -34,6 +32,29 @@ function setupProfileHandlers() {
                 updateAllAvatars(savedAvatar);
             }
         }
+    }
+    
+    // НАСТРАИВАЕМ ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
+    const darkThemeOption = document.getElementById('theme-dark');
+    const lightThemeOption = document.getElementById('theme-light');
+    
+    // Обновляем UI переключателя в соответствии с текущей темой
+    updateThemeSwitcherUI();
+    
+    if (darkThemeOption) {
+        darkThemeOption.addEventListener('click', () => {
+            applyTheme(THEMES.DARK);
+            saveTheme(THEMES.DARK);
+            updateThemeSwitcherUI();
+        });
+    }
+    
+    if (lightThemeOption) {
+        lightThemeOption.addEventListener('click', () => {
+            applyTheme(THEMES.LIGHT);
+            saveTheme(THEMES.LIGHT);
+            updateThemeSwitcherUI();
+        });
     }
     
     // НАСТРАИВАЕМ ЗАГРУЗКУ АВАТАРА
@@ -49,30 +70,25 @@ function setupProfileHandlers() {
             const file = e.target.files[0];
             if (!file) return;
             
-            // Проверяем размер файла (макс 2MB)
             if (file.size > 2 * 1024 * 1024) {
                 alert('Файл слишком большой. Максимальный размер - 2MB');
                 return;
             }
             
-            // Проверяем тип файла
             if (!file.type.startsWith('image/')) {
                 alert('Пожалуйста, выберите изображение');
                 return;
             }
             
             try {
-                // Конвертируем в Data URL
                 const imageData = await fileToDataURL(file);
-                
-                // Сохраняем в состояние
                 state.userAvatar = imageData;
-                
-                // Сохраняем в localStorage
                 saveAvatarToStorage(imageData);
-                
-                // Обновляем все аватары
                 updateAllAvatars(imageData);
+                
+                if (profileAvatar) {
+                    profileAvatar.src = imageData;
+                }
                 
                 console.log('Аватар успешно обновлен');
             } catch (error) {
