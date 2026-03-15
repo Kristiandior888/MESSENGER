@@ -1,0 +1,166 @@
+syntax = "proto3";
+
+option csharp_namespace = "gov_messenger";
+
+package messenger;
+
+service Messenger {
+  rpc Login (LoginRequest) returns (LoginResponse);
+
+  rpc GetUser (GetUserRequest) returns (GetUserResponse);
+
+  rpc GetChats (GetChatsRequest) returns (GetChatsResponse);
+  rpc CreateChat (CreateChatRequest) returns (CreateChatResponse);
+
+  rpc GetMessages (GetMessagesRequest) returns (GetMessagesResponse);
+  rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
+
+  rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
+}
+
+// Authentication
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  bool success = 1;
+  string token = 2;
+  User user = 3;
+  string error = 4;
+}
+
+// Users
+
+message User {
+  string id = 1;
+  string email = 2;
+  string name = 3;
+  string avatar_url = 4;
+
+  string status = 5;
+  int64 last_seen = 6;
+
+  // E2EE
+  bytes public_key = 7;
+}
+
+message GetUserRequest {
+  string user_id = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+  string error = 2;
+}
+
+// Chats
+
+enum ChatType {
+  PRIVATE = 0;
+  GROUP = 1;
+}
+
+message Chat {
+  string id = 1;
+  string name = 2;
+  ChatType type = 3;
+  string avatar_url = 4;
+  repeated User participants = 5;
+  Message last_message = 6;
+  int32 unread_count = 7;
+  int64 created_at = 8;
+}
+
+message GetChatsRequest {}
+
+message GetChatsResponse {
+  repeated Chat chats = 1;
+  string error = 2;
+}
+
+message CreateChatRequest {
+  ChatType type = 1;
+  string name = 2;
+  repeated string participant_ids = 3;
+}
+
+message CreateChatResponse {
+  Chat chat = 1;
+  string error = 2;
+}
+
+// Messages
+
+enum MessageType {
+  TEXT = 0;
+  FILE = 1;
+  IMAGE = 2;
+  SYSTEM = 3;
+}
+
+enum MessageStatus {
+  SENT = 0;
+  DELIVERED = 1;
+  READ = 2;
+}
+
+message Message {
+  string id = 1;
+  string chat_id = 2;
+  string sender_id = 3;
+  int64 timestamp = 4;
+  MessageType type = 5;
+  MessageStatus status = 6;
+
+  // field for testing purposes
+  string text = 7;
+
+  string file_id = 8;
+
+  // E2EE
+  bytes ciphertext = 9;
+  bytes nonce = 10;
+}
+
+// Message requests
+
+message GetMessagesRequest {
+  string chat_id = 1;
+  int32 limit = 2;
+  string cursor = 3;
+}
+
+message GetMessagesResponse {
+  repeated Message messages = 1;
+  string next_cursor = 2;
+  string error = 3;
+}
+
+message SendMessageRequest {
+  string chat_id = 1;
+  MessageType type = 2;
+  string text = 3;
+  string file_id = 4;
+
+  // E2EE
+  bytes ciphertext = 5;
+
+  bytes nonce = 6;
+
+  string sender_id = 7;
+}
+
+message SendMessageResponse {
+  bool success = 1;
+  Message message = 2;
+  string error = 3;
+}
+
+// Stream
+
+message StreamMessagesRequest {
+  repeated string chat_ids = 1;
+}
