@@ -16,4 +16,4 @@ Fourth, run the backend using the "dotnet run" command in the project's root fol
 
 Dumb note: i believe this damn bullshit will work.
 
-Thanks for reading! Hope you managed to go through all the steps.
+Thanks for reading! Hope you managed to go through all the steps without dying from doing these terrible things.
