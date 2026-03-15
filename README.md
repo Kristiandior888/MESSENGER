@@ -6,7 +6,7 @@ Dear ~~mf~~ dev, welcome to the guide that helps you configure the backend of ou
 
 ## Steps
 
-First, install PostgreSQL. Make sure you select the option "install pgAdmin 4" during the installation.
+First, install PostgreSQL. Make sure you select the option "install pgAdmin 4" during the installation. This will install the UI for Postgres. Choose this option unless you wanna be fucked up by the command prompt.
 
 Second, in pgAdmin 4, open and run all the script in the Database folder to create the database itself, the required tables and fill them with some rows.
 
