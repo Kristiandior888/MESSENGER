@@ -1,4 +1,4 @@
-# How do you set up the backend?
+# How Do You Set Up the Backend?
 
 ~~idk actually~~
 
