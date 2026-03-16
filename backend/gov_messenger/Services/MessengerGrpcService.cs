@@ -22,6 +22,16 @@ namespace gov_messenger.Services
             _chatService = chatService;
         }
 
+        public override async Task<StubResponse> Stub(
+            StubRequest request,
+            ServerCallContext context)
+        {
+            return new StubResponse
+            {
+                Msg = "QQQQQQQQQQQQQQQQQQQQQQQQQQQQQ"
+            };
+        }
+
         public override async Task<SendMessageResponse> SendMessage(
             SendMessageRequest request,
             ServerCallContext context)
