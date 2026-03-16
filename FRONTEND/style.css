@@ -2230,3 +2230,19 @@ body.light-theme .settings-btn:hover {
     background: #e6b800;
     color: #ffffff;
 }
+
+.login-input {
+    width: 300px;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #3a424c;
+    border-radius: 8px;
+    background: #1a1e24;
+    color: white;
+    font-size: 16px;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: #d4af37;
+}

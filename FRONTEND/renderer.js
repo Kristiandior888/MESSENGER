@@ -5,10 +5,32 @@ import { showScreen } from './js/ui.js';
 import { initTheme } from './js/utils/themeUtils.js';
 import { applyAllSettings } from './js/utils/settingsUtils.js';
 
-// Инициализируем тему при запуске
-initTheme();
+// Функция восстановления сессии
+function restoreSession() {
+    const token = localStorage.getItem('authToken');
+    const userData = localStorage.getItem('userData');
+    
+    if (token && userData) {
+        try {
+            state.token = token;
+            state.currentUser = JSON.parse(userData);
+            state.isAuthenticated = true;
+            console.log('🔄 Сессия восстановлена для:', state.currentUser.email);
+            return true;
+        } catch (e) {
+            console.error('Ошибка восстановления сессии:', e);
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
+        }
+    }
+    return false;
+}
 
-// Применяем сохраненные настройки
+// Сначала восстанавливаем сессию
+restoreSession();
+
+// Потом инициализируем тему и настройки
+initTheme();
 applyAllSettings();
 
 // ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
@@ -21,5 +43,3 @@ document.addEventListener('DOMContentLoaded', () => {
         showScreen('login');
     }
 });
-
-

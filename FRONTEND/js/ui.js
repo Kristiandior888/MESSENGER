@@ -27,7 +27,7 @@ async function showScreen(screenName) {
 
     let pageUrl = '';
     if (screenName === 'login') {
-        pageUrl = 'pages/login.html';
+        pageUrl = 'pages/login.html';          // ← СНАЧАЛА URL
     } else if (screenName === 'chat') {
         pageUrl = 'pages/chat.html';
     } else if (screenName === 'profile') {
@@ -40,10 +40,11 @@ async function showScreen(screenName) {
         const html = await loadPage(pageUrl);
         content.innerHTML = html;
 
+        // ПОСЛЕ загрузки HTML вызываем соответствующий обработчик
         if (screenName === 'chat') {
             setupChatHandlers();
         } else if (screenName === 'login') {
-            setupLoginHandlers();
+            setupLoginHandlers();               // ← ТОЛЬКО ОДИН РАЗ, ПОСЛЕ ЗАГРУЗКИ
         } else if (screenName === 'profile') {
             setupProfileHandlers();
         } else if (screenName === 'settings') {

@@ -1,6 +1,6 @@
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
-import { getContacts, createGroup, deleteGroup, leaveGroup } from '../storage.js';
+import { getContacts, createGroup } from '../storage.js';
 import { loadMessagesForChat } from './chatHandlers.js';
 
 let selectedContacts = [];
@@ -22,20 +22,7 @@ function showCreateGroupModal() {
 }
 
 // Настройка обработчиков модального окна создания группы
-
-
 function setupGroupModalHandlers() {
-
-
-    console.log('Настройка модального окна создания группы');
-    console.log('Элементы модального окна:', {
-    modal: document.getElementById('create-group-modal'),
-    groupName: document.getElementById('group-name'),
-    createBtn: document.getElementById('create-group-submit'),
-    contactsList: document.getElementById('contacts-list')
-});
-
-
     const modal = document.getElementById('create-group-modal');
     const closeBtn = document.getElementById('close-group-modal');
     const cancelBtn = document.getElementById('cancel-group');
@@ -81,53 +68,38 @@ function setupGroupModalHandlers() {
     });
     
     function validateForm() {
-    const nameValid = groupNameInput.value.trim().length >= 3;
-    const contactsValid = selectedContacts.length >= 1;
-    const isValid = nameValid && contactsValid;
-    
-    console.log('Валидация формы:', { nameValid, contactsValid, isValid });
-    
-    createBtn.disabled = !isValid;
-    return isValid;
-}
+        const nameValid = groupNameInput.value.trim().length >= 3;
+        const contactsValid = selectedContacts.length >= 1;
+        const isValid = nameValid && contactsValid;
+        
+        createBtn.disabled = !isValid;
+        return isValid;
+    }
     
     groupNameInput.addEventListener('input', validateForm);
     
     createBtn.addEventListener('click', () => {
-    console.log('Клик по кнопке создания группы');
-    const groupName = groupNameInput.value.trim();
-    console.log(' Название группы:', groupName);
-    console.log('Выбранные контакты:', selectedContacts);
-    
-    if (groupName && selectedContacts.length > 0) {
-        try {
-            console.log('Создаём группу...');
-            const newGroup = createGroup(groupName, selectedContacts);
-            console.log('✅ Группа создана:', newGroup);
-            
-            if (!state.chats) state.chats = [];
-            state.chats.push(newGroup);
-            console.log('Обновлённый список чатов:', state.chats);
-            
-            console.log('Обновляем отображение списка чатов');
-            updateChatsList();
-            
-            state.currentChat = newGroup.id;
-            console.log('Текущий чат:', state.currentChat);
-            
-            showScreen('chat');
-            closeModal();
-        } catch (error) {
-            console.error('❌ Ошибка создания группы:', error);
-            alert('Не удалось создать группу');
+        const groupName = groupNameInput.value.trim();
+        
+        if (groupName && selectedContacts.length > 0) {
+            try {
+                const newGroup = createGroup(groupName, selectedContacts);
+                
+                if (!state.chats) state.chats = [];
+                state.chats.push(newGroup);
+                
+                updateChatsList();
+                
+                state.currentChat = newGroup.id;
+                
+                showScreen('chat');
+                closeModal();
+            } catch (error) {
+                console.error('❌ Ошибка создания группы:', error);
+                alert('Не удалось создать группу');
+            }
         }
-    } else {
-        console.warn('⚠️ Не все поля заполнены:', {
-            nameValid: groupName.length >= 3,
-            contactsValid: selectedContacts.length >= 1
-        });
-    }
-});
+    });
     
     function renderContacts(contactsToRender, container) {
         if (!container) return;
@@ -191,6 +163,55 @@ function setupGroupModalHandlers() {
     }
 }
 
+// Обновление списка чатов
+function updateChatsList() {
+    const chatsList = document.getElementById('chats-list');
+    if (chatsList) {
+        chatsList.innerHTML = '';
+        
+        if (!state.chats || state.chats.length === 0) {
+            chatsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #a0a8b4;">Нет доступных чатов</div>';
+            return;
+        }
+        
+        const sortedChats = [...state.chats].sort((a, b) => {
+            if (a.settings?.pinned && !b.settings?.pinned) return -1;
+            if (!a.settings?.pinned && b.settings?.pinned) return 1;
+            return 0;
+        });
+        
+        sortedChats.forEach(chat => {
+            const chatItem = document.createElement('div');
+            chatItem.className = `chat-item ${state.currentChat === chat.id ? 'active' : ''}`;
+            chatItem.setAttribute('data-chat-id', chat.id);
+            
+            const pinIcon = chat.settings?.pinned ? '📌 ' : '';
+            
+            chatItem.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span>${pinIcon}${chat.name}</span>
+                    ${chat.unreadCount > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : ''}
+                </div>
+            `;
+            
+            chatItem.addEventListener('click', () => {
+                document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
+                chatItem.classList.add('active');
+                state.currentChat = chat.id;
+                loadMessagesForChat(chat.id);
+            });
+            
+            chatItem.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                showChatContextMenu(e, chat);
+            });
+            
+            chatsList.appendChild(chatItem);
+        });
+    }
+}
+
 // Показать информацию о группе
 function showGroupInfo(groupId) {
     const group = state.chats.find(c => c.id === groupId);
@@ -238,8 +259,9 @@ function setupGroupInfoModalHandlers(group) {
         pinnedCheckbox.checked = group.settings?.pinned || false;
     }
     
+    const contacts = getContacts();
     const participants = group.participants.map(userId => {
-        const contact = getContacts().find(c => c.id === userId) || 
+        const contact = contacts.find(c => c.id === userId) || 
                        { name: 'Неизвестный', email: '', avatar: null };
         return {
             id: userId,
@@ -303,62 +325,7 @@ function setupGroupInfoModalHandlers(group) {
     });
 }
 
-// Обновление списка чатов с сортировкой (закрепленные сверху)
-// Обновление списка чатов
-function updateChatsList() {
-    const chatsList = document.getElementById('chats-list');
-    if (chatsList) {
-        chatsList.innerHTML = '';
-        
-        if (!state.chats || state.chats.length === 0) {
-            chatsList.innerHTML = '<div style="padding: 20px; text-align: center; color: #a0a8b4;">Нет доступных чатов</div>';
-            return;
-        }
-        
-        const sortedChats = [...state.chats].sort((a, b) => {
-            if (a.settings?.pinned && !b.settings?.pinned) return -1;
-            if (!a.settings?.pinned && b.settings?.pinned) return 1;
-            return 0;
-        });
-        
-        sortedChats.forEach(chat => {
-            const chatItem = document.createElement('div');
-            chatItem.className = `chat-item ${state.currentChat === chat.id ? 'active' : ''}`;
-            chatItem.setAttribute('data-chat-id', chat.id);
-            
-            const icon = chat.type = ' ';
-            const pinIcon = chat.settings?.pinned ? '📌 ' : '';
-            
-            // Только название чата, никаких кнопок!
-            chatItem.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span>${pinIcon}${icon}${chat.name}</span>
-                    ${chat.unreadCount > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : ''}
-                </div>
-            `;
-            
-            // Левый клик - переключение чата
-            chatItem.addEventListener('click', (e) => {
-                document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
-                chatItem.classList.add('active');
-                state.currentChat = chat.id;
-                loadMessagesForChat(chat.id);
-            });
-            
-            // Правый клик - контекстное меню (для ВСЕХ чатов)
-            chatItem.addEventListener('contextmenu', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                showChatContextMenu(e, chat);
-            });
-            
-            chatsList.appendChild(chatItem);
-        });
-    }
-}
-
-
-// Показать контекстное меню чата (для ВСЕХ чатов)
+// Показать контекстное меню чата
 function showChatContextMenu(e, chat) {
     e.preventDefault();
     e.stopPropagation();
@@ -369,7 +336,6 @@ function showChatContextMenu(e, chat) {
     const menu = document.createElement('div');
     menu.className = 'chat-context-menu';
     
-    // Пункт 1: Уведомления (для всех)
     const notificationsItem = document.createElement('div');
     notificationsItem.className = 'context-menu-item';
     notificationsItem.innerHTML = `
@@ -383,7 +349,6 @@ function showChatContextMenu(e, chat) {
     });
     menu.appendChild(notificationsItem);
     
-    // Пункт 2: Закрепить/открепить (для всех)
     const pinItem = document.createElement('div');
     pinItem.className = 'context-menu-item';
     pinItem.innerHTML = `
@@ -397,7 +362,6 @@ function showChatContextMenu(e, chat) {
     });
     menu.appendChild(pinItem);
     
-    // Для групп добавляем дополнительные пункты
     if (chat.type === 'group') {
         const separator = document.createElement('div');
         separator.style.height = '1px';
@@ -405,7 +369,6 @@ function showChatContextMenu(e, chat) {
         separator.style.margin = '8px 0';
         menu.appendChild(separator);
         
-        // Информация о группе
         const groupInfoItem = document.createElement('div');
         groupInfoItem.className = 'context-menu-item';
         groupInfoItem.innerHTML = `<span>❔ Информация о группе</span>`;
@@ -415,14 +378,12 @@ function showChatContextMenu(e, chat) {
         });
         menu.appendChild(groupInfoItem);
         
-        // Выйти из группы
         const leaveGroupItem = document.createElement('div');
         leaveGroupItem.className = 'context-menu-item';
         leaveGroupItem.innerHTML = `<span>Выйти из группы</span>`;
         leaveGroupItem.style.color = '#e05a5a';
         leaveGroupItem.addEventListener('click', () => {
             if (confirm(`Выйти из группы "${chat.name}"?`)) {
-                // Здесь логика выхода из группы
                 const index = state.chats.findIndex(c => c.id === chat.id);
                 if (index !== -1) {
                     state.chats.splice(index, 1);
@@ -440,23 +401,20 @@ function showChatContextMenu(e, chat) {
         });
         menu.appendChild(leaveGroupItem);
     } else {
-        // Для личных чатов можно добавить что-то своё
         const separator = document.createElement('div');
         separator.style.height = '1px';
         separator.style.background = '#3a424c';
         separator.style.margin = '8px 0';
         menu.appendChild(separator);
         
-        // Очистить историю (пример)
         const clearHistoryItem = document.createElement('div');
         clearHistoryItem.className = 'context-menu-item';
         clearHistoryItem.innerHTML = `<span>🗑️ Очистить историю</span>`;
         clearHistoryItem.style.color = '#e05a5a';
         clearHistoryItem.addEventListener('click', () => {
             if (confirm(`Очистить историю чата с ${chat.name}?`)) {
-                // Здесь логика очистки истории
                 console.log(`Очистка истории чата ${chat.id}`);
-                loadMessagesForChat(chat.id); // Перезагружаем пустой чат
+                loadMessagesForChat(chat.id);
             }
             menu.remove();
         });
@@ -465,11 +423,9 @@ function showChatContextMenu(e, chat) {
     
     document.body.appendChild(menu);
     
-    // Позиционирование меню
     menu.style.top = e.pageY + 'px';
     menu.style.left = e.pageX + 'px';
     
-    // Закрытие при клике вне меню
     setTimeout(() => {
         document.addEventListener('click', function closeMenu(e) {
             if (!menu.contains(e.target)) {
