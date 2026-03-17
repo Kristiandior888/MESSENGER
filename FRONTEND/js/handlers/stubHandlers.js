@@ -6,7 +6,7 @@ import grpcService from '../grpc/grpc-service.js';  // ← прямой импо
 function setupLoginHandlers() {
     console.log('setupLoginHandlers вызвана');
 
-    const loginBtn = document.getElementById('login-btn');
+    const loginBtn = document.getElementById('ggg');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
 

@@ -16,7 +16,7 @@ if (typeof require !== 'undefined') {
 }
 
 const PROTO_PATH = 'proto/messenger.proto';
-const SERVER_ADDRESS = '127.0.0.1:5077';
+const SERVER_ADDRESS = 'localhost:5077';
 
 console.log('📁 Загружаем proto из:', PROTO_PATH);
 
