@@ -14,5 +14,11 @@ namespace gov_messenger.Data
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
         }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<ChatParticipantEntity>()
+                .HasKey(cp => new { cp.ChatId, cp.UserId });
+        }
     }
 }
