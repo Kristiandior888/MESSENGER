@@ -20,8 +20,8 @@ namespace gov_messenger.Services
             var message = new MessageEntity
             {
                 id = Guid.NewGuid(),
-                chat_id = chatId,
-                sender_id = senderId,
+                chat_id = Guid.Parse(chatId),
+                sender_id = Guid.Parse(senderId),
                 text = text,
                 timestamp = DateTime.UtcNow
             };
@@ -31,7 +31,7 @@ namespace gov_messenger.Services
 
         public async Task<List<MessageEntity>> GetMessagesAsync(string chatId, int limit, string cursor)
         {
-            return await _repository.GetMessagesAsync(chatId, limit, cursor);
+            return await _repository.GetMessagesAsync(Guid.Parse(chatId), limit, cursor);
         }
     }
 }
