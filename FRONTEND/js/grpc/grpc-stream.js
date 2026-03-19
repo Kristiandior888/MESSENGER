@@ -6,6 +6,12 @@ import { state } from '../app.js';
 let stream = null;
 
 export function startMessageStream(chatIds, onMessageCallback) {
+    console.log('📡 Стрим сообщений пока отключен (метод не реализован на сервере)');
+    // Временно отключаем стрим
+    return null;
+    
+    // Раскомментируйте когда сервер будет готов:
+    /*
     if (stream) {
         stream.cancel();
     }
@@ -29,6 +35,9 @@ export function startMessageStream(chatIds, onMessageCallback) {
     stream.on('end', () => {
         console.log('Стрим завершен');
     });
+    
+    return stream;
+    */
 }
 
 export function stopMessageStream() {

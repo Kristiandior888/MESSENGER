@@ -382,16 +382,16 @@ function setupChatHandlers() {
     }
 
     // Запускаем стрим сообщений для текущего чата
-    if (state.currentChat) {
-        initGrpc().then(({ stream }) => {
-            stream.startMessageStream([state.currentChat], (newMessage) => {
-                console.log('📩 Свежее сообщение:', newMessage);
+    //if (state.currentChat) {
+        //initGrpc().then(({ stream }) => {
+            //stream.startMessageStream([state.currentChat], (newMessage) => {
+                //console.log('📩 Свежее сообщение:', newMessage);
 
-                const type = newMessage.sender_id === state.currentUser?.id ? 'sent' : 'received';
-                addMessage(newMessage.text, type, true, newMessage.status?.toLowerCase());
-            });
-        });
-    }
+               // const type = newMessage.sender_id === state.currentUser?.id ? 'sent' : 'received';
+               // addMessage(newMessage.text, type, true, newMessage.status?.toLowerCase());
+           // });
+       // });
+   // }
 }
 
 // ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ВЫБРАННОГО ЧАТА
