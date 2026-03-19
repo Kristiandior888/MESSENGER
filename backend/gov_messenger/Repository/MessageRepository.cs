@@ -21,7 +21,7 @@ namespace gov_messenger.Repository
             return message;
         }
 
-        public async Task<List<MessageEntity>> GetMessagesAsync(string chatId, int limit, string cursor)
+        public async Task<List<MessageEntity>> GetMessagesAsync(Guid chatId, int limit, string cursor)
         {
             var query = _db.Messages.Where(m => m.chat_id == chatId);
 

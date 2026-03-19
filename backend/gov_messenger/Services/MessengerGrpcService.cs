@@ -41,7 +41,8 @@ namespace gov_messenger.Services
             var message = new Message
             {
                 Id = entity.id.ToString(),
-                ChatId = entity.chat_id,
+                ChatId = entity.chat_id.ToString(),
+                SenderId = entity.sender_id.ToString(),
                 Text = entity.text,
                 Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
             };
@@ -70,8 +71,8 @@ namespace gov_messenger.Services
                 response.Messages.Add(new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chat_id,
-                    SenderId = entity.sender_id,
+                    ChatId = entity.chat_id.ToString(),
+                    SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
                 });
@@ -150,7 +151,10 @@ namespace gov_messenger.Services
             GetChatsRequest request,
             ServerCallContext context)
         {
-            var userId = context.RequestHeaders.FirstOrDefault(h => h.Key == "user-id")?.Value;
+            var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "authorization")?.Value;
+            var userId = authHeader?.Replace("Bearer ", "");
+
+            // var userId = context.RequestHeaders.FirstOrDefault(h => h.Key == "user-id")?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
