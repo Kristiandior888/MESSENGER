@@ -35,6 +35,10 @@ class GrpcService {
         });
     }
 
+    async stub() {
+        return this.#call('Stub', { });
+    }
+    
     async login(email, password) {
         return this.#call('Login', { email, password });
     }

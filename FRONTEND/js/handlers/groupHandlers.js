@@ -447,6 +447,23 @@ function closeModal() {
     }
 }
 
+export function logout() {
+    console.log('🚪 Выход из системы');
+    
+    // Очищаем localStorage
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userData');
+    
+    // Сбрасываем состояние
+    state.isAuthenticated = false;
+    state.currentUser = null;
+    state.token = null;
+    state.currentChat = null;
+    
+    // Показываем экран входа
+    showScreen('login');
+}
+
 export { 
     showCreateGroupModal, 
     updateChatsList,

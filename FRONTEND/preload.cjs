@@ -1,5 +1,5 @@
 // preload.cjs
 const { contextBridge } = require('electron');
 
-// Просто включаем Node.js, ничего не скрываем
-// (для разработки, в продакшене нужно ограничить)
+// Пока ничего не делаем, просто даем доступ к Node.js
+console.log('✅ Preload script loaded');
