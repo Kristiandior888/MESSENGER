@@ -19,11 +19,11 @@ namespace gov_messenger.Services
         {
             var message = new MessageEntity
             {
-                Id = Guid.NewGuid(),
-                ChatId = chatId,
-                SenderId = senderId,
-                Text = text,
-                Timestamp = DateTime.UtcNow
+                id = Guid.NewGuid(),
+                chat_id = chatId,
+                sender_id = senderId,
+                text = text,
+                timestamp = DateTime.UtcNow
             };
 
             return await _repository.AddAsync(message);

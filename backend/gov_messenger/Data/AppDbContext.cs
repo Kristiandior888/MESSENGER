@@ -18,7 +18,7 @@ namespace gov_messenger.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<ChatParticipantEntity>()
-                .HasKey(cp => new { cp.ChatId, cp.UserId });
+                .HasKey(cp => new { cp.chat_id, cp.user_id });
         }
     }
 }

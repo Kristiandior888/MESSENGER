@@ -15,12 +15,12 @@ namespace gov_messenger.Repository
 
         public async Task<UserEntity?> GetByEmailAsync(string email)
         {
-            return await _db.Users.FirstOrDefaultAsync(u => u.Email == email);
+            return await _db.Users.FirstOrDefaultAsync(u => u.email == email);
         }
 
         public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
-            return await _db.Users.FirstOrDefaultAsync(u => u.Id == id);
+            return await _db.Users.FirstOrDefaultAsync(u => u.id == id);
         }
     }
 }
