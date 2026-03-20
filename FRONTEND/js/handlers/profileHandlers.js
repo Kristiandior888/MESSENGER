@@ -1,3 +1,4 @@
+// js/handlers/profileHandlers.js
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
@@ -114,15 +115,26 @@ function setupProfileHandlers() {
         });
     }
     
-    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ"
+    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ" - ИСПРАВЛЕНО!
     const logoutProfileBtn = document.getElementById('logout-profile-btn');
     if (logoutProfileBtn) {
         logoutProfileBtn.addEventListener('click', () => {
-            console.log('Выход из системы через профиль');
+            console.log('🚪 Выход из системы через профиль');
             
+            // Очищаем localStorage от данных сессии
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('userData');
+            
+            // Сбрасываем состояние приложения
             state.isAuthenticated = false;
             state.currentUser = null;
+            state.token = null;
+            state.currentChat = null;
+            state.userAvatar = null;
             
+            console.log('✅ Сессия очищена, переход на экран входа');
+            
+            // Показываем экран входа
             showScreen('login');
         });
     }

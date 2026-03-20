@@ -2246,3 +2246,93 @@ body.light-theme .settings-btn:hover {
     outline: none;
     border-color: #d4af37;
 }
+
+/* Стили для списка чатов */
+.chats-list {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.chat-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color, #3a424c);
+    transition: background-color 0.2s;
+    font-size: 14px;
+}
+
+.chat-item:hover {
+    background-color: var(--hover-bg, #2a2f38);
+}
+
+.chat-item.active {
+    background-color: var(--active-bg, #2f3640);
+    font-weight: 500;
+}
+
+.chat-item-name {
+    color: var(--text-primary, #e0e0e0);
+}
+
+/* Заглушка для чата */
+.chat-placeholder {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--chat-bg, #1e242b);
+    height: 100%;
+}
+
+.placeholder-content {
+    text-align: center;
+    color: var(--text-secondary, #a0a8b4);
+}
+
+.placeholder-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    display: block;
+    opacity: 0.5;
+}
+
+.placeholder-content h3 {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: var(--text-primary, #e0e0e0);
+}
+
+.placeholder-content p {
+    font-size: 14px;
+    color: var(--text-secondary, #a0a8b4);
+}
+
+/* Разделитель по датам */
+.message-date-separator {
+    text-align: center;
+    margin: 20px 0 10px;
+    position: relative;
+    color: var(--text-secondary, #a0a8b4);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.message-date-separator::before,
+.message-date-separator::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 70px);
+    height: 1px;
+    background-color: var(--border-color, #3a424c);
+}
+
+.message-date-separator::before {
+    left: 0;
+}
+
+.message-date-separator::after {
+    right: 0;
+}
+
+

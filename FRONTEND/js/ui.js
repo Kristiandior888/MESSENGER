@@ -1,6 +1,6 @@
+// js/ui.js
 import { addMessage } from './utils/messageUtils.js';
 import { setupLoginHandlers } from './handlers/loginHandlers.js';
-import { setupChatHandlers } from './handlers/chatHandlers.js';
 import { setupProfileHandlers } from './handlers/profileHandlers.js';
 import { setupSettingsHandlers } from './handlers/settingsHandlers.js';
 
@@ -27,7 +27,7 @@ async function showScreen(screenName) {
 
     let pageUrl = '';
     if (screenName === 'login') {
-        pageUrl = 'pages/login.html';          // ← СНАЧАЛА URL
+        pageUrl = 'pages/login.html';
     } else if (screenName === 'chat') {
         pageUrl = 'pages/chat.html';
     } else if (screenName === 'profile') {
@@ -42,9 +42,20 @@ async function showScreen(screenName) {
 
         // ПОСЛЕ загрузки HTML вызываем соответствующий обработчик
         if (screenName === 'chat') {
-            setupChatHandlers();
+            // Динамический импорт для избежания циклических зависимостей
+            const chatModule = await import('./handlers/chat/index.js');
+            await chatModule.setupChatHandlers();
         } else if (screenName === 'login') {
-            setupLoginHandlers();               // ← ТОЛЬКО ОДИН РАЗ, ПОСЛЕ ЗАГРУЗКИ
+            // Сбрасываем флаг чата при переходе на логин
+            try {
+                const chatModule = await import('./handlers/chat/index.js');
+                if (chatModule.resetChatInitialization) {
+                    chatModule.resetChatInitialization();
+                }
+            } catch (e) {
+                // Модуль чата может не загрузиться, это нормально
+            }
+            setupLoginHandlers();
         } else if (screenName === 'profile') {
             setupProfileHandlers();
         } else if (screenName === 'settings') {
