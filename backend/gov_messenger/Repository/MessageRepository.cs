@@ -21,18 +21,18 @@ namespace gov_messenger.Repository
             return message;
         }
 
-        public async Task<List<MessageEntity>> GetMessagesAsync(string chatId, int limit, string cursor)
+        public async Task<List<MessageEntity>> GetMessagesAsync(Guid chatId, int limit, string cursor)
         {
-            var query = _db.Messages.Where(m => m.ChatId == chatId);
+            var query = _db.Messages.Where(m => m.chat_id == chatId);
 
             if (!string.IsNullOrEmpty(cursor))
             {
                 var cursorTime = DateTime.Parse(cursor);
-                query = query.Where(m => m.Timestamp < cursorTime);
+                query = query.Where(m => m.timestamp < cursorTime);
             }
 
             return await query
-                .OrderByDescending(m => m.Timestamp)
+                .OrderByDescending(m => m.timestamp)
                 .Take(limit)
                 .ToListAsync();
         }

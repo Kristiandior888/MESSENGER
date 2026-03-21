@@ -2,12 +2,12 @@
 {
     public class UserEntity
     {
-        public Guid Id { get; set; }
-        public string? Email { get; set; }
-        public string? PasswordHash { get; set; }
-        public string? Name { get; set; }
-        public string? AvatarUrl { get; set; }
-        public string? Status { get; set; }
-        public DateTime? LastSeen { get; set; }
+        public Guid id { get; set; }
+        public string? email { get; set; }
+        public string? password_hash { get; set; }
+        public string? name { get; set; }
+        public string? avatar_url { get; set; }
+        public string? status { get; set; }
+        public DateTime? last_seen { get; set; }
     }
 }

@@ -30,10 +30,11 @@ namespace gov_messenger.Services
 
             var message = new Message
             {
-                Id = entity.Id.ToString(),
-                ChatId = entity.ChatId,
-                Text = entity.Text,
-                Timestamp = new DateTimeOffset(entity.Timestamp).ToUnixTimeSeconds()
+                Id = entity.id.ToString(),
+                ChatId = entity.chat_id.ToString(),
+                SenderId = entity.sender_id.ToString(),
+                Text = entity.text,
+                Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
             };
 
             return new SendMessageResponse
@@ -59,11 +60,11 @@ namespace gov_messenger.Services
             {
                 response.Messages.Add(new Message
                 {
-                    Id = entity.Id.ToString(),
-                    ChatId = entity.ChatId,
-                    SenderId = entity.SenderId,
-                    Text = entity.Text,
-                    Timestamp = new DateTimeOffset(entity.Timestamp).ToUnixTimeSeconds()
+                    Id = entity.id.ToString(),
+                    ChatId = entity.chat_id.ToString(),
+                    SenderId = entity.sender_id.ToString(),
+                    Text = entity.text,
+                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
                 });
             }
 
@@ -88,20 +89,20 @@ namespace gov_messenger.Services
 
             var grpcUser = new User
             {
-                Id = user.Id.ToString(),
-                Email = user.Email,
-                Name = user.Name ?? "",
-                AvatarUrl = user.AvatarUrl ?? "",
-                Status = user.Status ?? "",
-                LastSeen = user.LastSeen != null
-                    ? new DateTimeOffset(user.LastSeen.Value).ToUnixTimeSeconds()
+                Id = user.id.ToString(),
+                Email = user.email,
+                Name = user.name ?? "",
+                AvatarUrl = user.avatar_url ?? "",
+                Status = user.status ?? "",
+                LastSeen = user.last_seen != null
+                    ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
                     : 0
             };
 
             return new LoginResponse
             {
                 Success = true,
-                Token = user.Id.ToString(), // temp token
+                Token = user.id.ToString(), // temp token
                 User = grpcUser
             };
         }
@@ -124,13 +125,13 @@ namespace gov_messenger.Services
             {
                 User = new User
                 {
-                    Id = user.Id.ToString(),
-                    Email = user.Email,
-                    Name = user.Name ?? "",
-                    AvatarUrl = user.AvatarUrl ?? "",
-                    Status = user.Status ?? "",
-                    LastSeen = user.LastSeen != null
-                        ? new DateTimeOffset(user.LastSeen.Value).ToUnixTimeSeconds()
+                    Id = user.id.ToString(),
+                    Email = user.email,
+                    Name = user.name ?? "",
+                    AvatarUrl = user.avatar_url ?? "",
+                    Status = user.status ?? "",
+                    LastSeen = user.last_seen != null
+                        ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
                         : 0
                 }
             };
@@ -140,7 +141,10 @@ namespace gov_messenger.Services
             GetChatsRequest request,
             ServerCallContext context)
         {
-            var userId = context.RequestHeaders.FirstOrDefault(h => h.Key == "user-id")?.Value;
+            var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "authorization")?.Value;
+            var userId = authHeader?.Replace("Bearer ", "");
+
+            // var userId = context.RequestHeaders.FirstOrDefault(h => h.Key == "user-id")?.Value;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -158,11 +162,11 @@ namespace gov_messenger.Services
             {
                 response.Chats.Add(new Chat
                 {
-                    Id = chat.Id.ToString(),
-                    Name = chat.Name ?? "",
-                    Type = (ChatType)chat.Type,
-                    AvatarUrl = chat.AvatarUrl ?? "",
-                    CreatedAt = new DateTimeOffset(chat.CreatedAt).ToUnixTimeSeconds()
+                    Id = chat.id.ToString(),
+                    Name = chat.name ?? "",
+                    Type = (ChatType)chat.type,
+                    AvatarUrl = chat.avatar_url ?? "",
+                    CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds()
                 });
             }
 

@@ -20,7 +20,7 @@ namespace gov_messenger.Services
                 return null;
 
             // TODO: gotta implement more complex check
-            if (user.PasswordHash != password)
+            if (user.password_hash != password)
                 return null;
 
             return user;

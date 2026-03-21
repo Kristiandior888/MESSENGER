@@ -16,11 +16,11 @@ namespace gov_messenger.Repository
         public async Task<List<ChatEntity>> GetUserChatsAsync(Guid userId)
         {
             var chatIds = await _db.ChatParticipants
-                .Where(cp => cp.UserId == userId)
-                .Select(cp => cp.ChatId)
+                .Where(cp => cp.user_id == userId)
+                .Select(cp => cp.chat_id)
                 .ToListAsync();
 
-            return await _db.Chats.Where(c => chatIds.Contains(c.Id)).ToListAsync();
+            return await _db.Chats.Where(c => chatIds.Contains(c.id)).ToListAsync();
         }
     }
 }

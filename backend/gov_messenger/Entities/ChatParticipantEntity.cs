@@ -2,9 +2,9 @@
 {
     public class ChatParticipantEntity
     {
-        public Guid ChatId { get; set; }
-        public Guid UserId { get; set; }
-        public string? Role { get; set; }
-        public DateTime JoinedAt { get; set; }
+        public Guid chat_id { get; set; }
+        public Guid user_id { get; set; }
+        public string? role { get; set; }
+        public DateTime joined_at { get; set; }
     }
 }

@@ -2,10 +2,10 @@
 {
     public class ChatEntity
     {
-        public Guid Id { get; set; }
-        public string? Name { get; set; }
-        public short Type { get; set; }
-        public string? AvatarUrl { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public Guid id { get; set; }
+        public string? name { get; set; }
+        public short type { get; set; }
+        public string? avatar_url { get; set; }
+        public DateTime created_at { get; set; }
     }
 }
