@@ -2335,4 +2335,45 @@ body.light-theme .settings-btn:hover {
     right: 0;
 }
 
+.error-toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #e05a5a;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 10000;
+    display: none;
+    animation: fadeInUp 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.no-chats {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0a8b4;
+    font-style: italic;
+}
+
+.no-messages {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0a8b4;
+    font-style: italic;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}    
+
 

@@ -3,13 +3,13 @@ import { state } from '../../app.js';
 import { showScreen } from '../../ui.js';
 import { showCreateGroupModal } from '../groupHandlers.js';
 
-// Импортируем все модули
 import { 
     initGrpc, 
     loadChatsFromServer, 
     setCurrentChat,
     getCurrentChat,
-    createNewChat 
+    createNewChat,
+    cleanupChatResources
 } from './chat-core.js';
 
 import { 
@@ -19,9 +19,10 @@ import {
 } from './chat-ui.js';
 
 import { 
-    loadMessagesForChat,
     loadMessagesFromServer,
-    addNewMessage
+    appendNewMessage,
+    stopMessageStreamForChat,
+    stopAllMessageStreams
 } from './chat-messages.js';
 
 import { 
@@ -42,7 +43,6 @@ import {
     setupEmojiPanel 
 } from './chat-emoji.js';
 
-// Флаг для предотвращения множественной инициализации
 let isChatInitialized = false;
 
 export {
@@ -51,12 +51,14 @@ export {
     setCurrentChat,
     getCurrentChat,
     createNewChat,
+    cleanupChatResources,
     updateChatAreaUI,
     setupAvatar,
     showErrorMessage,
-    loadMessagesForChat,
     loadMessagesFromServer,
-    addNewMessage,
+    appendNewMessage,
+    stopMessageStreamForChat,
+    stopAllMessageStreams,
     setupFileAttachment,
     clearAttachedFiles,
     setupMessageSending,
@@ -65,9 +67,6 @@ export {
     setupEmojiPanel
 };
 
-/**
- * Настройка кнопки создания группы
- */
 function setupCreateGroupButton() {
     const createGroupBtn = document.getElementById('create-group-btn');
     if (createGroupBtn) {
@@ -82,17 +81,11 @@ function setupCreateGroupButton() {
     }
 }
 
-/**
- * Сброс флага инициализации (при выходе из чата)
- */
 export function resetChatInitialization() {
     isChatInitialized = false;
     console.log('🔄 Флаг инициализации чата сброшен');
 }
 
-/**
- * ГЛАВНАЯ ФУНКЦИЯ НАСТРОЙКИ ЧАТА
- */
 export async function setupChatHandlers() {
     if (isChatInitialized) {
         console.log('⚠️ Чат уже был инициализирован, пропускаем');

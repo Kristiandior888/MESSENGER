@@ -1,7 +1,9 @@
+// js/handlers/groupHandlers.js
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { getContacts, createGroup } from '../storage.js';
-import { loadMessagesForChat } from './chatHandlers.js';
+import { loadMessagesFromServer } from './chat/chat-messages.js';
+import { setCurrentChat } from './chat/chat-core.js';
 
 let selectedContacts = [];
 
@@ -198,7 +200,8 @@ function updateChatsList() {
                 document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
                 chatItem.classList.add('active');
                 state.currentChat = chat.id;
-                loadMessagesForChat(chat.id);
+                // Используем loadMessagesFromServer вместо loadMessagesForChat
+                loadMessagesFromServer(chat.id);
             });
             
             chatItem.addEventListener('contextmenu', (e) => {
@@ -393,7 +396,10 @@ function showChatContextMenu(e, chat) {
                 if (state.currentChat === chat.id) {
                     state.currentChat = state.chats[0]?.id || null;
                     if (state.currentChat) {
-                        loadMessagesForChat(state.currentChat);
+                        loadMessagesFromServer(state.currentChat);
+                    } else {
+                        const messagesDiv = document.getElementById('messages');
+                        if (messagesDiv) messagesDiv.innerHTML = '<div class="no-messages">Выберите чат для общения</div>';
                     }
                 }
             }
@@ -414,7 +420,11 @@ function showChatContextMenu(e, chat) {
         clearHistoryItem.addEventListener('click', () => {
             if (confirm(`Очистить историю чата с ${chat.name}?`)) {
                 console.log(`Очистка истории чата ${chat.id}`);
-                loadMessagesForChat(chat.id);
+                // Очищаем историю
+                const messagesDiv = document.getElementById('messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое сообщение!</div>';
+                }
             }
             menu.remove();
         });
@@ -450,17 +460,14 @@ function closeModal() {
 export function logout() {
     console.log('🚪 Выход из системы');
     
-    // Очищаем localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     
-    // Сбрасываем состояние
     state.isAuthenticated = false;
     state.currentUser = null;
     state.token = null;
     state.currentChat = null;
     
-    // Показываем экран входа
     showScreen('login');
 }
 

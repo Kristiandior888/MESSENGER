@@ -5,9 +5,6 @@ import { setCurrentChat, getCurrentChat } from './chat-core.js';
 import { loadMessagesFromServer } from './chat-messages.js';
 import { showChatContextMenu } from '../groupHandlers.js';
 
-/**
- * Обновление UI в зависимости от выбранного чата
- */
 export async function updateChatAreaUI() {
     console.log('🔄 Обновление UI чата, currentChat:', state.currentChat);
     
@@ -24,7 +21,6 @@ export async function updateChatAreaUI() {
         messagesDiv.style.display = 'flex';
         messageInput.style.display = 'flex';
         
-        const { loadMessagesFromServer } = await import('./chat-messages.js');
         loadMessagesFromServer(getCurrentChat());
     } else {
         messagesDiv.style.display = 'none';
@@ -45,15 +41,11 @@ export async function updateChatAreaUI() {
     }
 }
 
-/**
- * Создание элемента чата - ТОЛЬКО НАЗВАНИЕ
- */
 export function createChatItemElement(chat) {
     const chatItem = document.createElement('div');
     chatItem.className = 'chat-item';
     chatItem.dataset.chatId = chat.id;
     
-    // Только название чата - без аватаров, без иконок, без последних сообщений
     const nameSpan = document.createElement('span');
     nameSpan.className = 'chat-item-name';
     nameSpan.textContent = chat.name || `Чат ${chat.id}`;
@@ -75,9 +67,6 @@ export function createChatItemElement(chat) {
     return chatItem;
 }
 
-/**
- * Настройка аватара пользователя
- */
 export function setupAvatar() {
     const chatAvatar = document.getElementById('chat-avatar');
     if (chatAvatar) {
@@ -100,9 +89,6 @@ export function setupAvatar() {
     }
 }
 
-/**
- * Показ сообщения об ошибке
- */
 export function showErrorMessage(message) {
     let errorToast = document.querySelector('.error-toast');
     
