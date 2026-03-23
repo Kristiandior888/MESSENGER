@@ -1,7 +1,5 @@
-// js/handlers/chat/chat-message-send.js
 import { state } from '../../app.js';
-import { addMessage, updateLastMessageStatusUI } from '../../utils/messageUtils.js';
-import { updateLastMessageStatus } from '../../storage.js';
+import { addMessage } from '../../utils/messageUtils.js';
 import { initGrpc, getCurrentChat } from './chat-core.js';
 import { attachedFiles, clearAttachedFiles } from './chat-files.js';
 import { showErrorMessage } from './chat-ui.js';
@@ -43,9 +41,9 @@ export async function sendMessage() {
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
-    // ✅ СРАЗУ показываем сообщение в DOM
+    // Сразу показываем сообщение в DOM
     console.log('📝 Добавляем сообщение в DOM');
-    addMessage(text, 'sent', true, 'sending', filesToSend);
+    addMessage(text, 'sent', false, 'sending', filesToSend);
     
     // Очищаем поле ввода
     messageField.value = '';
@@ -55,33 +53,43 @@ export async function sendMessage() {
         
         console.log('📤 Отправка сообщения на сервер:', text);
         
-        // Отправляем на сервер (не блокируем UI)
-        service.sendMessage(chatId, text).then(response => {
-            console.log('✅ Сообщение отправлено, ответ сервера:', response);
-            
-            // Обновляем статус сообщения в DOM
-            updateLastMessageStatusUI('sent');
-            updateLastMessageStatus(chatId, 'sent');
-            
-        }).catch(error => {
-            console.error('❌ Ошибка отправки на сервер:', error);
-            
-            // Показываем ошибку в UI
-            updateLastMessageStatusUI('error');
-            showErrorMessage('Не удалось отправить сообщение');
-            
-            // Возвращаем текст обратно при ошибке
-            if (!hasFiles) {
-                messageField.value = text;
-            }
-        });
+        const response = await service.sendMessage(chatId, text);
+        console.log('✅ Сообщение отправлено, ответ сервера:', response);
+        
+        // Обновляем статус последнего сообщения
+        updateLastMessageStatusUI('sent');
         
     } catch (error) {
-        console.error('❌ Ошибка инициализации gRPC:', error);
+        console.error('❌ Ошибка отправки на сервер:', error);
+        
+        // Показываем ошибку в UI
         updateLastMessageStatusUI('error');
-        showErrorMessage('Ошибка соединения с сервером');
+        showErrorMessage('Не удалось отправить сообщение');
+        
+        // Возвращаем текст обратно при ошибке
+        if (!hasFiles) {
+            messageField.value = text;
+        }
     } finally {
         isSending = false;
+    }
+}
+
+/**
+ * Обновление статуса последнего сообщения в UI
+ */
+function updateLastMessageStatusUI(newStatus) {
+    const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) return;
+    
+    const sentMessages = messagesDiv.querySelectorAll('.message.sent');
+    if (sentMessages.length > 0) {
+        const lastMessage = sentMessages[sentMessages.length - 1];
+        const statusSpan = lastMessage.querySelector('.message-status');
+        if (statusSpan) {
+            statusSpan.className = `message-status ${newStatus}`;
+            console.log(`UI статус последнего сообщения обновлен на ${newStatus}`);
+        }
     }
 }
 

@@ -53,11 +53,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (module.updateChatAreaUI) {
                     module.updateChatAreaUI();
                 }
+                // Загружаем чаты с сервера
+                if (module.loadChatsFromServer) {
+                    module.loadChatsFromServer();
+                }
             }).catch(err => {
                 console.error('Ошибка загрузки chatHandlers:', err);
             });
         });
     } else {
         showScreen('login');
+    }
+});
+
+// Добавляем обработчик для сохранения состояния перед закрытием
+window.addEventListener('beforeunload', () => {
+    // Сохраняем текущего пользователя, если он есть
+    if (state.isAuthenticated && state.currentUser) {
+        localStorage.setItem('authToken', state.token);
+        localStorage.setItem('userData', JSON.stringify(state.currentUser));
     }
 });

@@ -1,7 +1,8 @@
+// js/handlers/groupHandlers.js
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
-import { getContacts, createGroup } from '../storage.js';
-import { loadMessagesForChat } from './chatHandlers.js';
+import { loadMessagesFromServer } from './chat/chat-messages.js';
+import { initGrpc } from './chat/chat-core.js';
 
 let selectedContacts = [];
 
@@ -40,17 +41,12 @@ function setupGroupModalHandlers() {
     
     selectedContacts = [];
     
-    const contacts = getContacts();
-    renderContacts(contacts, contactsList);
+    loadContacts(contactsList);
     
     if (contactSearch) {
         contactSearch.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
-            const filtered = contacts.filter(c => 
-                c.name.toLowerCase().includes(query) || 
-                c.email.toLowerCase().includes(query)
-            );
-            renderContacts(filtered, contactsList);
+            filterContacts(query, contactsList);
         });
     }
     
@@ -78,25 +74,32 @@ function setupGroupModalHandlers() {
     
     groupNameInput.addEventListener('input', validateForm);
     
-    createBtn.addEventListener('click', () => {
+    createBtn.addEventListener('click', async () => {
         const groupName = groupNameInput.value.trim();
         
         if (groupName && selectedContacts.length > 0) {
             try {
-                const newGroup = createGroup(groupName, selectedContacts);
+                const { service } = await initGrpc();
+                const response = await service.createChat({
+                    type: 1, // GROUP
+                    name: groupName,
+                    participant_ids: selectedContacts
+                });
                 
-                if (!state.chats) state.chats = [];
-                state.chats.push(newGroup);
-                
-                updateChatsList();
-                
-                state.currentChat = newGroup.id;
-                
-                showScreen('chat');
-                closeModal();
+                if (response.chat) {
+                    // Обновляем список чатов
+                    const { loadChatsFromServer } = await import('./chat/chat-core.js');
+                    await loadChatsFromServer();
+                    
+                    state.currentChat = response.chat.id;
+                    showScreen('chat');
+                    closeModal();
+                } else {
+                    throw new Error(response.error || 'Не удалось создать группу');
+                }
             } catch (error) {
                 console.error('❌ Ошибка создания группы:', error);
-                alert('Не удалось создать группу');
+                alert('Не удалось создать группу: ' + error.message);
             }
         }
     });
@@ -109,10 +112,9 @@ function setupGroupModalHandlers() {
             const contactItem = document.createElement('div');
             contactItem.className = `contact-item ${selectedContacts.includes(contact.id) ? 'selected' : ''}`;
             contactItem.innerHTML = `
-                <img src="${contact.avatar || 'images/default-avatar.png'}" alt="avatar" class="contact-avatar">
                 <div class="contact-info">
-                    <div class="contact-name">${contact.name}</div>
-                    <div class="contact-email">${contact.email}</div>
+                    <div class="contact-name">${escapeHtml(contact.name)}</div>
+                    <div class="contact-email">${escapeHtml(contact.email)}</div>
                 </div>
                 <div class="contact-checkbox">${selectedContacts.includes(contact.id) ? '✓' : ''}</div>
             `;
@@ -133,38 +135,99 @@ function setupGroupModalHandlers() {
         });
     }
     
+    async function loadContacts(container) {
+        try {
+            const { service } = await initGrpc();
+            const response = await service.getChats();
+            
+            // Извлекаем уникальных пользователей из чатов
+            const users = new Map();
+            response.chats?.forEach(chat => {
+                chat.participants?.forEach(user => {
+                    if (user.id !== state.currentUser?.id) {
+                        users.set(user.id, user);
+                    }
+                });
+            });
+            
+            const contactsList = Array.from(users.values());
+            renderContacts(contactsList, container);
+        } catch (error) {
+            console.error('Ошибка загрузки контактов:', error);
+        }
+    }
+    
+    async function filterContacts(query, container) {
+        try {
+            const { service } = await initGrpc();
+            const response = await service.getChats();
+            
+            const users = new Map();
+            response.chats?.forEach(chat => {
+                chat.participants?.forEach(user => {
+                    if (user.id !== state.currentUser?.id) {
+                        if (user.name.toLowerCase().includes(query) || 
+                            user.email.toLowerCase().includes(query)) {
+                            users.set(user.id, user);
+                        }
+                    }
+                });
+            });
+            
+            const filtered = Array.from(users.values());
+            renderContacts(filtered, container);
+        } catch (error) {
+            console.error('Ошибка фильтрации контактов:', error);
+        }
+    }
+    
     function updateSelectedTags() {
         if (selectedTags && selectedCount) {
             selectedCount.textContent = selectedContacts.length;
             selectedTags.innerHTML = '';
             
-            selectedContacts.forEach(contactId => {
-                const contact = contacts.find(c => c.id === contactId);
-                if (contact) {
-                    const tag = document.createElement('span');
-                    tag.className = 'selected-tag';
-                    tag.innerHTML = `
-                        ${contact.name}
-                        <button class="selected-tag-remove" data-contact-id="${contact.id}">✕</button>
-                    `;
-                    
-                    tag.querySelector('.selected-tag-remove').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        selectedContacts = selectedContacts.filter(id => id !== contactId);
-                        updateSelectedTags();
-                        renderContacts(getContacts(), contactsList);
-                        validateForm();
-                    });
-                    
-                    selectedTags.appendChild(tag);
+            selectedContacts.forEach(async contactId => {
+                try {
+                    const { service } = await initGrpc();
+                    const response = await service.getUser(contactId);
+                    if (response.user) {
+                        const tag = document.createElement('span');
+                        tag.className = 'selected-tag';
+                        tag.innerHTML = `
+                            ${escapeHtml(response.user.name)}
+                            <button class="selected-tag-remove" data-contact-id="${contactId}">✕</button>
+                        `;
+                        
+                        tag.querySelector('.selected-tag-remove').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            selectedContacts = selectedContacts.filter(id => id !== contactId);
+                            updateSelectedTags();
+                            loadContacts(document.getElementById('contacts-list'));
+                            validateForm();
+                        });
+                        
+                        selectedTags.appendChild(tag);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки пользователя:', error);
                 }
             });
         }
     }
+    
+    function escapeHtml(str) {
+        if (!str) return str;
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 }
 
 // Обновление списка чатов
-function updateChatsList() {
+async function updateChatsList() {
     const chatsList = document.getElementById('chats-list');
     if (chatsList) {
         chatsList.innerHTML = '';
@@ -175,8 +238,8 @@ function updateChatsList() {
         }
         
         const sortedChats = [...state.chats].sort((a, b) => {
-            if (a.settings?.pinned && !b.settings?.pinned) return -1;
-            if (!a.settings?.pinned && b.settings?.pinned) return 1;
+            if (a.pinned && !b.pinned) return -1;
+            if (!a.pinned && b.pinned) return 1;
             return 0;
         });
         
@@ -185,12 +248,12 @@ function updateChatsList() {
             chatItem.className = `chat-item ${state.currentChat === chat.id ? 'active' : ''}`;
             chatItem.setAttribute('data-chat-id', chat.id);
             
-            const pinIcon = chat.settings?.pinned ? '📌 ' : '';
+            const pinIcon = chat.pinned ? '📌 ' : '';
             
             chatItem.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span>${pinIcon}${chat.name}</span>
-                    ${chat.unreadCount > 0 ? `<span class="unread-badge">${chat.unreadCount}</span>` : ''}
+                    <span>${pinIcon}${escapeHtml(chat.name)}</span>
+                    ${chat.unread_count > 0 ? `<span class="unread-badge">${chat.unread_count}</span>` : ''}
                 </div>
             `;
             
@@ -198,7 +261,7 @@ function updateChatsList() {
                 document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
                 chatItem.classList.add('active');
                 state.currentChat = chat.id;
-                loadMessagesForChat(chat.id);
+                loadMessagesFromServer(chat.id);
             });
             
             chatItem.addEventListener('contextmenu', (e) => {
@@ -210,12 +273,22 @@ function updateChatsList() {
             chatsList.appendChild(chatItem);
         });
     }
+    
+    function escapeHtml(str) {
+        if (!str) return str;
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 }
 
 // Показать информацию о группе
 function showGroupInfo(groupId) {
     const group = state.chats.find(c => c.id === groupId);
-    if (!group || group.type !== 'group') return;
+    if (!group || group.type !== 1) return; // type 1 = GROUP
     
     fetch('pages/group-info.html')
         .then(response => response.text())
@@ -232,7 +305,7 @@ function showGroupInfo(groupId) {
 }
 
 // Настройка обработчиков для модального окна информации о группе
-function setupGroupInfoModalHandlers(group) {
+async function setupGroupInfoModalHandlers(group) {
     const modal = document.getElementById('group-info-modal');
     const closeBtn = document.getElementById('close-group-info');
     const closeBtn2 = document.getElementById('close-group-info-btn');
@@ -252,77 +325,105 @@ function setupGroupInfoModalHandlers(group) {
     }
     
     if (notificationsCheckbox) {
-        notificationsCheckbox.checked = group.settings?.notifications !== false;
+        notificationsCheckbox.checked = group.notifications !== false;
     }
     
     if (pinnedCheckbox) {
-        pinnedCheckbox.checked = group.settings?.pinned || false;
+        pinnedCheckbox.checked = group.pinned || false;
     }
     
-    const contacts = getContacts();
-    const participants = group.participants.map(userId => {
-        const contact = contacts.find(c => c.id === userId) || 
-                       { name: 'Неизвестный', email: '', avatar: null };
-        return {
-            id: userId,
-            name: contact.name,
-            email: contact.email,
-            avatar: contact.avatar,
-            isCreator: userId === group.createdBy
-        };
-    });
-    
-    if (participantsCount) {
-        participantsCount.textContent = participants.length;
-    }
-    
-    if (participantsList) {
-        participantsList.innerHTML = '';
+    // Загружаем участников с сервера
+    try {
+        const { service } = await initGrpc();
+        const participants = [];
         
-        participants.forEach(participant => {
-            const participantItem = document.createElement('div');
-            participantItem.className = 'participant-item';
-            participantItem.innerHTML = `
-                <img src="${participant.avatar || 'images/default-avatar.png'}" alt="avatar" class="participant-avatar">
-                <div class="participant-info">
-                    <div class="participant-name">
-                        ${participant.name}
-                        ${participant.isCreator ? '<span class="creator-badge">👑</span>' : ''}
+        // Загружаем каждого участника по ID
+        for (const userId of group.participant_ids || []) {
+            try {
+                const response = await service.getUser(userId);
+                if (response.user) {
+                    participants.push({
+                        id: userId,
+                        name: response.user.name,
+                        email: response.user.email,
+                        avatar: response.user.avatar_url,
+                        isCreator: userId === group.created_by
+                    });
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки участника:', error);
+                participants.push({
+                    id: userId,
+                    name: 'Неизвестный',
+                    email: '',
+                    avatar: null,
+                    isCreator: false
+                });
+            }
+        }
+        
+        if (participantsCount) {
+            participantsCount.textContent = participants.length;
+        }
+        
+        if (participantsList) {
+            participantsList.innerHTML = '';
+            
+            participants.forEach(participant => {
+                const participantItem = document.createElement('div');
+                participantItem.className = 'participant-item';
+                participantItem.innerHTML = `
+                    <img src="${participant.avatar || 'images/default-avatar.png'}" alt="avatar" class="participant-avatar">
+                    <div class="participant-info">
+                        <div class="participant-name">
+                            ${escapeHtml(participant.name)}
+                            ${participant.isCreator ? '<span class="creator-badge">👑</span>' : ''}
+                        </div>
+                        <div class="participant-email">${escapeHtml(participant.email)}</div>
                     </div>
-                    <div class="participant-email">${participant.email}</div>
-                </div>
-            `;
-            participantsList.appendChild(participantItem);
-        });
+                `;
+                participantsList.appendChild(participantItem);
+            });
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки участников группы:', error);
     }
     
     if (notificationsCheckbox) {
         notificationsCheckbox.addEventListener('change', (e) => {
-            group.settings = group.settings || {};
-            group.settings.notifications = e.target.checked;
+            group.notifications = e.target.checked;
             console.log(`Уведомления для группы ${group.name}: ${e.target.checked}`);
         });
     }
     
     if (pinnedCheckbox) {
         pinnedCheckbox.addEventListener('change', (e) => {
-            group.settings = group.settings || {};
-            group.settings.pinned = e.target.checked;
+            group.pinned = e.target.checked;
             updateChatsList();
             console.log(`Закрепление для группы ${group.name}: ${e.target.checked}`);
         });
     }
     
-    const closeModal = () => {
+    const closeModalWindow = () => {
         if (modal) modal.remove();
     };
     
-    if (closeBtn) closeBtn.addEventListener('click', closeModal);
-    if (closeBtn2) closeBtn2.addEventListener('click', closeModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModalWindow);
+    if (closeBtn2) closeBtn2.addEventListener('click', closeModalWindow);
     
     modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
+        if (e.target === modal) closeModalWindow();
     });
+    
+    function escapeHtml(str) {
+        if (!str) return str;
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
 }
 
 // Показать контекстное меню чата
@@ -339,12 +440,11 @@ function showChatContextMenu(e, chat) {
     const notificationsItem = document.createElement('div');
     notificationsItem.className = 'context-menu-item';
     notificationsItem.innerHTML = `
-        <span>🔔 ${chat.settings?.notifications === false ? 'Включить' : 'Выключить'} уведомления</span>
+        <span>🔔 ${chat.notifications === false ? 'Включить' : 'Выключить'} уведомления</span>
     `;
     notificationsItem.addEventListener('click', () => {
-        chat.settings = chat.settings || {};
-        chat.settings.notifications = !chat.settings.notifications;
-        console.log(`Уведомления для ${chat.name}: ${chat.settings.notifications}`);
+        chat.notifications = !chat.notifications;
+        console.log(`Уведомления для ${chat.name}: ${chat.notifications}`);
         menu.remove();
     });
     menu.appendChild(notificationsItem);
@@ -352,17 +452,16 @@ function showChatContextMenu(e, chat) {
     const pinItem = document.createElement('div');
     pinItem.className = 'context-menu-item';
     pinItem.innerHTML = `
-        <span>📌 ${chat.settings?.pinned ? 'Открепить' : 'Закрепить'} чат</span>
+        <span>📌 ${chat.pinned ? 'Открепить' : 'Закрепить'} чат</span>
     `;
     pinItem.addEventListener('click', () => {
-        chat.settings = chat.settings || {};
-        chat.settings.pinned = !chat.settings.pinned;
+        chat.pinned = !chat.pinned;
         updateChatsList();
         menu.remove();
     });
     menu.appendChild(pinItem);
     
-    if (chat.type === 'group') {
+    if (chat.type === 1) { // GROUP
         const separator = document.createElement('div');
         separator.style.height = '1px';
         separator.style.background = '#3a424c';
@@ -382,19 +481,29 @@ function showChatContextMenu(e, chat) {
         leaveGroupItem.className = 'context-menu-item';
         leaveGroupItem.innerHTML = `<span>Выйти из группы</span>`;
         leaveGroupItem.style.color = '#e05a5a';
-        leaveGroupItem.addEventListener('click', () => {
+        leaveGroupItem.addEventListener('click', async () => {
             if (confirm(`Выйти из группы "${chat.name}"?`)) {
-                const index = state.chats.findIndex(c => c.id === chat.id);
-                if (index !== -1) {
-                    state.chats.splice(index, 1);
-                }
-                updateChatsList();
-                
-                if (state.currentChat === chat.id) {
-                    state.currentChat = state.chats[0]?.id || null;
-                    if (state.currentChat) {
-                        loadMessagesForChat(state.currentChat);
+                try {
+                    // TODO: Добавить API для выхода из группы
+                    // const { service } = await initGrpc();
+                    // await service.leaveGroup(chat.id);
+                    
+                    // Пока просто удаляем из локального списка
+                    const index = state.chats.findIndex(c => c.id === chat.id);
+                    if (index !== -1) {
+                        state.chats.splice(index, 1);
                     }
+                    updateChatsList();
+                    
+                    if (state.currentChat === chat.id) {
+                        state.currentChat = state.chats[0]?.id || null;
+                        if (state.currentChat) {
+                            loadMessagesFromServer(state.currentChat);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Ошибка выхода из группы:', error);
+                    alert('Не удалось выйти из группы');
                 }
             }
             menu.remove();
@@ -411,10 +520,16 @@ function showChatContextMenu(e, chat) {
         clearHistoryItem.className = 'context-menu-item';
         clearHistoryItem.innerHTML = `<span>🗑️ Очистить историю</span>`;
         clearHistoryItem.style.color = '#e05a5a';
-        clearHistoryItem.addEventListener('click', () => {
+        clearHistoryItem.addEventListener('click', async () => {
             if (confirm(`Очистить историю чата с ${chat.name}?`)) {
-                console.log(`Очистка истории чата ${chat.id}`);
-                loadMessagesForChat(chat.id);
+                try {
+                    // TODO: Добавить API для очистки истории
+                    console.log(`Очистка истории чата ${chat.id}`);
+                    loadMessagesFromServer(chat.id);
+                } catch (error) {
+                    console.error('Ошибка очистки истории:', error);
+                    alert('Не удалось очистить историю');
+                }
             }
             menu.remove();
         });
@@ -459,6 +574,7 @@ export function logout() {
     state.currentUser = null;
     state.token = null;
     state.currentChat = null;
+    state.chats = [];
     
     // Показываем экран входа
     showScreen('login');

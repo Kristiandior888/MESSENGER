@@ -6,6 +6,19 @@ import { loadMessagesFromServer } from './chat-messages.js';
 import { showChatContextMenu } from '../groupHandlers.js';
 
 /**
+ * Экранирование HTML
+ */
+function escapeHtml(str) {
+    if (!str) return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Обновление UI в зависимости от выбранного чата
  */
 export async function updateChatAreaUI() {
@@ -46,19 +59,22 @@ export async function updateChatAreaUI() {
 }
 
 /**
- * Создание элемента чата - ТОЛЬКО НАЗВАНИЕ
+ * Создание элемента чата
  */
 export function createChatItemElement(chat) {
     const chatItem = document.createElement('div');
     chatItem.className = 'chat-item';
     chatItem.dataset.chatId = chat.id;
     
-    // Только название чата - без аватаров, без иконок, без последних сообщений
-    const nameSpan = document.createElement('span');
-    nameSpan.className = 'chat-item-name';
-    nameSpan.textContent = chat.name || `Чат ${chat.id}`;
+    const pinIcon = chat.pinned ? '📌 ' : '';
+    const unreadBadge = chat.unread_count > 0 ? `<span class="unread-badge">${chat.unread_count}</span>` : '';
     
-    chatItem.appendChild(nameSpan);
+    chatItem.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <span>${pinIcon}${escapeHtml(chat.name)}</span>
+            ${unreadBadge}
+        </div>
+    `;
 
     chatItem.addEventListener('click', () => {
         document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
@@ -94,7 +110,11 @@ export function setupAvatar() {
 
     const avatarWrapper = document.getElementById('avatar-wrapper');
     if (avatarWrapper) {
-        avatarWrapper.addEventListener('click', () => {
+        // Удаляем старые обработчики
+        const newAvatarWrapper = avatarWrapper.cloneNode(true);
+        avatarWrapper.parentNode.replaceChild(newAvatarWrapper, avatarWrapper);
+        
+        newAvatarWrapper.addEventListener('click', () => {
             showScreen('profile');
         });
     }

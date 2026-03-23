@@ -25,6 +25,27 @@ async function showScreen(screenName) {
 
     const content = document.getElementById('content');
 
+    // Если это чат и он уже отображается, не перезагружаем
+    if (screenName === 'chat') {
+        const existingChat = document.querySelector('.chat-container');
+        if (existingChat && existingChat.style.display !== 'none') {
+            console.log('Чат уже отображается, не перезагружаем');
+            // Просто обновляем UI
+            try {
+                const chatModule = await import('./handlers/chat/index.js');
+                if (chatModule.updateChatAreaUI) {
+                    await chatModule.updateChatAreaUI();
+                }
+                if (chatModule.loadChatsFromServer) {
+                    await chatModule.loadChatsFromServer();
+                }
+            } catch (err) {
+                console.error('Ошибка обновления чата:', err);
+            }
+            return;
+        }
+    }
+
     let pageUrl = '';
     if (screenName === 'login') {
         pageUrl = 'pages/login.html';
@@ -42,11 +63,9 @@ async function showScreen(screenName) {
 
         // ПОСЛЕ загрузки HTML вызываем соответствующий обработчик
         if (screenName === 'chat') {
-            // Динамический импорт для избежания циклических зависимостей
             const chatModule = await import('./handlers/chat/index.js');
             await chatModule.setupChatHandlers();
         } else if (screenName === 'login') {
-            // Сбрасываем флаг чата при переходе на логин
             try {
                 const chatModule = await import('./handlers/chat/index.js');
                 if (chatModule.resetChatInitialization) {

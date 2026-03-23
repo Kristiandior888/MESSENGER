@@ -1,13 +1,9 @@
 // js/handlers/chat/chat-messages.js
 import { state } from '../../app.js';
-import { getMessages } from '../../storage.js';
 import { initGrpc, getCurrentChat } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
 import { createFileElement } from './chat-files.js';
 import { searchState, highlightSearchResults } from '../../utils/searchUtils.js';
-
-// Убираем кэш! Больше никаких Map
-// const messagesCache = new Map(); // ← УДАЛЯЕМ!
 
 // Текущий отображаемый чат
 let currentDisplayedChat = null;
@@ -120,7 +116,8 @@ export function createMessageElement(msg) {
 
     if (type === 'sent') {
         const statusSpan = document.createElement('span');
-        statusSpan.className = `message-status ${msg.status?.toLowerCase() || 'sent'}`;
+        const status = msg.status?.toLowerCase() || 'sent';
+        statusSpan.className = `message-status ${status}`;
         metaDiv.appendChild(statusSpan);
     }
 
@@ -189,7 +186,7 @@ function displayMessages(chatId, messages) {
 }
 
 /**
- * Загрузка сообщений с сервера - ВСЕГДА С СЕРВЕРА, БЕЗ КЭША!
+ * Загрузка сообщений с сервера
  */
 export async function loadMessagesFromServer(chatId) {
     if (!chatId) return;
@@ -201,8 +198,6 @@ export async function loadMessagesFromServer(chatId) {
         const response = await service.getMessages(chatId, 50);
         
         console.log('💬 Получены сообщения:', response.messages);
-
-        // Просто отображаем сообщения, ничего не кэшируем
         displayMessages(chatId, response.messages || []);
         
     } catch (error) {
@@ -212,93 +207,21 @@ export async function loadMessagesFromServer(chatId) {
 }
 
 /**
- * Загрузка сообщений из локального хранилища (для демо)
+ * Загрузка сообщений для чата (алиас для обратной совместимости)
  */
-export function loadMessagesForChat(chatName) {
-    const messagesDiv = document.getElementById('messages');
-    if (!messagesDiv) return;
-
-    messagesDiv.innerHTML = '';
-
-    const messages = getMessages(chatName);
-
-    if (messages.length > 0) {
-        const sortedMessages = [...messages].sort((a, b) => {
-            if (a.timestamp && b.timestamp) {
-                return a.timestamp - b.timestamp;
-            }
-            return 0;
-        });
-
-        sortedMessages.forEach(msg => {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${msg.type}`;
-
-            if (msg.text) {
-                const textDiv = document.createElement('div');
-                textDiv.className = 'text';
-                textDiv.textContent = msg.text;
-                messageDiv.appendChild(textDiv);
-            }
-
-            if (msg.files && msg.files.length > 0) {
-                const filesContainer = document.createElement('div');
-                filesContainer.className = 'message-files';
-
-                msg.files.forEach(fileData => {
-                    const fileDiv = createFileElement(fileData);
-                    filesContainer.appendChild(fileDiv);
-                });
-
-                messageDiv.appendChild(filesContainer);
-            }
-
-            const metaDiv = document.createElement('div');
-            metaDiv.className = 'message-meta';
-
-            if (msg.time) {
-                const timeSpan = document.createElement('span');
-                timeSpan.className = 'time';
-                timeSpan.textContent = msg.time;
-                metaDiv.appendChild(timeSpan);
-            } else if (msg.timestamp) {
-                const timeSpan = document.createElement('span');
-                timeSpan.className = 'time';
-                timeSpan.textContent = formatMessageTime(msg.timestamp);
-                metaDiv.appendChild(timeSpan);
-            }
-
-            if (msg.type === 'sent') {
-                const statusSpan = document.createElement('span');
-                statusSpan.className = `message-status ${msg.status || 'sent'}`;
-                metaDiv.appendChild(statusSpan);
-            }
-
-            messageDiv.appendChild(metaDiv);
-            messagesDiv.appendChild(messageDiv);
-        });
-
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-        setTimeout(() => {
-            if (searchState && searchState.query) {
-                highlightSearchResults();
-            }
-        }, 100);
-    }
+export async function loadMessagesForChat(chatId) {
+    return loadMessagesFromServer(chatId);
 }
 
 /**
- * Добавление нового сообщения - теперь просто обновляем отображение
+ * Добавление нового сообщения - просто перезагружаем сообщения
  */
 export function addNewMessage(chatId, message) {
     if (!chatId || !message) return;
     
     console.log('📥 Добавлено новое сообщение:', message);
     
-    // Если это текущий отображаемый чат, перезагружаем сообщения с сервера
     if (currentDisplayedChat === chatId) {
         loadMessagesFromServer(chatId);
     }
 }
-

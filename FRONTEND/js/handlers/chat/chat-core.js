@@ -1,6 +1,5 @@
 // js/handlers/chat/chat-core.js
 import { state } from '../../app.js';
-import { showScreen } from '../../ui.js';
 import { updateChatAreaUI } from './chat-ui.js';
 import { loadMessagesFromServer } from './chat-messages.js';
 import { showErrorMessage } from './chat-ui.js';
@@ -21,10 +20,7 @@ export function setCurrentChat(chatId) {
     updateChatAreaUI();
     
     if (chatId) {
-        // Загружаем сообщения для этого чата
-        import('./chat-messages.js').then(module => {
-            module.loadMessagesFromServer(chatId);
-        });
+        loadMessagesFromServer(chatId);
     }
 }
 
@@ -76,14 +72,14 @@ export async function createNewChat(participantEmail) {
         const chatName = `Чат с ${participantEmail}`;
         
         const response = await service.createChat({
+            type: 0, // PRIVATE
             name: chatName,
-            participants: [participantEmail],
-            type: 'private'
+            participant_ids: [participantEmail]
         });
         
         console.log('✅ Новый чат создан:', response);
         
-        const { loadChatsFromServer } = await import('./chat-core.js');
+        // Загружаем обновленный список чатов
         await loadChatsFromServer();
         
         return response.chat || response;
@@ -105,20 +101,19 @@ export async function loadChatsFromServer() {
         const response = await service.getChats();
         console.log('📋 Получены чаты:', response.chats);
 
+        state.chats = response.chats || [];
+        
         const chatsList = document.querySelector('.chats-list');
         if (!chatsList) return [];
 
         if (response.chats && response.chats.length > 0) {
             chatsList.innerHTML = '';
 
-            // добавляем async здесь
             for (const chat of response.chats) {
                 const { createChatItemElement } = await import('./chat-ui.js');
                 const chatItem = createChatItemElement(chat);
                 chatsList.appendChild(chatItem);
             }
-
-            
         } else {
             chatsList.innerHTML = '<div class="no-chats">Нет чатов. Создайте новый чат или напишите кому-нибудь.</div>';
         }
