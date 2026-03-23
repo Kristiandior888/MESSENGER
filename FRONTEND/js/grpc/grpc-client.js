@@ -1,24 +1,26 @@
 // js/grpc/grpc-client.js
-// В Electron мы можем использовать require
+// Отключаем проверку сертификата для разработки
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-// Динамический импорт для Node.js модулей
 let grpc, protoLoader;
 
-// Проверяем, в Electron ли мы
 if (typeof require !== 'undefined') {
-    // В Electron используем require
     grpc = require('@grpc/grpc-js');
     protoLoader = require('@grpc/proto-loader');
     console.log('✅ gRPC загружен через require в Electron');
 } else {
-    // В браузере (не должно случиться)
     throw new Error('Это приложение должно запускаться в Electron');
 }
 
 const PROTO_PATH = 'proto/messenger.proto';
-const SERVER_ADDRESS = 'localhost:5077';
+
+// Используем HTTPS порт 7212
+const SERVER_IP = '192.168.0.106'; 
+const SERVER_PORT = 7212;
+const SERVER_ADDRESS = `${SERVER_IP}:${SERVER_PORT}`;
 
 console.log('📁 Загружаем proto из:', PROTO_PATH);
+console.log('🌐 Подключаемся к серверу:', SERVER_ADDRESS);
 
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
@@ -31,15 +33,21 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 const messenger = protoDescriptor.messenger;
 
-// Создаем клиент
-const client = new messenger.Messenger(
-    SERVER_ADDRESS,
-    grpc.credentials.createInsecure()
+// Создаем клиент с SSL, отключая проверку сертификата для разработки
+const sslCredentials = grpc.credentials.createSsl(
+    null,           // корневой сертификат (null для самоподписанного)
+    null,           // закрытый ключ клиента
+    null,           // сертификат клиента
+    { rejectUnauthorized: false }  // ← ОТКЛЮЧАЕМ ПРОВЕРКУ!
 );
 
-console.log('✅ gRPC клиент создан');
+const client = new messenger.Messenger(
+    SERVER_ADDRESS,
+    sslCredentials
+);
 
-// Для совместимости с вашим кодом, добавляем Metadata в глобальную область
+console.log('✅ gRPC клиент создан для адреса:', SERVER_ADDRESS);
+
 if (typeof window !== 'undefined') {
     window.grpc = window.grpc || {};
     window.grpc.Metadata = grpc.Metadata;
