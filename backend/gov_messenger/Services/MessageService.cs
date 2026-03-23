@@ -1,6 +1,6 @@
 ﻿using gov_messenger.Entities;
 using gov_messenger.Repository;
-using Grpc.Core;  
+using Grpc.Core;
 using System.Collections.Concurrent;
 
 namespace gov_messenger.Services
@@ -28,6 +28,7 @@ namespace gov_messenger.Services
 
             var result = await _repository.AddAsync(message);
             
+            // Уведомляем подписчиков о новом сообщении
             await NotifySubscribers(chatId, result);
             
             return result;
@@ -49,14 +50,16 @@ namespace gov_messenger.Services
             
             try
             {
+                // Ждем, пока клиент не отключится
                 await Task.Delay(-1, cancellationToken);
             }
             catch (TaskCanceledException)
             {
-                // Клиент отключился
+                // Клиент отключился, ничего не делаем
             }
             finally
             {
+                // Удаляем поток из подписчиков
                 _subscribers[chatId].Remove(stream);
                 if (_subscribers[chatId].Count == 0)
                 {
@@ -92,6 +95,7 @@ namespace gov_messenger.Services
                     }
                 }
                 
+                // Удаляем неработающие потоки
                 foreach (var dead in deadStreams)
                 {
                     streams.Remove(dead);
