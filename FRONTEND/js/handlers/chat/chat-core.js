@@ -6,6 +6,7 @@ import { showErrorMessage } from './chat-ui.js';
 
 let grpcService;
 let currentChatId = null;
+let grpcStream = null; // Добавляем переменную для grpcStream
 
 export async function setCurrentChat(chatId) {
     console.log(`Установка текущего чата: ${chatId}`);
@@ -55,35 +56,6 @@ export async function checkChatExists(chatId) {
     }
 }
 
-/**
- * Создание нового чата
- */
-export async function createNewChat(participantEmail) {
-    try {
-        const { service } = await initGrpc();
-        
-        const chatName = `Чат с ${participantEmail}`;
-        
-        const response = await service.createChat({
-            type: 0, // PRIVATE
-            name: chatName,
-            participant_ids: [participantEmail]
-        });
-        
-        console.log('✅ Новый чат создан:', response);
-        
-        // Загружаем обновленный список чатов
-        await loadChatsFromServer();
-        
-        return response.chat || response;
-    } catch (error) {
-        console.error('❌ Ошибка создания чата:', error);
-        showErrorMessage('Не удалось создать чат');
-        return null;
-    }
-    return { service: grpcService };
-}
-
 export async function loadChatsFromServer() {
     const { service } = await initGrpc();
     console.log('👤 Текущий пользователь:', state.currentUser); 
@@ -120,18 +92,39 @@ export async function loadChatsFromServer() {
 }
 
 /**
- * Создание нового чата
+ * Создание нового чата (единая версия)
  */
 export async function createNewChat(participantId, participantName) {
     try {
         const { service } = await initGrpc();
         
-        // Временно создаем локальный чат, так как на сервере может не быть метода createChat
+        // Проверяем, есть ли метод createChat на сервере
+        if (typeof service.createChat === 'function') {
+            try {
+                const response = await service.createChat({
+                    type: 0, // PRIVATE
+                    name: participantName || `Чат с пользователем`,
+                    participant_ids: [participantId]
+                });
+                
+                console.log('✅ Новый чат создан на сервере:', response);
+                
+                // Загружаем обновленный список чатов
+                await loadChatsFromServer();
+                
+                return response.chat || response;
+            } catch (serverError) {
+                console.warn('⚠️ Метод createChat на сервере не реализован, создаем локальный чат');
+            }
+        }
+        
+        // Локальное создание чата (для демо-режима)
         const newChat = {
             id: `chat_${Date.now()}`,
             name: participantName || `Чат с пользователем`,
             type: 'PRIVATE',
-            created_at: Math.floor(Date.now() / 1000)
+            created_at: Math.floor(Date.now() / 1000),
+            participants: [state.currentUser?.id, participantId]
         };
         
         // Добавляем чат в состояние
@@ -146,7 +139,7 @@ export async function createNewChat(participantId, participantName) {
             chatsList.appendChild(chatItem);
         }
         
-        console.log('✅ Новый чат создан:', newChat);
+        console.log('✅ Новый чат создан локально:', newChat);
         return newChat;
         
     } catch (error) {
@@ -161,3 +154,6 @@ export async function cleanupChatResources() {
     currentChatId = null;
     state.currentChat = null;
 }
+
+// Экспортируем grpcStream для использования в других модулях
+export { grpcStream };
