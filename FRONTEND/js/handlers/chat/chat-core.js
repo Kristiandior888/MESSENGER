@@ -31,6 +31,55 @@ export async function initGrpc() {
     if (!grpcService) {
         const serviceModule = await import('../../grpc/grpc-service.js');
         grpcService = serviceModule.default || serviceModule;
+
+        const streamModule = await import('../../grpc/grpc-stream.js');
+        grpcStream = streamModule.default || streamModule;
+    }
+    return { service: grpcService, stream: grpcStream };
+}
+
+/**
+ * Проверка существования чата на сервере
+ */
+export async function checkChatExists(chatId) {
+    try {
+        const { service } = await initGrpc();
+        const response = await service.getChats();
+        
+        const exists = response.chats?.some(chat => chat.id === chatId);
+        console.log(`🔍 Чат ${chatId} ${exists ? 'существует' : 'не существует'} на сервере`);
+        return exists;
+    } catch (error) {
+        console.error('❌ Ошибка проверки существования чата:', error);
+        return false;
+    }
+}
+
+/**
+ * Создание нового чата
+ */
+export async function createNewChat(participantEmail) {
+    try {
+        const { service } = await initGrpc();
+        
+        const chatName = `Чат с ${participantEmail}`;
+        
+        const response = await service.createChat({
+            type: 0, // PRIVATE
+            name: chatName,
+            participant_ids: [participantEmail]
+        });
+        
+        console.log('✅ Новый чат создан:', response);
+        
+        // Загружаем обновленный список чатов
+        await loadChatsFromServer();
+        
+        return response.chat || response;
+    } catch (error) {
+        console.error('❌ Ошибка создания чата:', error);
+        showErrorMessage('Не удалось создать чат');
+        return null;
     }
     return { service: grpcService };
 }
@@ -43,6 +92,8 @@ export async function loadChatsFromServer() {
         const response = await service.getChats();
         console.log('📋 Получены чаты:', response.chats);
 
+        state.chats = response.chats || [];
+        
         const chatsList = document.querySelector('.chats-list');
         if (!chatsList) return [];
 

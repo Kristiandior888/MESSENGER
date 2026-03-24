@@ -1,7 +1,5 @@
-// js/handlers/chat/chat-message-send.js
 import { state } from '../../app.js';
-import { addMessage, updateLastMessageStatusUI } from '../../utils/messageUtils.js';
-import { updateLastMessageStatus } from '../../storage.js';
+import { addMessage } from '../../utils/messageUtils.js';
 import { initGrpc, getCurrentChat } from './chat-core.js';
 import { attachedFiles, clearAttachedFiles } from './chat-files.js';
 import { showErrorMessage } from './chat-ui.js';
@@ -113,6 +111,24 @@ export async function sendMessage() {
                 pendingMessages.delete(id);
             });
         }, 5000);
+    }
+}
+
+/**
+ * Обновление статуса последнего сообщения в UI
+ */
+function updateLastMessageStatusUI(newStatus) {
+    const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) return;
+    
+    const sentMessages = messagesDiv.querySelectorAll('.message.sent');
+    if (sentMessages.length > 0) {
+        const lastMessage = sentMessages[sentMessages.length - 1];
+        const statusSpan = lastMessage.querySelector('.message-status');
+        if (statusSpan) {
+            statusSpan.className = `message-status ${newStatus}`;
+            console.log(`UI статус последнего сообщения обновлен на ${newStatus}`);
+        }
     }
 }
 

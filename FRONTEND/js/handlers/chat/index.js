@@ -45,6 +45,7 @@ import {
 
 let isChatInitialized = false;
 
+// Экспортируем все функции
 export {
     initGrpc,
     loadChatsFromServer,
@@ -81,14 +82,45 @@ function setupCreateGroupButton() {
     }
 }
 
+/**
+ * Обновление информации о пользователе в UI
+ */
+function updateUserInfo() {
+    const userEmail = document.getElementById('user-email');
+    if (userEmail && state.currentUser) {
+        userEmail.textContent = state.currentUser.email;
+        console.log('✅ Email пользователя обновлен:', state.currentUser.email);
+    }
+    
+    const chatAvatar = document.getElementById('chat-avatar');
+    if (chatAvatar && state.userAvatar) {
+        chatAvatar.src = state.userAvatar;
+    } else if (chatAvatar) {
+        const savedAvatar = localStorage.getItem('userAvatar');
+        if (savedAvatar) {
+            state.userAvatar = savedAvatar;
+            chatAvatar.src = savedAvatar;
+        }
+    }
+}
+
+/**
+ * Сброс флага инициализации (при выходе из чата)
+ */
 export function resetChatInitialization() {
     isChatInitialized = false;
     console.log('🔄 Флаг инициализации чата сброшен');
 }
 
 export async function setupChatHandlers() {
+    // Всегда обновляем информацию о пользователе
+    updateUserInfo();
+    
     if (isChatInitialized) {
-        console.log('⚠️ Чат уже был инициализирован, пропускаем');
+        console.log('⚠️ Чат уже был инициализирован, пропускаем полную инициализацию');
+        // Даже если инициализирован, обновляем чаты и UI
+        await loadChatsFromServer();
+        await updateChatAreaUI();
         return;
     }
     
@@ -96,11 +128,9 @@ export async function setupChatHandlers() {
 
     await loadChatsFromServer();
 
-    const userEmail = document.getElementById('user-email');
-    if (userEmail && state.currentUser) {
-        userEmail.textContent = state.currentUser.email;
-    }
-
+    // Обновляем email пользователя
+    updateUserInfo();
+    
     setupAvatar();
     setupCreateGroupButton();
     setupFileAttachment();
@@ -108,7 +138,7 @@ export async function setupChatHandlers() {
     setupSearch();
     setupEmojiPanel();
 
-    updateChatAreaUI();
+    await updateChatAreaUI();
     
     isChatInitialized = true;
     console.log('✅ Чат полностью инициализирован');

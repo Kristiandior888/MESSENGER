@@ -96,7 +96,8 @@ export function createMessageElement(msg) {
 
     if (type === 'sent') {
         const statusSpan = document.createElement('span');
-        statusSpan.className = `message-status ${msg.status?.toLowerCase() || 'sent'}`;
+        const status = msg.status?.toLowerCase() || 'sent';
+        statusSpan.className = `message-status ${status}`;
         metaDiv.appendChild(statusSpan);
     }
 
@@ -148,6 +149,9 @@ export function appendNewMessage(chatId, message) {
     return true;
 }
 
+/**
+ * Загрузка сообщений с сервера
+ */
 export async function loadMessagesFromServer(chatId) {
     if (!chatId) return;
     if (isLoadingMessages) {
