@@ -37,7 +37,6 @@ export async function updateChatAreaUI() {
         messagesDiv.style.display = 'flex';
         messageInput.style.display = 'flex';
         
-        const { loadMessagesFromServer } = await import('./chat-messages.js');
         loadMessagesFromServer(getCurrentChat());
     } else {
         messagesDiv.style.display = 'none';
@@ -91,9 +90,6 @@ export function createChatItemElement(chat) {
     return chatItem;
 }
 
-/**
- * Настройка аватара пользователя
- */
 export function setupAvatar() {
     const chatAvatar = document.getElementById('chat-avatar');
     if (chatAvatar) {
@@ -120,9 +116,6 @@ export function setupAvatar() {
     }
 }
 
-/**
- * Показ сообщения об ошибке
- */
 export function showErrorMessage(message) {
     let errorToast = document.querySelector('.error-toast');
     

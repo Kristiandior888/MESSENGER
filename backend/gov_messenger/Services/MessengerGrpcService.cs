@@ -26,7 +26,10 @@ namespace gov_messenger.Services
             SendMessageRequest request,
             ServerCallContext context)
         {
-            var entity = await _messageService.SendMessageAsync(request.ChatId, request.SenderId, request.Text);
+            var entity = await _messageService.SendMessageAsync(
+                request.ChatId, 
+                request.SenderId, 
+                request.Text);
 
             var message = new Message
             {
@@ -144,8 +147,6 @@ namespace gov_messenger.Services
             var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "authorization")?.Value;
             var userId = authHeader?.Replace("Bearer ", "");
 
-            // var userId = context.RequestHeaders.FirstOrDefault(h => h.Key == "user-id")?.Value;
-
             if (string.IsNullOrEmpty(userId))
             {
                 return new GetChatsResponse
@@ -171,6 +172,25 @@ namespace gov_messenger.Services
             }
 
             return response;
+        }
+
+        public override async Task StreamMessages(
+            StreamMessagesRequest request,
+            IServerStreamWriter<Message> responseStream,
+            ServerCallContext context)
+        {
+            var tasks = new List<Task>();
+            var cancellationToken = context.CancellationToken;
+            
+            // Подписываемся на каждый чат из запроса
+            foreach (var chatId in request.ChatIds)
+            {
+                var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
+                tasks.Add(task);
+            }
+            
+            // Ждем, пока все подписки не будут завершены
+            await Task.WhenAll(tasks);
         }
     }
 }

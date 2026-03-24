@@ -522,13 +522,11 @@ function showChatContextMenu(e, chat) {
         clearHistoryItem.style.color = '#e05a5a';
         clearHistoryItem.addEventListener('click', async () => {
             if (confirm(`Очистить историю чата с ${chat.name}?`)) {
-                try {
-                    // TODO: Добавить API для очистки истории
-                    console.log(`Очистка истории чата ${chat.id}`);
-                    loadMessagesFromServer(chat.id);
-                } catch (error) {
-                    console.error('Ошибка очистки истории:', error);
-                    alert('Не удалось очистить историю');
+                console.log(`Очистка истории чата ${chat.id}`);
+                // Очищаем историю
+                const messagesDiv = document.getElementById('messages');
+                if (messagesDiv) {
+                    messagesDiv.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое сообщение!</div>';
                 }
             }
             menu.remove();
@@ -565,18 +563,15 @@ function closeModal() {
 export function logout() {
     console.log('🚪 Выход из системы');
     
-    // Очищаем localStorage
     localStorage.removeItem('authToken');
     localStorage.removeItem('userData');
     
-    // Сбрасываем состояние
     state.isAuthenticated = false;
     state.currentUser = null;
     state.token = null;
     state.currentChat = null;
     state.chats = [];
     
-    // Показываем экран входа
     showScreen('login');
 }
 

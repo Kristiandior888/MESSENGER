@@ -6,6 +6,7 @@ import { showErrorMessage } from './chat-ui.js';
 
 let isSending = false;
 let isInitialized = false;
+let pendingMessages = new Map(); // Храним временные ID сообщений
 
 /**
  * Отправка сообщения
@@ -41,9 +42,15 @@ export async function sendMessage() {
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
-    // Сразу показываем сообщение в DOM
-    console.log('📝 Добавляем сообщение в DOM');
-    addMessage(text, 'sent', false, 'sending', filesToSend);
+    // Генерируем временный ID для сообщения
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Сохраняем временный ID в pendingMessages
+    pendingMessages.set(tempId, { text, files: filesToSend, chatId });
+    
+    // Показываем сообщение в DOM с временным ID
+    console.log('📝 Добавляем сообщение в DOM с временным ID:', tempId);
+    addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
     // Очищаем поле ввода
     messageField.value = '';
@@ -53,17 +60,39 @@ export async function sendMessage() {
         
         console.log('📤 Отправка сообщения на сервер:', text);
         
+        // Отправляем на сервер
         const response = await service.sendMessage(chatId, text);
+        
         console.log('✅ Сообщение отправлено, ответ сервера:', response);
         
-        // Обновляем статус последнего сообщения
-        updateLastMessageStatusUI('sent');
+        if (response.success && response.message) {
+            // Удаляем временное сообщение из DOM
+            const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
+            if (tempMessage) {
+                tempMessage.remove();
+            }
+            
+            // Добавляем сообщение с реальным ID от сервера
+            addMessage(text, 'sent', true, 'sent', filesToSend, response.message.id);
+            
+            // Удаляем из pendingMessages
+            pendingMessages.delete(tempId);
+        } else {
+            // Если ошибка, обновляем статус
+            updateLastMessageStatusUI('error', tempId);
+            showErrorMessage('Не удалось отправить сообщение');
+            
+            // Возвращаем текст обратно при ошибке
+            if (!hasFiles) {
+                messageField.value = text;
+            }
+        }
         
     } catch (error) {
         console.error('❌ Ошибка отправки на сервер:', error);
         
-        // Показываем ошибку в UI
-        updateLastMessageStatusUI('error');
+        // Обновляем статус на ошибку
+        updateLastMessageStatusUI('error', tempId);
         showErrorMessage('Не удалось отправить сообщение');
         
         // Возвращаем текст обратно при ошибке
@@ -72,6 +101,16 @@ export async function sendMessage() {
         }
     } finally {
         isSending = false;
+        // Очищаем временные сообщения, которые не были удалены
+        setTimeout(() => {
+            pendingMessages.forEach((_, id) => {
+                const tempMessage = document.querySelector(`.message[data-message-id="${id}"]`);
+                if (tempMessage) {
+                    tempMessage.remove();
+                }
+                pendingMessages.delete(id);
+            });
+        }, 5000);
     }
 }
 
