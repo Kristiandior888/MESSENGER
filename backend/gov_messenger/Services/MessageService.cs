@@ -28,7 +28,7 @@ namespace gov_messenger.Services
 
             var result = await _repository.AddAsync(message);
             
-            // Уведомляем подписчиков о новом сообщении
+            // Notify subs about a new message
             await NotifySubscribers(chatId, result);
             
             return result;
@@ -50,16 +50,16 @@ namespace gov_messenger.Services
             
             try
             {
-                // Ждем, пока клиент не отключится
+                // Wait until the client disconnects
                 await Task.Delay(-1, cancellationToken);
             }
             catch (TaskCanceledException)
             {
-                // Клиент отключился, ничего не делаем
+                // The client disconnected, do nothing
             }
             finally
             {
-                // Удаляем поток из подписчиков
+                // Remove the stream of subs
                 _subscribers[chatId].Remove(stream);
                 if (_subscribers[chatId].Count == 0)
                 {
@@ -95,7 +95,7 @@ namespace gov_messenger.Services
                     }
                 }
                 
-                // Удаляем неработающие потоки
+                // Remove dead streams
                 foreach (var dead in deadStreams)
                 {
                     streams.Remove(dead);

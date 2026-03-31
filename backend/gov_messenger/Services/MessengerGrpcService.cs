@@ -182,14 +182,14 @@ namespace gov_messenger.Services
             var tasks = new List<Task>();
             var cancellationToken = context.CancellationToken;
             
-            // Подписываемся на каждый чат из запроса
+            // Subscribe to each chat from the request
             foreach (var chatId in request.ChatIds)
             {
                 var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
                 tasks.Add(task);
             }
             
-            // Ждем, пока все подписки не будут завершены
+            // Wait until all subscriptions are completed
             await Task.WhenAll(tasks);
         }
     }

@@ -21,9 +21,6 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ChatService>();
 
-// Kestrel настройки берутся из appsettings.json
-// Не нужно дублировать ConfigureKestrel
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
