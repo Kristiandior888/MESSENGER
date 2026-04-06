@@ -5,10 +5,9 @@
             <div class="avatar-wrapper" id="avatar-wrapper" style="cursor: pointer;">
                 <img src="images/default-avatar.png" alt="avatar" class="avatar" id="chat-avatar">
             </div>
-            <span id="user-email"></span> <!-- Убираем текст-заглушку! -->
+            <span id="user-email"></span>
         </div>
 
-        <!-- ПОИСК ПО СООБЩЕНИЯМ -->
         <div class="search-section">
             <div class="search-input-wrapper">
                 <input type="text" id="search-input" placeholder="Поиск по сообщениям...">
@@ -16,27 +15,19 @@
             </div>
         </div>
 
-        <!-- ПАНЕЛЬ РЕЗУЛЬТАТОВ ПОИСКА -->
         <div class="search-results-panel" id="search-results-panel" style="display: none;">
             <div class="search-results-header">
                 <span id="search-results-title">Результаты поиска</span>
                 <button id="close-search-results" class="close-search-btn">✕</button>
             </div>
-            <div class="search-results-list" id="search-results-list">
-                <!-- Сюда будут добавляться результаты -->
-            </div>
+            <div class="search-results-list" id="search-results-list"></div>
         </div>
 
-        <!-- СПИСОК ЧАТОВ -->
-        <div class="chats-list" id="chats-list">
-            <!-- Чаты будут созданы через JavaScript -->
-        </div>
+        <div class="chats-list" id="chats-list"></div>
     </div>
 
     <div class="chat-area">
-        <div class="messages" id="messages">
-            <!-- Сообщения добавляются через JavaScript -->
-        </div>
+        <div class="messages" id="messages"></div>
         
         <div class="message-input">
             <button id="attach-btn" class="attach-btn" title="Прикрепить файл">
@@ -44,13 +35,13 @@
             </button>
             <input type="file" id="file-upload" style="display: none;" multiple>
             
-            <input type="text" id="message-field" placeholder="Написать сообщение...">
+            <!-- ЗАМЕНА: input на textarea -->
+            <textarea id="message-field" rows="1" placeholder="Написать сообщение..."></textarea>
 
             <button id="emoji-btn" class="emoji-btn" title="Эмодзи">
                 <span>😊</span>
             </button>
     
-            <!-- Панель с эмодзи (скрыта по умолчанию) -->
             <div id="emoji-panel" class="emoji-panel" style="display: none;">
                 <div class="emoji-categories">
                     <button class="emoji-category active" data-category="recent">🕒</button>
@@ -64,9 +55,7 @@
                     <button class="emoji-category" data-category="symbols">❤️</button>
                     <button class="emoji-category" data-category="flags">🏁</button>
                 </div>
-                <div class="emoji-container" id="emoji-container">
-                    <!-- Эмодзи будут загружаться сюда -->
-                </div>
+                <div class="emoji-container" id="emoji-container"></div>
             </div>
             <button id="send-btn">Отправить</button>
         </div>
@@ -74,6 +63,35 @@
 </div>
 
 <style>
+/* Стили для textarea */
+#message-field {
+    flex: 1;
+    padding: 12px 20px;
+    background: var(--gradient-input);
+    border: 1px solid var(--border-light);
+    border-radius: 28px;
+    color: var(--text-primary);
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.2s;
+    resize: none;
+    font-family: inherit;
+    line-height: 1.4;
+    max-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: none; /* Firefox - скрываем ползунок */
+    -ms-overflow-style: none; /* IE/Edge - скрываем ползунок */
+}
+
+#message-field::-webkit-scrollbar {
+    display: none; /* Chrome/Safari/Opera - скрываем ползунок */
+}
+
+#message-field:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+}
+
 .chat-placeholder {
     flex: 1;
     display: flex;
@@ -106,16 +124,14 @@
     color: #a0a8b4;
 }
 
-/* Скрываем messages по умолчанию, пока не выбран чат */
 #messages {
     display: none;
 }
 
 .message-input {
-    display: none; /* Скрыто по умолчанию */
+    display: none;
 }
 
-/* Когда чат выбран - показываем */
 .chat-selected #messages,
 .chat-selected .message-input {
     display: flex;

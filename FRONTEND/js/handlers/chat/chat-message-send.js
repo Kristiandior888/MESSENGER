@@ -1,3 +1,4 @@
+// js/handlers/chat/chat-message-send.js
 import { state } from '../../app.js';
 import { addMessage } from '../../utils/messageUtils.js';
 import { initGrpc, getCurrentChat } from './chat-core.js';
@@ -6,7 +7,16 @@ import { showErrorMessage } from './chat-ui.js';
 
 let isSending = false;
 let isInitialized = false;
-let pendingMessages = new Map(); // Храним временные ID сообщений
+let pendingMessages = new Map();
+
+/**
+ * Автоматическое изменение высоты textarea
+ */
+function autoResizeTextarea(textarea) {
+    textarea.style.height = 'auto';
+    const newHeight = Math.min(textarea.scrollHeight, 120); // максимум 120px
+    textarea.style.height = newHeight + 'px';
+}
 
 /**
  * Отправка сообщения
@@ -42,66 +52,56 @@ export async function sendMessage() {
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
-    // Генерируем временный ID для сообщения
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Сохраняем временный ID в pendingMessages
     pendingMessages.set(tempId, { text, files: filesToSend, chatId });
     
-    // Показываем сообщение в DOM с временным ID
     console.log('📝 Добавляем сообщение в DOM с временным ID:', tempId);
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
-    // Очищаем поле ввода
+    // Очищаем поле ввода и сбрасываем высоту
     messageField.value = '';
+    autoResizeTextarea(messageField);
 
     try {
         const { service } = await initGrpc();
         
         console.log('📤 Отправка сообщения на сервер:', text);
         
-        // Отправляем на сервер
         const response = await service.sendMessage(chatId, text);
         
         console.log('✅ Сообщение отправлено, ответ сервера:', response);
         
         if (response.success && response.message) {
-            // Удаляем временное сообщение из DOM
             const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
             if (tempMessage) {
                 tempMessage.remove();
             }
             
-            // Добавляем сообщение с реальным ID от сервера
             addMessage(text, 'sent', true, 'sent', filesToSend, response.message.id);
-            
-            // Удаляем из pendingMessages
             pendingMessages.delete(tempId);
         } else {
-            // Если ошибка, обновляем статус
             updateLastMessageStatusUI('error', tempId);
             showErrorMessage('Не удалось отправить сообщение');
             
-            // Возвращаем текст обратно при ошибке
             if (!hasFiles) {
                 messageField.value = text;
+                autoResizeTextarea(messageField);
             }
         }
         
     } catch (error) {
         console.error('❌ Ошибка отправки на сервер:', error);
         
-        // Обновляем статус на ошибку
         updateLastMessageStatusUI('error', tempId);
         showErrorMessage('Не удалось отправить сообщение');
         
-        // Возвращаем текст обратно при ошибке
         if (!hasFiles) {
             messageField.value = text;
+            autoResizeTextarea(messageField);
         }
     } finally {
         isSending = false;
-        // Очищаем временные сообщения, которые не были удалены
         setTimeout(() => {
             pendingMessages.forEach((_, id) => {
                 const tempMessage = document.querySelector(`.message[data-message-id="${id}"]`);
@@ -114,20 +114,19 @@ export async function sendMessage() {
     }
 }
 
-/**
- * Обновление статуса последнего сообщения в UI
- */
-function updateLastMessageStatusUI(newStatus) {
+function updateLastMessageStatusUI(newStatus, messageId) {
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return;
     
-    const sentMessages = messagesDiv.querySelectorAll('.message.sent');
-    if (sentMessages.length > 0) {
-        const lastMessage = sentMessages[sentMessages.length - 1];
-        const statusSpan = lastMessage.querySelector('.message-status');
+    const targetMessage = messageId 
+        ? document.querySelector(`.message[data-message-id="${messageId}"]`)
+        : messagesDiv.querySelector('.message.sent:last-child');
+    
+    if (targetMessage) {
+        const statusSpan = targetMessage.querySelector('.message-status');
         if (statusSpan) {
             statusSpan.className = `message-status ${newStatus}`;
-            console.log(`UI статус последнего сообщения обновлен на ${newStatus}`);
+            console.log(`UI статус сообщения обновлен на ${newStatus}`);
         }
     }
 }
@@ -158,26 +157,49 @@ export function setupMessageSending() {
     const newMessageField = messageField.cloneNode(true);
     messageField.parentNode.replaceChild(newMessageField, messageField);
     
-    // Добавляем новые обработчики
+    // Добавляем обработчик для auto-resize
+    newMessageField.addEventListener('input', function() {
+        autoResizeTextarea(this);
+    });
+    
+    // Отправка по Enter (без Shift)
+    newMessageField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            sendMessage();
+        }
+        // Shift+Enter оставляем для переноса строки (ничего не делаем, браузер сам вставит \n)
+    });
+    
     newSendBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         sendMessage();
     });
     
-    newMessageField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            sendMessage();
-        }
-    });
-
-    newMessageField.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
-    
     isInitialized = true;
     console.log('✅ Отправка сообщений настроена');
+}
+
+// Добавить в chat-message-send.js
+const drafts = new Map();
+
+export function saveDraft(chatId, text) {
+    if (text.trim()) {
+        drafts.set(chatId, text);
+        localStorage.setItem(`draft_${chatId}`, text);
+    } else {
+        drafts.delete(chatId);
+        localStorage.removeItem(`draft_${chatId}`);
+    }
+}
+
+export function loadDraft(chatId) {
+    const saved = localStorage.getItem(`draft_${chatId}`);
+    if (saved) {
+        const messageField = document.getElementById('message-field');
+        messageField.value = saved;
+        autoResizeTextarea(messageField);
+    }
 }
