@@ -1,5 +1,6 @@
 using gov_messenger;
 using Grpc.Core;
+using MimeKit;
 
 namespace gov_messenger.Services
 {
@@ -9,26 +10,43 @@ namespace gov_messenger.Services
         private readonly AuthService _authService;
         private readonly UserService _userService;
         private readonly ChatService _chatService;
+        private readonly JwtService _jwtService;
 
         public MessengerGrpcService(
             MessageService messageService, 
             AuthService authService,
             ChatService chatService,
-            UserService userService)
+            UserService userService,
+            JwtService jwtService)
         {
             _messageService = messageService;
             _authService = authService;
             _userService = userService;
             _chatService = chatService;
+            _jwtService = jwtService;
         }
 
         public override async Task<SendMessageResponse> SendMessage(
             SendMessageRequest request,
             ServerCallContext context)
         {
+            var senderId = context.UserState["userId"] as string;
+
+            if (senderId == null)
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "No user"));
+            }
+
+            var isMember = await _chatService.IsUserInChat(senderId, request.ChatId);
+
+            if (!isMember)
+            {
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied"));
+            }
+
             var entity = await _messageService.SendMessageAsync(
                 request.ChatId, 
-                request.SenderId, 
+                senderId, 
                 request.Text);
 
             var message = new Message
@@ -51,6 +69,15 @@ namespace gov_messenger.Services
             GetMessagesRequest request,
             ServerCallContext context)
         {
+            var userId = context.UserState["userId"] as string;
+
+            var isMember = await _chatService.IsUserInChat(userId, request.ChatId);
+
+            if (!isMember)
+            {
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied"));
+            }
+
             var messages = await _messageService.GetMessagesAsync(
                 request.ChatId,
                 request.Limit,
@@ -76,10 +103,7 @@ namespace gov_messenger.Services
 
         public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
         {
-            var user = await _authService.LoginAsync(
-                request.Email,
-                request.Password
-            );
+            var user = await _authService.LoginAsync(request.Email, request.Password);
 
             if (user == null)
             {
@@ -90,23 +114,21 @@ namespace gov_messenger.Services
                 };
             }
 
-            var grpcUser = new User
-            {
-                Id = user.id.ToString(),
-                Email = user.email,
-                Name = user.name ?? "",
-                AvatarUrl = user.avatar_url ?? "",
-                Status = user.status ?? "",
-                LastSeen = user.last_seen != null
-                    ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                    : 0
-            };
+            var token = _jwtService.GenerateToken(
+                user.id.ToString(),
+                user.email
+            );
 
             return new LoginResponse
             {
                 Success = true,
-                Token = user.id.ToString(), // temp token
-                User = grpcUser
+                Token = token,
+                User = new User
+                {
+                    Id = user.id.ToString(),
+                    Email = user.email,
+                    Name = user.name ?? ""
+                }
             };
         }
 
@@ -114,15 +136,12 @@ namespace gov_messenger.Services
             GetUserRequest request,
             ServerCallContext context)
         {
-            var user = await _userService.GetUserAsync(request.UserId);
+            var userId = context.UserState["userId"] as string;
+
+            var user = await _userService.GetUserAsync(userId);
 
             if (user == null)
-            {
-                return new GetUserResponse
-                {
-                    Error = "User not found"
-                };
-            }
+                return new GetUserResponse { Error = "User not found" };
 
             return new GetUserResponse
             {
@@ -144,14 +163,16 @@ namespace gov_messenger.Services
             GetChatsRequest request,
             ServerCallContext context)
         {
-            var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "authorization")?.Value;
-            var userId = authHeader?.Replace("Bearer ", "");
+            // var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "authorization")?.Value;
+            // var userId = authHeader?.Replace("Bearer ", "");
+
+            var userId = context.UserState["userId"] as string;
 
             if (string.IsNullOrEmpty(userId))
             {
                 return new GetChatsResponse
                 {
-                    Error = "User id missing"
+                    Error = "Unauthorized"
                 };
             }
 

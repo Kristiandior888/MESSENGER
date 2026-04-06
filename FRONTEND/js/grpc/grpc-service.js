@@ -61,7 +61,6 @@ class GrpcService {
             type: type,
             text: text,
             file_id: fileId,
-            sender_id: state.currentUser.id
         });
     }
 
