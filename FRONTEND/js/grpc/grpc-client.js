@@ -1,8 +1,9 @@
 // js/grpc/grpc-client.js
-// Отключаем проверку сертификата для разработки
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 let grpc, protoLoader;
+const path = require('path');
+const fs = require('fs');
 
 if (typeof require !== 'undefined') {
     grpc = require('@grpc/grpc-js');
@@ -12,10 +13,31 @@ if (typeof require !== 'undefined') {
     throw new Error('Это приложение должно запускаться в Electron');
 }
 
-const PROTO_PATH = 'proto/messenger.proto';
+// Функция для поиска proto файла
+function findProtoPath() {
+    const possiblePaths = [
+        path.resolve(process.cwd(), '../backend/gov_messenger/Protos/messenger.proto'),
+        path.resolve(__dirname, '../../backend/gov_messenger/Protos/messenger.proto'),
+        path.resolve(process.cwd(), 'backend/gov_messenger/Protos/messenger.proto'),
+    ];
+    
+    for (const p of possiblePaths) {
+        if (fs.existsSync(p)) {
+            console.log('📁 Найден proto:', p);
+            return p;
+        }
+    }
+    
+    console.error('❌ Не найден messenger.proto в путях:', possiblePaths);
+    throw new Error('Proto file not found');
+}
 
-// Используем HTTPS порт 7212
-const SERVER_IP = '192.168.0.106'; 
+const PROTO_PATH = findProtoPath();
+
+// IP адрес сервера - меняйте здесь при необходимости
+// 'localhost' - если сервер на том же компьютере
+// или конкретный IP: '192.168.0.106'
+const SERVER_IP = '192.168.0.106'; // ← поменяйте на нужный IP
 const SERVER_PORT = 7212;
 const SERVER_ADDRESS = `${SERVER_IP}:${SERVER_PORT}`;
 
@@ -33,20 +55,11 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 const messenger = protoDescriptor.messenger;
 
-// Создаем клиент с SSL, отключая проверку сертификата для разработки
-const sslCredentials = grpc.credentials.createSsl(
-    null,           // корневой сертификат (null для самоподписанного)
-    null,           // закрытый ключ клиента
-    null,           // сертификат клиента
-    { rejectUnauthorized: false }  // ← ОТКЛЮЧАЕМ ПРОВЕРКУ!
-);
+const sslCredentials = grpc.credentials.createSsl(null, null, null, { rejectUnauthorized: false });
 
-const client = new messenger.Messenger(
-    SERVER_ADDRESS,
-    sslCredentials
-);
+const client = new messenger.Messenger(SERVER_ADDRESS, sslCredentials);
 
-console.log('✅ gRPC клиент создан для адреса:', SERVER_ADDRESS);
+console.log('✅ gRPC клиент создан');
 
 if (typeof window !== 'undefined') {
     window.grpc = window.grpc || {};
