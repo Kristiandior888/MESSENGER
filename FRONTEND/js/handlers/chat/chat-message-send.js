@@ -9,12 +9,9 @@ let isSending = false;
 let isInitialized = false;
 let pendingMessages = new Map();
 
-/**
- * Автоматическое изменение высоты textarea
- */
 function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto';
-    const newHeight = Math.min(textarea.scrollHeight, 120); // максимум 120px
+    const newHeight = Math.min(textarea.scrollHeight, 120);
     textarea.style.height = newHeight + 'px';
 }
 
@@ -59,7 +56,6 @@ export async function sendMessage() {
     console.log('📝 Добавляем сообщение в DOM с временным ID:', tempId);
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
-    // Очищаем поле ввода и сбрасываем высоту
     messageField.value = '';
     autoResizeTextarea(messageField);
 
@@ -132,14 +128,9 @@ function updateLastMessageStatusUI(newStatus, messageId) {
 }
 
 /**
- * Настройка отправки сообщений
+ * Настройка отправки сообщений - ПРОСТАЯ ВЕРСИЯ
  */
 export function setupMessageSending() {
-    if (isInitialized) {
-        console.log('⚠️ setupMessageSending уже был вызван, пропускаем');
-        return;
-    }
-    
     console.log('🔧 Настройка отправки сообщений');
     
     const sendBtn = document.getElementById('send-btn');
@@ -150,6 +141,27 @@ export function setupMessageSending() {
         return;
     }
 
+    // Функция отправки
+    const handleSend = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        sendMessage();
+    };
+    
+    const handleKeyPress = (e) => {
+        // Enter без Shift - отправляем
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            sendMessage();
+        }
+        // Shift+Enter - перенос строки (ничего не делаем, браузер сам обработает)
+    };
+    
+    const handleInput = function() {
+        autoResizeTextarea(this);
+    };
+    
     // Удаляем старые обработчики
     const newSendBtn = sendBtn.cloneNode(true);
     sendBtn.parentNode.replaceChild(newSendBtn, sendBtn);
@@ -157,40 +169,18 @@ export function setupMessageSending() {
     const newMessageField = messageField.cloneNode(true);
     messageField.parentNode.replaceChild(newMessageField, messageField);
     
-    // Добавляем обработчик для auto-resize
-    newMessageField.addEventListener('input', function() {
-        autoResizeTextarea(this);
-    });
+    // Добавляем новые обработчики
+    newSendBtn.addEventListener('click', handleSend);
+    newMessageField.addEventListener('keydown', handleKeyPress);
+    newMessageField.addEventListener('input', handleInput);
     
-    // Отправка по Enter (без Shift)
-    newMessageField.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            sendMessage();
-        }
-        // Shift+Enter оставляем для переноса строки (ничего не делаем, браузер сам вставит \n)
-    });
-    
-    newSendBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        sendMessage();
-    });
-    
-    isInitialized = true;
     console.log('✅ Отправка сообщений настроена');
 }
 
-// Добавить в chat-message-send.js
-const drafts = new Map();
-
 export function saveDraft(chatId, text) {
     if (text.trim()) {
-        drafts.set(chatId, text);
         localStorage.setItem(`draft_${chatId}`, text);
     } else {
-        drafts.delete(chatId);
         localStorage.removeItem(`draft_${chatId}`);
     }
 }
@@ -199,7 +189,9 @@ export function loadDraft(chatId) {
     const saved = localStorage.getItem(`draft_${chatId}`);
     if (saved) {
         const messageField = document.getElementById('message-field');
-        messageField.value = saved;
-        autoResizeTextarea(messageField);
+        if (messageField) {
+            messageField.value = saved;
+            autoResizeTextarea(messageField);
+        }
     }
 }

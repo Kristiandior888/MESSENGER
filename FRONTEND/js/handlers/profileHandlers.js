@@ -48,11 +48,7 @@ function setupProfileHandlers() {
         
         newDarkOption.addEventListener('click', () => {
             console.log('🌙 Переключение на темную тему');
-            
-            // Сохраняем тему
             saveTheme(THEMES.DARK);
-            
-            // Перезагружаем приложение
             window.location.reload();
         });
     }
@@ -63,11 +59,7 @@ function setupProfileHandlers() {
         
         newLightOption.addEventListener('click', () => {
             console.log('☀️ Переключение на светлую тему');
-            
-            // Сохраняем тему
             saveTheme(THEMES.LIGHT);
-            
-            // Перезагружаем приложение
             window.location.reload();
         });
     }
@@ -139,16 +131,23 @@ function setupProfileHandlers() {
         });
     }
     
-    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ"
+    
+    // Выход без перезагрузки, но с полной очисткой
     const logoutProfileBtn = document.getElementById('logout-profile-btn');
     if (logoutProfileBtn) {
         const newLogoutBtn = logoutProfileBtn.cloneNode(true);
         logoutProfileBtn.parentNode.replaceChild(newLogoutBtn, logoutProfileBtn);
         
-        newLogoutBtn.addEventListener('click', () => {
+        newLogoutBtn.addEventListener('click', async () => {
             console.log('🚪 Выход из системы через профиль');
             
-            // Очищаем localStorage от данных сессии
+            // Останавливаем все стримы
+            try {
+                const { stopAllMessageStreams } = await import('./handlers/chat/index.js');
+                await stopAllMessageStreams();
+            } catch (e) {}
+            
+            // Очищаем localStorage
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
             
@@ -160,8 +159,8 @@ function setupProfileHandlers() {
             state.userAvatar = null;
             state.chats = [];
             
-            // Показываем экран входа
-            showScreen('login');
+            // Перезагружаем приложение
+            window.location.reload();
         });
     }
     

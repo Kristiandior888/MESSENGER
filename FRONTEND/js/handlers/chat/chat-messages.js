@@ -4,8 +4,8 @@ import { initGrpc, getCurrentChat } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
 
 let currentStreamChatId = null;
-let isLoadingMessages = false; // Флаг для предотвращения дублирования загрузки
-let lastProcessedMessageIds = new Set(); // Храним ID последних обработанных сообщений
+let isLoadingMessages = false;
+let lastProcessedMessageIds = new Set();
 
 export function formatMessageTime(timestamp) {
     if (!timestamp) return '';
@@ -113,13 +113,11 @@ export function appendNewMessage(chatId, message) {
     const currentChat = getCurrentChat();
     if (currentChat !== chatId) return false;
     
-    // Проверяем, не обрабатывали ли мы уже это сообщение
     if (lastProcessedMessageIds.has(message.id)) {
         console.log('⚠️ Сообщение уже было обработано, пропускаем:', message.id);
         return false;
     }
     
-    // Проверяем, нет ли уже такого сообщения в DOM
     if (document.querySelector(`.message[data-message-id="${message.id}"]`)) {
         console.log('⚠️ Сообщение уже есть в DOM, пропускаем:', message.id);
         return false;
@@ -127,10 +125,8 @@ export function appendNewMessage(chatId, message) {
     
     console.log(`📥 Добавляем новое сообщение в чат ${chatId}:`, message);
     
-    // Добавляем ID в Set обработанных сообщений
     lastProcessedMessageIds.add(message.id);
     
-    // Ограничиваем размер Set (храним последние 100 ID)
     if (lastProcessedMessageIds.size > 100) {
         const toDelete = [...lastProcessedMessageIds][0];
         lastProcessedMessageIds.delete(toDelete);
@@ -149,9 +145,65 @@ export function appendNewMessage(chatId, message) {
     return true;
 }
 
-/**
- * Загрузка сообщений с сервера
- */
+export async function startMessageStreamForChat(chatId) {
+    if (!chatId) return;
+    
+    // Останавливаем предыдущий стрим
+    await stopMessageStreamForChat(currentStreamChatId);
+    
+    try {
+        const { service } = await initGrpc();
+        
+        service.startMessageStream(
+            chatId,
+            (message) => {
+                console.log(`✨ Новое сообщение в реальном времени для чата ${chatId}:`, message);
+                appendNewMessage(chatId, message);
+            },
+            (error) => {
+                if (error.code !== 1) {
+                    console.error(`❌ Ошибка стрима для чата ${chatId}:`, error);
+                }
+            },
+            () => {
+                console.log(`📴 Стрим для чата ${chatId} завершен`);
+            }
+        );
+        
+        currentStreamChatId = chatId;
+        console.log(`✅ Стрим для чата ${chatId} запущен`);
+    } catch (error) {
+        console.error(`❌ Не удалось запустить стрим для чата ${chatId}:`, error);
+    }
+}
+
+export async function stopMessageStreamForChat(chatId) {
+    if (!chatId) return;
+    
+    try {
+        const { service } = await initGrpc();
+        service.stopMessageStream(chatId);
+        if (currentStreamChatId === chatId) {
+            currentStreamChatId = null;
+        }
+        console.log(`🛑 Стрим для чата ${chatId} остановлен`);
+    } catch (error) {
+        console.error(`❌ Ошибка остановки стрима:`, error);
+    }
+}
+
+export async function stopAllMessageStreams() {
+    try {
+        const { service } = await initGrpc();
+        service.stopAllStreams();
+        lastProcessedMessageIds.clear();
+        currentStreamChatId = null;
+        console.log(`🛑 Все стримы остановлены`);
+    } catch (error) {
+        console.error(`❌ Ошибка остановки стримов:`, error);
+    }
+}
+
 export async function loadMessagesFromServer(chatId) {
     if (!chatId) return;
     if (isLoadingMessages) {
@@ -173,35 +225,27 @@ export async function loadMessagesFromServer(chatId) {
         
         messagesDiv.innerHTML = '';
         
-        // Очищаем Set обработанных сообщений при загрузке нового чата
         lastProcessedMessageIds.clear();
         
         if (!response.messages || response.messages.length === 0) {
             messagesDiv.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое сообщение!</div>';
-            startMessageStreamForChat(chatId);
-            isLoadingMessages = false;
-            return;
+        } else {
+            const sortedMessages = [...response.messages].sort((a, b) => {
+                const timeA = Number(a.timestamp) || 0;
+                const timeB = Number(b.timestamp) || 0;
+                return timeA - timeB;
+            });
+            
+            sortedMessages.forEach(msg => {
+                lastProcessedMessageIds.add(msg.id);
+                const messageElement = createMessageElement(msg);
+                messagesDiv.appendChild(messageElement);
+            });
         }
-        
-        const sortedMessages = [...response.messages].sort((a, b) => {
-            const timeA = Number(a.timestamp) || 0;
-            const timeB = Number(b.timestamp) || 0;
-            return timeA - timeB;
-        });
-        
-        // Добавляем все сообщения в Set обработанных
-        sortedMessages.forEach(msg => {
-            lastProcessedMessageIds.add(msg.id);
-        });
-        
-        sortedMessages.forEach(msg => {
-            const messageElement = createMessageElement(msg);
-            messagesDiv.appendChild(messageElement);
-        });
         
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
-        // Запускаем стриминг после загрузки сообщений
+        // Запускаем стрим после загрузки сообщений
         await startMessageStreamForChat(chatId);
         
     } catch (error) {
@@ -209,63 +253,5 @@ export async function loadMessagesFromServer(chatId) {
         showErrorMessage('Не удалось загрузить сообщения');
     } finally {
         isLoadingMessages = false;
-    }
-}
-
-async function startMessageStreamForChat(chatId) {
-    try {
-        const { service } = await initGrpc();
-        
-        // Останавливаем предыдущий стрим
-        service.stopMessageStream(chatId);
-        
-        // Запускаем новый стрим
-        service.startMessageStream(
-            chatId,
-            (message) => {
-                console.log(`✨ Новое сообщение в реальном времени для чата ${chatId}:`, message);
-                appendNewMessage(chatId, message);
-            },
-            (error) => {
-                // Не показываем ошибку для отмененных стримов
-                if (error.code !== 1 || error.details !== 'Cancelled on client') {
-                    console.error(`❌ Ошибка стрима для чата ${chatId}:`, error);
-                    setTimeout(() => {
-                        if (getCurrentChat() === chatId && !isLoadingMessages) {
-                            console.log(`🔄 Переподключение стрима для чата ${chatId}...`);
-                            startMessageStreamForChat(chatId);
-                        }
-                    }, 5000);
-                }
-            },
-            () => {
-                console.log(`📴 Стрим для чата ${chatId} завершен`);
-            }
-        );
-        
-        console.log(`✅ Стрим для чата ${chatId} запущен`);
-    } catch (error) {
-        console.error(`❌ Не удалось запустить стрим для чата ${chatId}:`, error);
-    }
-}
-
-export async function stopMessageStreamForChat(chatId) {
-    try {
-        const { service } = await initGrpc();
-        service.stopMessageStream(chatId);
-        console.log(`🛑 Стрим для чата ${chatId} остановлен`);
-    } catch (error) {
-        console.error(`❌ Ошибка остановки стрима:`, error);
-    }
-}
-
-export async function stopAllMessageStreams() {
-    try {
-        const { service } = await initGrpc();
-        service.stopAllStreams();
-        lastProcessedMessageIds.clear();
-        console.log(`🛑 Все стримы остановлены`);
-    } catch (error) {
-        console.error(`❌ Ошибка остановки стримов:`, error);
     }
 }
