@@ -52,72 +52,103 @@ class GrpcService {
     }
 
     async sendMessage(chatId, { text = '', file = null }) {
-        if (!state.currentUser) {
-            throw new Error('Пользователь не авторизован');
-        }
+    if (!state.currentUser) {
+        throw new Error('Пользователь не авторизован');
+    }
 
-        let type = 0; // TEXT
-        let fileId = '';
+    let type = 0; // TEXT
+    let fileId = '';
 
-        if (file) {
-            console.log('📤 Загружаем файл...');
+    if (file) {
+        console.log('📤 Загружаем файл на сервер...');
+        try {
             fileId = await this.uploadFile(file);
             type = 1; // FILE
+            console.log('✅ Файл загружен, file_id:', fileId);
+        } catch (uploadError) {
+            console.error('❌ Ошибка загрузки файла:', uploadError);
+            throw new Error('Не удалось загрузить файл: ' + uploadError.message);
         }
-
-        return this.#call('SendMessage', {
-            chat_id: chatId,
-            type: type,
-            text: text,
-            file_id: fileId,
-            sender_id: state.currentUser.id
-        });
     }
+
+    console.log('📤 Отправляем сообщение:', {
+        chat_id: chatId,
+        type: type,
+        text: text,
+        file_id: fileId,
+        sender_id: state.currentUser.id
+    });
+
+    return this.#call('SendMessage', {
+        chat_id: chatId,
+        type: type,
+        text: text,
+        file_id: fileId,
+        sender_id: state.currentUser.id
+    });
+}
 
     async uploadFile(file) {
-        return new Promise((resolve, reject) => {
-            const metadata = new Metadata();
-            if (state.token) {
-                metadata.add('authorization', `Bearer ${state.token}`);
+    return new Promise((resolve, reject) => {
+        const metadata = new Metadata();
+        if (state.token) {
+            metadata.add('authorization', `Bearer ${state.token}`);
+        }
+        
+        // Кодируем имя файла в base64 или URL encode
+        const encodedFileName = encodeURIComponent(file.name);
+        metadata.add('file-name', encodedFileName);
+        
+        console.log('📤 Начинаем загрузку файла:', {
+            originalName: file.name,
+            encodedName: encodedFileName,
+            type: file.type,
+            size: file.size
+        });
+
+        const stream = this.client.UploadFile(metadata, (err, response) => {
+            if (err) {
+                console.error('❌ Ошибка загрузки файла:', err);
+                reject(err);
+            } else {
+                console.log('✅ Файл загружен, ID:', response.file_id);
+                resolve(response.file_id);
+            }
+        });
+
+        stream.on('error', (err) => {
+            console.error('❌ Ошибка стрима загрузки:', err);
+            reject(err);
+        });
+
+        const chunkSize = 64 * 1024;
+        let offset = 0;
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+            const buffer = new Uint8Array(reader.result);
+
+            while (offset < buffer.length) {
+                const chunk = buffer.slice(offset, offset + chunkSize);
+                stream.write({
+                    chunk: chunk,
+                    file_name: encodedFileName // Используем закодированное имя
+                });
+                offset += chunkSize;
             }
 
-            const stream = this.client.UploadFile(metadata, (err, response) => {
-                if (err) {
-                    console.error('❌ Ошибка загрузки файла:', err);
-                    reject(err);
-                } else {
-                    console.log('✅ Файл загружен:', response.file_id);
-                    resolve(response.file_id);
-                }
-            });
+            stream.end();
+        };
 
-            const chunkSize = 64 * 1024;
-            let offset = 0;
+        reader.onerror = (err) => {
+            console.error('❌ Ошибка чтения файла:', err);
+            reject(err);
+        };
 
-            const reader = new FileReader();
-
-            reader.onload = () => {
-                const buffer = new Uint8Array(reader.result);
-
-                while (offset < buffer.length) {
-                    const chunk = buffer.slice(offset, offset + chunkSize);
-
-                    stream.write({
-                        chunk: chunk,
-                        file_name: file.name
-                    });
-
-                    offset += chunkSize;
-                }
-
-                stream.end();
-            };
-
-            reader.onerror = reject;
-
-            reader.readAsArrayBuffer(file);
-        });
-    }
+        reader.readAsArrayBuffer(file);
+    });
+}
 
     async downloadFile(fileId) {
         const metadata = new Metadata();

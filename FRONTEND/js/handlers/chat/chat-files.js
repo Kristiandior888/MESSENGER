@@ -1,7 +1,7 @@
 // js/handlers/chat/chat-files.js
 import { saveFileToStorage, getFileFromStorage, downloadFile, getFileIcon, formatFileSize } from '../../utils/fileUtils.js';
 
-// Состояние прикрепленных файлов
+// Состояние прикрепленных файлов - теперь храним оригинальные File объекты
 export let attachedFiles = [];
 
 /**
@@ -43,6 +43,7 @@ export function clearAttachedFiles() {
 
 /**
  * Добавление файлов в список прикрепленных
+ * Теперь храним оригинальные File объекты
  */
 export async function addAttachedFiles(files) {
     for (const file of files) {
@@ -51,19 +52,9 @@ export async function addAttachedFiles(files) {
             continue;
         }
 
-        try {
-            const fileId = await saveFileToStorage(file);
-            attachedFiles.push({
-                id: fileId,
-                name: file.name,
-                size: file.size,
-                type: file.type
-            });
-            console.log(`✅ Файл прикреплен: ${file.name}`);
-        } catch (error) {
-            console.error('❌ Ошибка при загрузке файла:', error);
-            alert(`Не удалось загрузить файл ${file.name}`);
-        }
+        // Сохраняем оригинальный File объект
+        attachedFiles.push(file);
+        console.log(`✅ Файл прикреплен: ${file.name}, размер: ${file.size}`);
     }
     
     updateAttachedFilesIndicator(attachedFiles);
@@ -71,33 +62,57 @@ export async function addAttachedFiles(files) {
 
 /**
  * Создание элемента файла для сообщения
+ * Принимает либо File объект, либо объект с метаданными
  */
 export function createFileElement(fileData) {
     const fileDiv = document.createElement('div');
     fileDiv.className = 'message-file';
-    fileDiv.setAttribute('data-file-id', fileData.id);
+    
+    // Получаем имя файла (из File объекта или из метаданных)
+    const fileName = fileData.name || (fileData instanceof File ? fileData.name : 'file');
+    const fileSize = fileData.size || (fileData instanceof File ? fileData.size : 0);
+    const fileType = fileData.type || (fileData instanceof File ? fileData.type : '');
+    const fileId = fileData.id || `file_${Date.now()}_${fileName}`;
+    
+    fileDiv.setAttribute('data-file-id', fileId);
 
-    const fileIcon = getFileIcon(fileData.name, fileData.type);
+    const fileIcon = getFileIcon(fileName, fileType);
 
     fileDiv.innerHTML = `
         <span class="file-icon ${fileIcon.class}">${fileIcon.icon}</span>
         <div class="file-info">
-            <div class="file-name">${fileData.name}</div>
-            <div class="file-size">${formatFileSize(fileData.size)}</div>
+            <div class="file-name">${escapeHtml(fileName)}</div>
+            <div class="file-size">${formatFileSize(fileSize)}</div>
         </div>
         <span class="download-hint">⬇️</span>
     `;
 
     fileDiv.addEventListener('click', () => {
-        const savedFile = getFileFromStorage(fileData.id);
-        if (savedFile) {
-            downloadFile(savedFile, fileData.name);
+        // Если это File объект, скачиваем напрямую
+        if (fileData instanceof File) {
+            downloadFile(fileData, fileName);
         } else {
-            alert('Файл не найден в хранилище');
+            // Иначе пытаемся получить из хранилища
+            const savedFile = getFileFromStorage(fileId);
+            if (savedFile) {
+                downloadFile(savedFile, fileName);
+            } else {
+                alert('Файл не найден в хранилище');
+            }
         }
     });
 
     return fileDiv;
+}
+
+function escapeHtml(str) {
+    if (!str) return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**

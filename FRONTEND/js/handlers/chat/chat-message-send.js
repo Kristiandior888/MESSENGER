@@ -6,8 +6,6 @@ import { attachedFiles, clearAttachedFiles } from './chat-files.js';
 import { showErrorMessage } from './chat-ui.js';
 
 let isSending = false;
-let isInitialized = false;
-let pendingMessages = new Map();
 
 function autoResizeTextarea(textarea) {
     textarea.style.height = 'auto';
@@ -46,14 +44,16 @@ export async function sendMessage() {
 
     isSending = true;
     
+    // Копируем файлы (это оригинальные File объекты)
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    pendingMessages.set(tempId, { text, files: filesToSend, chatId });
-    
     console.log('📝 Добавляем сообщение в DOM с временным ID:', tempId);
+    console.log('📎 Файлы для отправки:', filesToSend.map(f => f.name));
+    
+    // Показываем временное сообщение
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
     messageField.value = '';
@@ -62,20 +62,30 @@ export async function sendMessage() {
     try {
         const { service } = await initGrpc();
         
-        console.log('📤 Отправка сообщения на сервер:', text);
+        console.log('📤 Отправка сообщения на сервер:', { text, hasFiles, filesCount: filesToSend.length });
         
-        const response = await service.sendMessage(chatId, text);
+        let response;
+        
+        if (hasFiles && filesToSend.length > 0) {
+            // Передаем первый файл (оригинальный File объект)
+            const fileToSend = filesToSend[0];
+            console.log('📎 Отправляем файл:', fileToSend.name, 'тип:', fileToSend.type, 'размер:', fileToSend.size);
+            response = await service.sendMessage(chatId, { text, file: fileToSend });
+        } else {
+            response = await service.sendMessage(chatId, { text, file: null });
+        }
         
         console.log('✅ Сообщение отправлено, ответ сервера:', response);
         
         if (response.success && response.message) {
+            // Удаляем временное сообщение
             const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
             if (tempMessage) {
                 tempMessage.remove();
             }
             
+            // Добавляем финальное сообщение
             addMessage(text, 'sent', true, 'sent', filesToSend, response.message.id);
-            pendingMessages.delete(tempId);
         } else {
             updateLastMessageStatusUI('error', tempId);
             showErrorMessage('Не удалось отправить сообщение');
@@ -90,7 +100,7 @@ export async function sendMessage() {
         console.error('❌ Ошибка отправки на сервер:', error);
         
         updateLastMessageStatusUI('error', tempId);
-        showErrorMessage('Не удалось отправить сообщение');
+        showErrorMessage('Не удалось отправить сообщение: ' + (error.message || 'Неизвестная ошибка'));
         
         if (!hasFiles) {
             messageField.value = text;
@@ -98,15 +108,6 @@ export async function sendMessage() {
         }
     } finally {
         isSending = false;
-        setTimeout(() => {
-            pendingMessages.forEach((_, id) => {
-                const tempMessage = document.querySelector(`.message[data-message-id="${id}"]`);
-                if (tempMessage) {
-                    tempMessage.remove();
-                }
-                pendingMessages.delete(id);
-            });
-        }, 5000);
     }
 }
 
@@ -128,7 +129,7 @@ function updateLastMessageStatusUI(newStatus, messageId) {
 }
 
 /**
- * Настройка отправки сообщений - ПРОСТАЯ ВЕРСИЯ
+ * Настройка отправки сообщений
  */
 export function setupMessageSending() {
     console.log('🔧 Настройка отправки сообщений');
@@ -141,7 +142,6 @@ export function setupMessageSending() {
         return;
     }
 
-    // Функция отправки
     const handleSend = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -149,13 +149,11 @@ export function setupMessageSending() {
     };
     
     const handleKeyPress = (e) => {
-        // Enter без Shift - отправляем
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
             sendMessage();
         }
-        // Shift+Enter - перенос строки (ничего не делаем, браузер сам обработает)
     };
     
     const handleInput = function() {
@@ -169,7 +167,6 @@ export function setupMessageSending() {
     const newMessageField = messageField.cloneNode(true);
     messageField.parentNode.replaceChild(newMessageField, messageField);
     
-    // Добавляем новые обработчики
     newSendBtn.addEventListener('click', handleSend);
     newMessageField.addEventListener('keydown', handleKeyPress);
     newMessageField.addEventListener('input', handleInput);
