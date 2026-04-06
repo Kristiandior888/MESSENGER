@@ -16,6 +16,9 @@ service Messenger {
   rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
 
   rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
+
+  rpc UploadFile (stream UploadFileRequest) returns (UploadFileResponse);
+  rpc DownloadFile (DownloadFileRequest) returns (stream DownloadFileResponse);
 }
 
 // Authentication
@@ -163,4 +166,23 @@ message SendMessageResponse {
 
 message StreamMessagesRequest {
   repeated string chat_ids = 1;
+}
+
+// Files
+
+message UploadFileRequest {
+  bytes chunk = 1;
+  string file_name = 2;
+}
+
+message UploadFileResponse {
+  string file_id = 1;
+}
+
+message DownloadFileRequest {
+  string file_id = 1;
+}
+
+message DownloadFileResponse {
+  bytes chunk = 1;
 }

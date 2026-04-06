@@ -15,23 +15,37 @@ namespace gov_messenger.Services
             _repository = repository;
         }
 
-        public async Task<MessageEntity> SendMessageAsync(string chatId, string senderId, string text)
+        public async Task<MessageEntity> SendMessageAsync(
+            string chatId,
+            string senderId,
+            string text,
+            int type,
+            string? fileId)
         {
+            Guid? parsedFileId = null;
+
+            if (!string.IsNullOrEmpty(fileId) && Guid.TryParse(fileId, out var guid))
+            {
+                parsedFileId = guid;
+            }
+
             var message = new MessageEntity
             {
                 id = Guid.NewGuid(),
                 chat_id = Guid.Parse(chatId),
                 sender_id = Guid.Parse(senderId),
                 text = text,
+                file_id = parsedFileId,
+                type = (short)type,
                 timestamp = DateTime.UtcNow
             };
 
-            var result = await _repository.AddAsync(message);
-            
-            // Уведомляем подписчиков о новом сообщении
-            await NotifySubscribers(chatId, result);
-            
-            return result;
+            var savedMessage = await _repository.AddAsync(message);
+
+            await NotifySubscribers(chatId, savedMessage);
+
+            return savedMessage;
+            // return await _repository.AddAsync(message);
         }
 
         public async Task<List<MessageEntity>> GetMessagesAsync(string chatId, int limit, string cursor)
@@ -50,16 +64,16 @@ namespace gov_messenger.Services
             
             try
             {
-                // Ждем, пока клиент не отключится
+                // Wait until the client disconnects
                 await Task.Delay(-1, cancellationToken);
             }
             catch (TaskCanceledException)
             {
-                // Клиент отключился, ничего не делаем
+                // The client disconnected, do nothing
             }
             finally
             {
-                // Удаляем поток из подписчиков
+                // Remove the stream of subs
                 _subscribers[chatId].Remove(stream);
                 if (_subscribers[chatId].Count == 0)
                 {
@@ -95,7 +109,7 @@ namespace gov_messenger.Services
                     }
                 }
                 
-                // Удаляем неработающие потоки
+                // Remove dead streams
                 foreach (var dead in deadStreams)
                 {
                     streams.Remove(dead);

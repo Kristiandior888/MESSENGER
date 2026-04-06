@@ -15,14 +15,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<ChatRepository>();
+builder.Services.AddScoped<FileRepository>();
 
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ChatService>();
-
-// Kestrel настройки берутся из appsettings.json
-// Не нужно дублировать ConfigureKestrel
+builder.Services.AddScoped<FileService>();
 
 var app = builder.Build();
 
