@@ -9,17 +9,20 @@ namespace gov_messenger.Services
         private readonly AuthService _authService;
         private readonly UserService _userService;
         private readonly ChatService _chatService;
+        private readonly FileService _fileService;
 
         public MessengerGrpcService(
             MessageService messageService, 
             AuthService authService,
             ChatService chatService,
-            UserService userService)
+            UserService userService,
+            FileService fileService)
         {
             _messageService = messageService;
             _authService = authService;
             _userService = userService;
             _chatService = chatService;
+            _fileService = fileService;
         }
 
         public override async Task<SendMessageResponse> SendMessage(
@@ -27,9 +30,12 @@ namespace gov_messenger.Services
             ServerCallContext context)
         {
             var entity = await _messageService.SendMessageAsync(
-                request.ChatId, 
-                request.SenderId, 
-                request.Text);
+                request.ChatId,
+                request.SenderId,
+                request.Text,
+                (int)request.Type,
+                request.FileId
+            );
 
             var message = new Message
             {
@@ -37,6 +43,8 @@ namespace gov_messenger.Services
                 ChatId = entity.chat_id.ToString(),
                 SenderId = entity.sender_id.ToString(),
                 Text = entity.text,
+                FileId = entity.file_id?.ToString() ?? "",
+                Type = (MessageType)entity.type,
                 Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
             };
 
@@ -67,6 +75,8 @@ namespace gov_messenger.Services
                     ChatId = entity.chat_id.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
+                    FileId = entity.file_id?.ToString() ?? "",
+                    Type = (MessageType)entity.type,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
                 });
             }
@@ -191,6 +201,60 @@ namespace gov_messenger.Services
             
             // Wait until all subscriptions are completed
             await Task.WhenAll(tasks);
+        }
+
+        public override async Task<UploadFileResponse> UploadFile(
+            IAsyncStreamReader<UploadFileRequest> requestStream,
+            ServerCallContext context)
+        {
+            var ms = new MemoryStream();
+            string fileName = "unknown";
+
+            await foreach (var chunk in requestStream.ReadAllAsync())
+            {
+                if (!string.IsNullOrEmpty(chunk.FileName))
+                    fileName = chunk.FileName;
+
+                if (chunk.Chunk.Length > 0)
+                    await ms.WriteAsync(chunk.Chunk.ToByteArray());
+            }
+
+            ms.Position = 0;
+
+            var userId = context.RequestHeaders
+                .FirstOrDefault(h => h.Key == "authorization")?.Value
+                ?.Replace("Bearer ", "");
+
+            var fileId = await _fileService.SaveFileAsync(userId, fileName, ms);
+
+            return new UploadFileResponse
+            {
+                FileId = fileId
+            };
+        }
+
+        public override async Task DownloadFile(
+            DownloadFileRequest request,
+            IServerStreamWriter<DownloadFileResponse> responseStream,
+            ServerCallContext context)
+        {
+            var path = await _fileService.GetFilePathAsync(request.FileId);
+
+            if (path == null)
+                return;
+
+            using var fs = new FileStream(path, FileMode.Open);
+
+            var buffer = new byte[8192];
+
+            int bytesRead;
+            while ((bytesRead = await fs.ReadAsync(buffer)) > 0)
+            {
+                await responseStream.WriteAsync(new DownloadFileResponse
+                {
+                    Chunk = Google.Protobuf.ByteString.CopyFrom(buffer, 0, bytesRead)
+                });
+            }
         }
     }
 }

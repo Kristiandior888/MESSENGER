@@ -15,23 +15,37 @@ namespace gov_messenger.Services
             _repository = repository;
         }
 
-        public async Task<MessageEntity> SendMessageAsync(string chatId, string senderId, string text)
+        public async Task<MessageEntity> SendMessageAsync(
+            string chatId,
+            string senderId,
+            string text,
+            int type,
+            string? fileId)
         {
+            Guid? parsedFileId = null;
+
+            if (!string.IsNullOrEmpty(fileId) && Guid.TryParse(fileId, out var guid))
+            {
+                parsedFileId = guid;
+            }
+
             var message = new MessageEntity
             {
                 id = Guid.NewGuid(),
                 chat_id = Guid.Parse(chatId),
                 sender_id = Guid.Parse(senderId),
                 text = text,
+                file_id = parsedFileId,
+                type = (short)type,
                 timestamp = DateTime.UtcNow
             };
 
-            var result = await _repository.AddAsync(message);
-            
-            // Notify subs about a new message
-            await NotifySubscribers(chatId, result);
-            
-            return result;
+            var savedMessage = await _repository.AddAsync(message);
+
+            await NotifySubscribers(chatId, savedMessage);
+
+            return savedMessage;
+            // return await _repository.AddAsync(message);
         }
 
         public async Task<List<MessageEntity>> GetMessagesAsync(string chatId, int limit, string cursor)

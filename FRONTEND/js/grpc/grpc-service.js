@@ -51,9 +51,18 @@ class GrpcService {
         });
     }
 
-    async sendMessage(chatId, text, type = 0, fileId = '') {
+    async sendMessage(chatId, { text = '', file = null }) {
         if (!state.currentUser) {
             throw new Error('Пользователь не авторизован');
+        }
+
+        let type = 0; // TEXT
+        let fileId = '';
+
+        if (file) {
+            console.log('📤 Загружаем файл...');
+            fileId = await this.uploadFile(file);
+            type = 1; // FILE
         }
 
         return this.#call('SendMessage', {
@@ -62,6 +71,75 @@ class GrpcService {
             text: text,
             file_id: fileId,
             sender_id: state.currentUser.id
+        });
+    }
+
+    async uploadFile(file) {
+        return new Promise((resolve, reject) => {
+            const metadata = new Metadata();
+            if (state.token) {
+                metadata.add('authorization', `Bearer ${state.token}`);
+            }
+
+            const stream = this.client.UploadFile(metadata, (err, response) => {
+                if (err) {
+                    console.error('❌ Ошибка загрузки файла:', err);
+                    reject(err);
+                } else {
+                    console.log('✅ Файл загружен:', response.file_id);
+                    resolve(response.file_id);
+                }
+            });
+
+            const chunkSize = 64 * 1024;
+            let offset = 0;
+
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                const buffer = new Uint8Array(reader.result);
+
+                while (offset < buffer.length) {
+                    const chunk = buffer.slice(offset, offset + chunkSize);
+
+                    stream.write({
+                        chunk: chunk,
+                        file_name: file.name
+                    });
+
+                    offset += chunkSize;
+                }
+
+                stream.end();
+            };
+
+            reader.onerror = reject;
+
+            reader.readAsArrayBuffer(file);
+        });
+    }
+
+    async downloadFile(fileId) {
+        const metadata = new Metadata();
+        if (state.token) {
+            metadata.add('authorization', `Bearer ${state.token}`);
+        }
+
+        return new Promise((resolve, reject) => {
+            const stream = this.client.DownloadFile({ file_id: fileId }, metadata);
+
+            const chunks = [];
+
+            stream.on('data', (response) => {
+                chunks.push(response.chunk);
+            });
+
+            stream.on('end', () => {
+                const blob = new Blob(chunks);
+                resolve(blob);
+            });
+
+            stream.on('error', reject);
         });
     }
 
