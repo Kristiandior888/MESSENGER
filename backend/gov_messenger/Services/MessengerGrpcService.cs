@@ -11,19 +11,22 @@ namespace gov_messenger.Services
         private readonly UserService _userService;
         private readonly ChatService _chatService;
         private readonly JwtService _jwtService;
+        private readonly RefreshTokenService _refreshTokenService;
 
         public MessengerGrpcService(
             MessageService messageService, 
             AuthService authService,
             ChatService chatService,
             UserService userService,
-            JwtService jwtService)
+            JwtService jwtService,
+            RefreshTokenService refreshTokenService)
         {
             _messageService = messageService;
             _authService = authService;
             _userService = userService;
             _chatService = chatService;
             _jwtService = jwtService;
+            _refreshTokenService = refreshTokenService;
         }
 
         public override async Task<SendMessageResponse> SendMessage(
@@ -114,21 +117,59 @@ namespace gov_messenger.Services
                 };
             }
 
-            var token = _jwtService.GenerateToken(
+            var jwtToken = _jwtService.GenerateToken(
                 user.id.ToString(),
                 user.email
             );
 
+            var (jwt, refreshToken) = await _refreshTokenService.CreateTokens(user);
+
             return new LoginResponse
             {
                 Success = true,
-                Token = token,
+                JwtToken = jwtToken,
+                RefreshToken = refreshToken,
                 User = new User
                 {
                     Id = user.id.ToString(),
                     Email = user.email,
                     Name = user.name ?? ""
                 }
+            };
+        }
+
+        public override async Task<LogoutResponse> Logout(
+            LogoutRequest request,
+            ServerCallContext context)
+        {
+            var userId = context.UserState["userId"] as string;
+
+            if (userId == null)
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "No user"));
+
+            await _refreshTokenService.Logout(Guid.Parse(userId));
+
+            return new LogoutResponse { Success = true };
+        }
+
+        public override async Task<RefreshTokenResponse> RefreshToken(
+            RefreshTokenRequest request,
+            ServerCallContext context)
+        {
+            var result = await _refreshTokenService.Refresh(request.RefreshToken);
+
+            if (result == null)
+            {
+                return new RefreshTokenResponse
+                {
+                    Error = "Invalid refresh token"
+                };
+            }
+
+            return new RefreshTokenResponse
+            {
+                JwtToken = result.Value.jwt,
+                RefreshToken = result.Value.refresh
             };
         }
 

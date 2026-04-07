@@ -37,7 +37,8 @@ function setupLoginHandlers() {
 
             if (response.success) {
                 state.isAuthenticated = true;
-                state.token = response.token;
+                state.jwtToken = response.jwt_token;
+                state.refreshToken = response.refresh_token;
                 state.currentUser = {
                     id: response.user.id,
                     email: response.user.email,
@@ -48,7 +49,8 @@ function setupLoginHandlers() {
                 // ВАЖНО: НЕ выбираем чат автоматически
                 state.currentChat = null;
 
-                localStorage.setItem('token', response.token);
+                localStorage.setItem('jwt_token', response.jwt_token);
+                localStorage.setItem('refresh_token', response.refresh_token);
                 localStorage.setItem('userData', JSON.stringify(state.currentUser));
 
                 console.log('👋 Привет,', state.currentUser.name);

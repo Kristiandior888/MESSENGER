@@ -39,11 +39,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<ChatRepository>();
+builder.Services.AddScoped<RefreshTokenRepository>();
 
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ChatService>();
+builder.Services.AddScoped<JwtService>();
+builder.Services.AddScoped<RefreshTokenService>();
+
+builder.Services.AddSingleton<AuthInterceptor>();
 
 var app = builder.Build();
 

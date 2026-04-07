@@ -1,19 +1,28 @@
 ﻿using Grpc.Core;
-using System.IdentityModel.Tokens.Jwt;
 using Grpc.Core.Interceptors;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace gov_messenger.Interceptors
 {
     public class AuthInterceptor : Interceptor
     {
+        private readonly IConfiguration _config;
+
+        public AuthInterceptor(IConfiguration config)
+        {
+            _config = config;
+        }
+
         public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
-        TRequest request,
-        ServerCallContext context,
-        UnaryServerMethod<TRequest, TResponse> continuation)
+            TRequest request,
+            ServerCallContext context,
+            UnaryServerMethod<TRequest, TResponse> continuation)
         {
             var method = context.Method;
 
-            if (method.Contains("Login"))
+            if (method.Contains("Login") || method.Contains("RefreshToken"))
             {
                 return await continuation(request, context);
             }
@@ -27,16 +36,40 @@ namespace gov_messenger.Interceptors
             var token = authHeader.Replace("Bearer ", "");
 
             var handler = new JwtSecurityTokenHandler();
-            var jwt = handler.ReadJwtToken(token);
 
-            var userId = jwt.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+            try
+            {
+                var key = Encoding.UTF8.GetBytes(_config["Jwt:Key"]);
 
-            if (userId == null)
-                throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid token"));
+                var principal = handler.ValidateToken(token, new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidIssuer = _config["Jwt:Issuer"],
 
-            context.UserState["userId"] = userId;
+                    ValidateAudience = true,
+                    ValidAudience = _config["Jwt:Audience"],
 
-            return await continuation(request, context);
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero,
+
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                }, out _);
+
+                var userId = principal.Claims
+                    .FirstOrDefault(c => c.Type == "uid")?.Value;
+
+                if (userId == null)
+                    throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid token"));
+
+                context.UserState["userId"] = userId;
+
+                return await continuation(request, context);
+            }
+            catch
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid or expired token"));
+            }
         }
     }
 }

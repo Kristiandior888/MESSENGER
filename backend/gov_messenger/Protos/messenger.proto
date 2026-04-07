@@ -6,6 +6,7 @@ package messenger;
 
 service Messenger {
   rpc Login (LoginRequest) returns (LoginResponse);
+  rpc Logout (LogoutRequest) returns (LogoutResponse);
 
   rpc GetUser (GetUserRequest) returns (GetUserResponse);
 
@@ -16,6 +17,8 @@ service Messenger {
   rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
 
   rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
+
+  rpc RefreshToken (RefreshTokenRequest) returns (RefreshTokenResponse);
 }
 
 // Authentication
@@ -27,9 +30,17 @@ message LoginRequest {
 
 message LoginResponse {
   bool success = 1;
-  string token = 2;
-  User user = 3;
-  string error = 4;
+  string jwt_token = 2;
+  string refresh_token = 3;
+  User user = 4;
+  string error = 5;
+}
+
+message LogoutRequest {}
+
+message LogoutResponse {
+  bool success = 1;
+  string error = 2;
 }
 
 // Users
@@ -159,4 +170,16 @@ message SendMessageResponse {
 
 message StreamMessagesRequest {
   repeated string chat_ids = 1;
+}
+
+// Refresh Token
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string jwt_token = 1;
+  string refresh_token = 2;
+  string error = 3;
 }

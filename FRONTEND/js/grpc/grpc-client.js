@@ -15,7 +15,9 @@ if (typeof require !== 'undefined') {
 const PROTO_PATH = 'proto/messenger.proto';
 
 // Используем HTTPS порт 7212
-const SERVER_IP = '192.168.0.21';
+// const SERVER_IP = '192.168.0.21';
+// const SERVER_IP = '192.168.11.189'; // my laptop's address within POVT
+const SERVER_IP = 'localhost';
 const SERVER_PORT = 7212;
 const SERVER_ADDRESS = `${SERVER_IP}:${SERVER_PORT}`;
 

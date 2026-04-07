@@ -18,16 +18,32 @@ class GrpcService {
                 metadata.add('authorization', `Bearer ${state.token}`);
             }
 
-            this.client[method](request, metadata, (error, response) => {
+            this.client[method](request, metadata, async (error, response) => {
                 if (error) {
-                    console.error(`❌ Ошибка ${method}:`, error);
-                    
-                    let errorMessage = 'Ошибка соединения с сервером';
-                    if (error.code === 14) errorMessage = 'Сервер недоступен';
-                    else if (error.code === 5) errorMessage = 'Не найден';
-                    else if (error.code === 16) errorMessage = 'Не авторизован';
-                    
-                    reject(new Error(errorMessage));
+                    // 🔥 JWT истёк → пробуем обновить
+                    if (error.code === 16 && !skipAuth) {
+                        try {
+                            console.log('🔄 JWT истёк, обновляем...');
+
+                            const newToken = await this.refreshToken();
+
+                            const retryMetadata = new Metadata();
+                            retryMetadata.add('authorization', `Bearer ${newToken}`);
+
+                            this.client[method](request, retryMetadata, (err2, res2) => {
+                                if (err2) return reject(err2);
+                                resolve(res2);
+                            });
+
+                            return;
+                        } catch (refreshError) {
+                            console.error('❌ Refresh не удался:', refreshError);
+                            reject(new Error('Сессия истекла'));
+                            return;
+                        }
+                    }
+
+                    reject(error);
                 } else {
                     resolve(response);
                 }
@@ -37,6 +53,23 @@ class GrpcService {
 
     async login(email, password) {
         return this.#call('Login', { email, password }, true);
+    }
+
+    async logout() {
+        try {
+            await this.#call('Logout', {});
+        } catch (e) {
+            console.warn('Ошибка logout:', e);
+        }
+
+        // очищаем всё
+        state.token = null;
+        state.refreshToken = null;
+        state.currentUser = null;
+
+        localStorage.removeItem('jwt_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('userData');
     }
 
     async getChats() {
@@ -150,6 +183,31 @@ class GrpcService {
         });
         this.streams.clear();
         this.activeStreams.clear();
+    }
+
+    async refreshToken() {
+        const refreshToken = localStorage.getItem('refresh_token');
+
+        if (!refreshToken) {
+            throw new Error('Нет refresh токена');
+        }
+
+        const response = await this.#call('RefreshToken', {
+            refresh_token: refreshToken
+        }, true);
+
+        if (response.error) {
+            throw new Error(response.error);
+        }
+
+        // обновляем токены
+        state.token = response.jwt_token;
+        state.refreshToken = response.refresh_token;
+
+        localStorage.setItem('jwt_token', response.jwt_token);
+        localStorage.setItem('refresh_token', response.refresh_token);
+
+        return response.jwt_token;
     }
 }
 
