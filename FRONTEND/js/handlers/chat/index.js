@@ -111,9 +111,21 @@ export function resetChatInitialization() {
 export async function setupChatHandlers() {
     updateUserInfo();
     
+    // При загрузке чата сбрасываем текущий выбранный чат
+    if (state.currentChat) {
+        // Проверяем, существует ли ещё этот чат у нового пользователя
+        const chatExists = state.chats?.some(c => c.id === state.currentChat);
+        if (!chatExists) {
+            state.currentChat = null;
+        }
+    }
+    
     if (isChatInitialized) {
         console.log('⚠️ Чат уже был инициализирован, но перезагружаем');
-        // НЕ пропускаем, а перезагружаем!
+        // Сбрасываем состояние сообщений
+        resetMessagesState();
+        await stopAllMessageStreams();
+        isChatInitialized = false; // Сбрасываем флаг для полной перезагрузки
     }
     
     console.log('📱 Чат загружается!');

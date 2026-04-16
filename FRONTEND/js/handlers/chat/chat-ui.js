@@ -1,7 +1,7 @@
 // js/handlers/chat/chat-ui.js
 import { state } from '../../app.js';
 import { showScreen } from '../../ui.js';
-import { setCurrentChat, getCurrentChat } from './chat-core.js';
+import { setCurrentChat, getCurrentChat, getChatDisplayName, isGroupChat } from './chat-core.js';
 import { loadMessagesFromServer } from './chat-messages.js';
 import { showChatContextMenu } from '../groupHandlers.js';
 
@@ -103,12 +103,20 @@ export function createChatItemElement(chat) {
     chatItem.className = 'chat-item';
     chatItem.dataset.chatId = chat.id;
     
+    const displayName = getChatDisplayName(chat);
     const pinIcon = chat.pinned ? '📌 ' : '';
     const unreadBadge = chat.unread_count > 0 ? `<span class="unread-badge">${chat.unread_count}</span>` : '';
     
+    // Иконка в зависимости от типа чата
+    const isGroup = isGroupChat(chat);
+    const typeIcon = isGroup ? '👥 ' : '💬 ';
+    
     chatItem.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-            <span>${pinIcon}${escapeHtml(chat.name)}</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>${typeIcon}</span>
+                <span>${pinIcon}${escapeHtml(displayName)}</span>
+            </div>
             ${unreadBadge}
         </div>
     `;
@@ -116,11 +124,6 @@ export function createChatItemElement(chat) {
     chatItem.addEventListener('click', () => {
         document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
         chatItem.classList.add('active');
-        
-        // Сохраняем выбранный чат
-        localStorage.setItem('lastChatId', chat.id);
-        console.log('💾 Сохранили выбранный чат:', chat.id);
-        
         setCurrentChat(chat.id);
     });
 

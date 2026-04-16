@@ -1,6 +1,6 @@
 // js/handlers/chat/chat-messages.js
 import { state } from '../../app.js';
-import { initGrpc, getCurrentChat } from './chat-core.js';
+import { initGrpc, getCurrentChat, isGroupChat, getChatDisplayName } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
 
 let isLoadingMessages = false;
@@ -69,13 +69,39 @@ export function formatMessageDate(timestamp) {
     }
 }
 
-export function createMessageElement(msg) {
-    const type = msg.sender_id === state.currentUser?.id ? 'sent' : 'received';
+export function createMessageElement(msg, chat) {
+    const isSent = msg.sender_id === state.currentUser?.id;
+    const type = isSent ? 'sent' : 'received';
     const timeStr = formatMessageTime(msg.timestamp);
     
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.dataset.messageId = msg.id;
+
+    // Показываем имя отправителя только для полученных сообщений в групповых чатах
+    const isGroup = isGroupChat(chat);
+    
+    if (isGroup && !isSent) {
+        // Ищем имя отправителя среди участников чата
+        let senderName = 'Пользователь';
+        
+        if (chat.participants && Array.isArray(chat.participants)) {
+            const sender = chat.participants.find(p => p.id === msg.sender_id);
+            if (sender) {
+                senderName = sender.name || sender.email?.split('@')[0] || 'Пользователь';
+            }
+        }
+        
+        // Если есть поле sender_name в сообщении
+        if (msg.sender_name) {
+            senderName = msg.sender_name;
+        }
+        
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'message-sender';
+        senderDiv.textContent = senderName;
+        messageDiv.appendChild(senderDiv);
+    }
 
     if (msg.text) {
         const textDiv = document.createElement('div');
@@ -95,18 +121,19 @@ export function createMessageElement(msg) {
     }
 
     if (type === 'sent') {
-        const statusSpan = document.createElement('span');
-        const status = msg.status?.toLowerCase() || 'sent';
-        statusSpan.className = `message-status ${status}`;
-        metaDiv.appendChild(statusSpan);
-    }
+    const statusSpan = document.createElement('span');
+    const status = msg.status?.toLowerCase() || 'sent';
+    statusSpan.className = `message-status ${status}`;
+    
+    metaDiv.appendChild(statusSpan);
+}
 
     messageDiv.appendChild(metaDiv);
     
     return messageDiv;
 }
 
-export function appendNewMessage(chatId, message) {
+export function appendNewMessage(chatId, message, chat) {
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return false;
     
@@ -132,7 +159,7 @@ export function appendNewMessage(chatId, message) {
         lastProcessedMessageIds.delete(toDelete);
     }
     
-    const messageElement = createMessageElement(message);
+    const messageElement = createMessageElement(message, chat);
     
     const noMessagesDiv = messagesDiv.querySelector('.no-messages');
     if (noMessagesDiv) {
@@ -153,7 +180,12 @@ export async function loadMessagesFromServer(chatId) {
     
     try {
         const { service } = await initGrpc();
-        const response = await service.getMessages(chatId, 50);
+        const [response, chatResponse] = await Promise.all([
+            service.getMessages(chatId, 50),
+            service.getChats() // Получаем список чатов для информации о текущем чате
+        ]);
+        
+        const currentChat = chatResponse.chats?.find(c => c.id === chatId);
         
         console.log('💬 Получены сообщения:', response.messages?.length || 0);
         
@@ -183,7 +215,7 @@ export async function loadMessagesFromServer(chatId) {
         });
         
         sortedMessages.forEach(msg => {
-            const messageElement = createMessageElement(msg);
+            const messageElement = createMessageElement(msg, currentChat);
             messagesDiv.appendChild(messageElement);
         });
         
@@ -222,11 +254,18 @@ async function startGlobalStreamOnce() {
     try {
         const { service } = await initGrpc();
         
-        service.startGlobalStream((message) => {
-            const currentChat = getCurrentChat();
-            if (currentChat === message.chat_id) {
+        service.startGlobalStream(async (message) => {
+            const currentChatId = getCurrentChat();
+            
+            // Получаем информацию о чате для сообщения
+            const chat = state.chats?.find(c => c.id === message.chat_id);
+            
+            if (currentChatId === message.chat_id) {
                 console.log(`✨ Новое сообщение в реальном времени:`, message);
-                appendNewMessage(message.chat_id, message);
+                appendNewMessage(message.chat_id, message, chat);
+            } else {
+                console.log(`📩 Новое сообщение в чате ${message.chat_id}`);
+                // Можно добавить уведомление
             }
         });
         

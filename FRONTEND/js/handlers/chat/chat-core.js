@@ -130,3 +130,48 @@ export async function cleanupChatResources() {
     currentChatId = null;
     state.currentChat = null;
 }
+
+// Получить отображаемое имя чата
+export function getChatDisplayName(chat) {
+    if (!chat) return 'Чат';
+    
+    // Если это групповой чат (type === 1)
+    if (chat.type === 1) {
+        return chat.name || 'Групповой чат';
+    }
+    
+    // Для личного чата (type === 0) - показываем имя собеседника
+    if (chat.participants && Array.isArray(chat.participants)) {
+        // Находим собеседника (не текущего пользователя)
+        const otherParticipant = chat.participants.find(p => p.id !== state.currentUser?.id);
+        if (otherParticipant) {
+            // Если есть имя - используем его, иначе email без домена
+            if (otherParticipant.name) {
+                return otherParticipant.name;
+            }
+            if (otherParticipant.email) {
+                return otherParticipant.email.split('@')[0];
+            }
+            return 'Собеседник';
+        }
+    }
+    
+    // Если не нашли, показываем имя чата или fallback
+    return chat.name || 'Диалог';
+}
+
+// Определить, является ли чат групповым
+export function isGroupChat(chat) {
+    return chat.type === 1;
+}
+
+// Получить ID собеседника в личном чате
+export function getOtherParticipantId(chat) {
+    if (chat.type === 1 || chat.type === 'GROUP') return null;
+    
+    if (chat.participants && Array.isArray(chat.participants)) {
+        const other = chat.participants.find(p => p.id !== state.currentUser?.id);
+        return other?.id || null;
+    }
+    return null;
+}

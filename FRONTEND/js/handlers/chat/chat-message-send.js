@@ -1,3 +1,4 @@
+// js/handlers/chat/chat-message-send.js
 import { state } from '../../app.js';
 import { addMessage } from '../../utils/messageUtils.js';
 import { initGrpc, getCurrentChat } from './chat-core.js';
@@ -7,7 +8,6 @@ import { showErrorMessage } from './chat-ui.js';
 let isSending = false;
 let isInitialized = false;
 let pendingMessages = new Map(); // Храним временные ID сообщений
-let currentStream = null;
 
 /**
  * Отправка сообщения
@@ -38,7 +38,6 @@ export async function sendMessage() {
         return;
     }
 
-    // Проверяем, есть ли DOM элементы для сообщений
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) {
         console.error('❌ Контейнер сообщений не найден');
@@ -56,7 +55,7 @@ export async function sendMessage() {
     // Сохраняем временный ID в pendingMessages
     pendingMessages.set(tempId, { text, files: filesToSend, chatId });
     
-    // Показываем сообщение в DOM с временным ID
+    // Показываем сообщение в DOM с временным ID и статусом "sending"
     console.log('📝 Добавляем сообщение в DOM с временным ID:', tempId);
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
@@ -74,20 +73,33 @@ export async function sendMessage() {
         console.log('✅ Сообщение отправлено, ответ сервера:', response);
         
         if (response.success && response.message) {
+            const realMessageId = response.message.id;
+            
             // Удаляем временное сообщение из DOM
             const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
             if (tempMessage) {
                 tempMessage.remove();
             }
             
-            // Добавляем сообщение с реальным ID от сервера
-            addMessage(text, 'sent', true, 'sent', filesToSend, response.message.id);
+            // Проверяем, не добавил ли уже стрим это сообщение
+            const existingMessage = document.querySelector(`.message[data-message-id="${realMessageId}"]`);
+            
+            if (!existingMessage) {
+                // Если стрим ещё не добавил, добавляем сами
+                addMessage(text, 'sent', true, 'sent', filesToSend, realMessageId);
+            } else {
+                // Если сообщение уже есть, просто обновляем статус
+                const statusSpan = existingMessage.querySelector('.message-status');
+                if (statusSpan) {
+                    statusSpan.className = 'message-status sent';
+                }
+            }
             
             // Удаляем из pendingMessages
             pendingMessages.delete(tempId);
         } else {
-            // Если ошибка, обновляем статус
-            updateLastMessageStatusUI('error', tempId);
+            // Если ошибка, обновляем статус временного сообщения
+            updateTempMessageStatus(tempId, 'error');
             showErrorMessage('Не удалось отправить сообщение');
             
             // Возвращаем текст обратно при ошибке
@@ -99,8 +111,8 @@ export async function sendMessage() {
     } catch (error) {
         console.error('❌ Ошибка отправки на сервер:', error);
         
-        // Обновляем статус на ошибку
-        updateLastMessageStatusUI('error', tempId);
+        // Обновляем статус временного сообщения на ошибку
+        updateTempMessageStatus(tempId, 'error');
         showErrorMessage('Не удалось отправить сообщение');
         
         // Возвращаем текст обратно при ошибке
@@ -123,19 +135,15 @@ export async function sendMessage() {
 }
 
 /**
- * Обновление статуса последнего сообщения в UI
+ * Обновление статуса временного сообщения по ID
  */
-function updateLastMessageStatusUI(newStatus) {
-    const messagesDiv = document.getElementById('messages');
-    if (!messagesDiv) return;
-    
-    const sentMessages = messagesDiv.querySelectorAll('.message.sent');
-    if (sentMessages.length > 0) {
-        const lastMessage = sentMessages[sentMessages.length - 1];
-        const statusSpan = lastMessage.querySelector('.message-status');
+function updateTempMessageStatus(tempId, newStatus) {
+    const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
+    if (tempMessage) {
+        const statusSpan = tempMessage.querySelector('.message-status');
         if (statusSpan) {
             statusSpan.className = `message-status ${newStatus}`;
-            console.log(`UI статус последнего сообщения обновлен на ${newStatus}`);
+            console.log(`Статус сообщения ${tempId} обновлен на ${newStatus}`);
         }
     }
 }
