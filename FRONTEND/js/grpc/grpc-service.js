@@ -7,7 +7,8 @@ const Metadata = window.grpc?.Metadata || (client && client.Metadata);
 class GrpcService {
     constructor() {
         this.client = client;
-        this.streams = new Map();
+        this.stream = null; // Один стрим для всех чатов
+        this.onMessageCallback = null; // Храним колбэк
     }
 
     #call(method, request, skipAuth = false) {
@@ -63,67 +64,107 @@ class GrpcService {
         });
     }
 
-    startMessageStream(chatId, onMessage, onError, onEnd) {
+    // Запускаем ОДИН стрим для всех чатов
+    // js/grpc/grpc-service.js
+
+startGlobalStream(onMessage) {
+    this.onMessageCallback = onMessage;
+    
+    if (this.stream) {
+        console.log('⚠️ Глобальный стрим уже существует');
+        return this.stream;
+    }
+
     const metadata = new Metadata();
     if (state.token) {
         metadata.add('authorization', `Bearer ${state.token}`);
     }
 
-    console.log(`📡 Запуск стрима для чата: ${chatId}`);
+    // Получаем список ID чатов из state
+    const chatIds = state.chats?.map(chat => chat.id) || [];
+    
+    if (chatIds.length === 0) {
+        console.log('⚠️ Нет чатов для стрима, откладываем запуск');
+        // Подождём, пока загрузятся чаты
+        setTimeout(() => {
+            if (state.chats?.length > 0) {
+                this.startGlobalStream(onMessage);
+            }
+        }, 2000);
+        return null;
+    }
+    
+    console.log(`📡 Запуск глобального стрима для чатов:`, chatIds);
     
     try {
-        const stream = this.client.StreamMessages({ chat_ids: [chatId] }, metadata);
+        this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);
         
-        stream.on('data', (message) => {
-            console.log(`📩 Новое сообщение в чате ${chatId}:`, message);
-            if (onMessage) onMessage(message);
+        this.stream.on('data', (message) => {
+            console.log(`📩 Новое сообщение в чате ${message.chat_id}:`, message);
+            if (this.onMessageCallback) {
+                this.onMessageCallback(message);
+            }
         });
         
-        stream.on('error', (error) => {
+        this.stream.on('error', (error) => {
             if (error.code === 1) {
-                console.log(`📴 Стрим для чата ${chatId} был остановлен`);
-                this.streams.delete(chatId);
+                console.log(`📴 Глобальный стрим был остановлен`);
+                this.stream = null;
                 return;
             }
-            console.error(`❌ Ошибка стрима для чата ${chatId}:`, error);
-            if (onError) onError(error);
+            console.error(`❌ Ошибка глобального стрима:`, error);
+            // Переподключаемся через 5 секунд
+            setTimeout(() => {
+                console.log(`🔄 Переподключение глобального стрима...`);
+                this.startGlobalStream(this.onMessageCallback);
+            }, 5000);
         });
         
-        stream.on('end', () => {
-            console.log(`📴 Стрим для чата ${chatId} завершен сервером`);
-            this.streams.delete(chatId);
-            if (onEnd) onEnd();
+        this.stream.on('end', () => {
+            console.log(`Глобальный стрим завершен сервером`);
+            this.stream = null;
+            // Не переподключаемся сразу, дадим время
+            setTimeout(() => {
+                if (state.chats?.length > 0) {
+                    console.log(`🔄 Переподключение глобального стрима...`);
+                    this.startGlobalStream(this.onMessageCallback);
+                }
+            }, 3000);
         });
         
-        this.streams.set(chatId, stream);
-        return stream;
+        return this.stream;
         
     } catch (error) {
-        console.error(`❌ Ошибка создания стрима для чата ${chatId}:`, error);
+        console.error(`Ошибка создания глобального стрима:`, error);
+        this.stream = null;
         throw error;
     }
+}
+
+    // Остановка глобального стрима (только при выходе)
+    stopGlobalStream() {
+        if (this.stream) {
+            console.log(` Остановка глобального стрима`);
+            this.stream.removeAllListeners();
+            this.stream.cancel();
+            this.stream = null;
+            this.onMessageCallback = null;
+        }
+    }
+
+    // Старые методы для обратной совместимости
+    startMessageStream(chatId, onMessage, onError, onEnd) {
+        // Просто вызываем глобальный стрим
+        return this.startGlobalStream(onMessage);
     }
 
     stopMessageStream(chatId) {
-        const stream = this.streams.get(chatId);
-        if (stream) {
-            console.log(`🛑 Остановка стрима для чата ${chatId}`);
-            
-            // Удаляем обработчики, чтобы избежать лишних вызовов
-            stream.removeAllListeners('data');
-            stream.removeAllListeners('error');
-            stream.removeAllListeners('end');
-            
-            try {
-                stream.cancel();
-            } catch (e) {
-                // Игнорируем ошибку CANCELLED
-                if (e.code !== 1) {
-                    console.warn(`Ошибка при отмене стрима ${chatId}:`, e);
-                }
-            }
-            this.streams.delete(chatId);
-        }
+        // Не останавливаем стрим при переключении чата
+        console.log(`⚠️ stopMessageStream вызван для ${chatId}, но стрим не останавливается`);
+    }
+
+    stopAllStreams() {
+        this.stopGlobalStream();
     }
 }
 

@@ -10,10 +10,6 @@ let currentChatId = null;
 export async function setCurrentChat(chatId) {
     console.log(`Установка текущего чата: ${chatId}`);
     
-    // Останавливаем стрим ТОЛЬКО если меняем чат
-    if (currentChatId && currentChatId !== chatId) {
-        await stopMessageStreamForChat(currentChatId);
-    }
     
     state.currentChat = chatId;
     currentChatId = chatId;
