@@ -22,7 +22,8 @@ import {
     loadMessagesFromServer,
     appendNewMessage,
     stopMessageStreamForChat,
-    stopAllMessageStreams
+    stopAllMessageStreams,
+    resetMessagesState  // Добавляем импорт
 } from './chat-messages.js';
 
 import { 
@@ -82,9 +83,6 @@ function setupCreateGroupButton() {
     }
 }
 
-/**
- * Обновление информации о пользователе в UI
- */
 function updateUserInfo() {
     const userEmail = document.getElementById('user-email');
     if (userEmail && state.currentUser) {
@@ -104,31 +102,23 @@ function updateUserInfo() {
     }
 }
 
-/**
- * Сброс флага инициализации (при выходе из чата)
- */
 export function resetChatInitialization() {
     isChatInitialized = false;
     console.log('🔄 Флаг инициализации чата сброшен');
 }
 
+
 export async function setupChatHandlers() {
-    // Всегда обновляем информацию о пользователе
     updateUserInfo();
     
     if (isChatInitialized) {
-        console.log('⚠️ Чат уже был инициализирован, пропускаем полную инициализацию');
-        // Даже если инициализирован, обновляем чаты и UI
-        await loadChatsFromServer();
-        await updateChatAreaUI();
-        return;
+        console.log('⚠️ Чат уже был инициализирован, но перезагружаем');
+        // НЕ пропускаем, а перезагружаем!
     }
     
-    console.log('📱 Чат загружен!');
-
+    console.log('📱 Чат загружается!');
+    
     await loadChatsFromServer();
-
-    // Обновляем email пользователя
     updateUserInfo();
     
     setupAvatar();
@@ -137,7 +127,7 @@ export async function setupChatHandlers() {
     setupMessageSending();
     setupSearch();
     setupEmojiPanel();
-
+    
     await updateChatAreaUI();
     
     isChatInitialized = true;

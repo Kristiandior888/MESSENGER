@@ -19,10 +19,10 @@ function escapeHtml(str) {
 }
 
 /**
- * Обновление UI в зависимости от выбранного чата
+ * Обновление UI в зависимости от выбранного чата (полное, с загрузкой сообщений)
  */
 export async function updateChatAreaUI() {
-    console.log('🔄 Обновление UI чата, currentChat:', state.currentChat);
+    console.log('🔄 Полное обновление UI чата, currentChat:', state.currentChat);
     
     const messagesDiv = document.getElementById('messages');
     const messageInput = document.querySelector('.message-input');
@@ -37,7 +37,45 @@ export async function updateChatAreaUI() {
         messagesDiv.style.display = 'flex';
         messageInput.style.display = 'flex';
         
-        loadMessagesFromServer(getCurrentChat());
+        await loadMessagesFromServer(getCurrentChat());
+    } else {
+        messagesDiv.style.display = 'none';
+        messageInput.style.display = 'none';
+        
+        const placeholder = document.createElement('div');
+        placeholder.id = 'chat-placeholder';
+        placeholder.className = 'chat-placeholder';
+        placeholder.innerHTML = `
+            <div class="placeholder-content">
+                <div class="placeholder-icon">💬</div>
+                <h3>Выберите чат для общения</h3>
+                <p>Нажмите на чат в списке слева, чтобы начать переписку</p>
+            </div>
+        `;
+        
+        chatArea.insertBefore(placeholder, messagesDiv);
+    }
+}
+
+/**
+ * Обновление UI чата БЕЗ загрузки сообщений (только отображение)
+ */
+export async function updateChatAreaUIOnly() {
+    console.log('🔄 Обновление UI чата (без загрузки сообщений), currentChat:', state.currentChat);
+    
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.querySelector('.message-input');
+    const chatArea = document.querySelector('.chat-area');
+    
+    if (!messagesDiv || !messageInput || !chatArea) return;
+    
+    const oldPlaceholder = document.getElementById('chat-placeholder');
+    if (oldPlaceholder) oldPlaceholder.remove();
+    
+    if (getCurrentChat()) {
+        messagesDiv.style.display = 'flex';
+        messageInput.style.display = 'flex';
+        // НЕ вызываем loadMessagesFromServer здесь!
     } else {
         messagesDiv.style.display = 'none';
         messageInput.style.display = 'none';
@@ -78,6 +116,11 @@ export function createChatItemElement(chat) {
     chatItem.addEventListener('click', () => {
         document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
         chatItem.classList.add('active');
+        
+        // Сохраняем выбранный чат
+        localStorage.setItem('lastChatId', chat.id);
+        console.log('💾 Сохранили выбранный чат:', chat.id);
+        
         setCurrentChat(chat.id);
     });
 

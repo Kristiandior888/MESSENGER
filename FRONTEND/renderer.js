@@ -1,76 +1,52 @@
 console.log('renderer.js загрузился!');
 
 import { state } from './js/app.js';
-import { showScreen } from './js/ui.js';
+import { showScreen, initScreens } from './js/ui.js';
 import { initTheme } from './js/utils/themeUtils.js';
 import { applyAllSettings } from './js/utils/settingsUtils.js';
 
-// Функция восстановления сессии
-function restoreSession() {
-    const token = localStorage.getItem('authToken');
-    const userData = localStorage.getItem('userData');
-    
-    if (token && userData) {
-        try {
-            state.token = token;
-            state.currentUser = JSON.parse(userData);
-            state.isAuthenticated = true;
-            console.log('🔄 Сессия восстановлена для:', state.currentUser.email);
-            
-            // НЕ выбираем чат автоматически
-            state.currentChat = null;
-            
-            return true;
-        } catch (e) {
-            console.error('Ошибка восстановления сессии:', e);
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('userData');
-        }
-    }
-    
-    // Если нет сессии, сбрасываем состояние
-    state.isAuthenticated = false;
-    state.currentUser = null;
-    state.token = null;
-    return false;
-}
+// Проверяем сохраненного пользователя
+const token = localStorage.getItem('token');
+const userData = localStorage.getItem('userData');
 
-// Восстанавливаем сессию
-restoreSession();
+if (token && userData) {
+    try {
+        state.token = token;
+        state.currentUser = JSON.parse(userData);
+        state.isAuthenticated = true;
+        console.log('👋 Добро пожаловать обратно,', state.currentUser.email);
+    } catch (e) {
+        console.error('Ошибка восстановления:', e);
+        localStorage.removeItem('token');
+        localStorage.removeItem('userData');
+        state.isAuthenticated = false;
+    }
+} else {
+    state.isAuthenticated = false;
+}
 
 // Инициализируем тему и настройки
 initTheme();
 applyAllSettings();
 
-// ЗАПУСК ПРИ ЗАГРУЗКЕ СТРАНИЦЫ
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Страница загружена, state.isAuthenticated =', state.isAuthenticated);
-
+// ЗАПУСК ПРИ ЗАГРУЗКЕ
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Страница загружена, isAuthenticated =', state.isAuthenticated);
+    
+    // Инициализируем все экраны один раз
+    await initScreens();
+    
     if (state.isAuthenticated) {
-        showScreen('chat').then(() => {
-            state.currentChat = null;
-            import('./js/handlers/chat/index.js').then(module => {
-                if (module.updateChatAreaUI) {
-                    module.updateChatAreaUI();
-                }
-                // Загружаем чаты с сервера
-                if (module.loadChatsFromServer) {
-                    module.loadChatsFromServer();
-                }
-            }).catch(err => {
-                console.error('Ошибка загрузки chatHandlers:', err);
-            });
-        });
+        await showScreen('chat');
     } else {
-        showScreen('login');
+        await showScreen('login');
     }
 });
 
-// Добавляем обработчик для сохранения состояния перед закрытием
+// При закрытии сохраняем данные
 window.addEventListener('beforeunload', () => {
-    // Сохраняем текущего пользователя, если он есть
-    if (state.isAuthenticated && state.currentUser) {
-        localStorage.setItem('authToken', state.token);
+    if (state.isAuthenticated && state.currentUser && state.token) {
+        localStorage.setItem('token', state.token);
         localStorage.setItem('userData', JSON.stringify(state.currentUser));
     }
 });

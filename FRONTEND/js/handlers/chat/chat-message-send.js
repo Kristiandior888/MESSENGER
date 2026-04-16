@@ -7,6 +7,7 @@ import { showErrorMessage } from './chat-ui.js';
 let isSending = false;
 let isInitialized = false;
 let pendingMessages = new Map(); // Храним временные ID сообщений
+let currentStream = null;
 
 /**
  * Отправка сообщения
@@ -34,6 +35,13 @@ export async function sendMessage() {
     const chatId = getCurrentChat();
     if (!chatId) {
         alert('Сначала выберите чат');
+        return;
+    }
+
+    // Проверяем, есть ли DOM элементы для сообщений
+    const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) {
+        console.error('❌ Контейнер сообщений не найден');
         return;
     }
 

@@ -8,7 +8,6 @@ class GrpcService {
     constructor() {
         this.client = client;
         this.streams = new Map();
-        this.activeStreams = new Map(); // Для отслеживания активных стримов
     }
 
     #call(method, request, skipAuth = false) {
@@ -65,60 +64,44 @@ class GrpcService {
     }
 
     startMessageStream(chatId, onMessage, onError, onEnd) {
-        // Сначала останавливаем существующий стрим для этого чата
-        this.stopMessageStream(chatId);
-        
-        const metadata = new Metadata();
-        if (state.token) {
-            metadata.add('authorization', `Bearer ${state.token}`);
-        }
+    const metadata = new Metadata();
+    if (state.token) {
+        metadata.add('authorization', `Bearer ${state.token}`);
+    }
 
-        console.log(`📡 Запуск стрима для чата: ${chatId}`);
+    console.log(`📡 Запуск стрима для чата: ${chatId}`);
+    
+    try {
+        const stream = this.client.StreamMessages({ chat_ids: [chatId] }, metadata);
         
-        // Создаем AbortController для управления отменой
-        const abortController = new AbortController();
+        stream.on('data', (message) => {
+            console.log(`📩 Новое сообщение в чате ${chatId}:`, message);
+            if (onMessage) onMessage(message);
+        });
         
-        try {
-            const stream = this.client.StreamMessages({ chat_ids: [chatId] }, metadata);
-            
-            // Сохраняем контроллер для возможности отмены
-            this.activeStreams.set(chatId, abortController);
-            
-            stream.on('data', (message) => {
-                // Проверяем, не отменен ли стрим
-                if (!abortController.signal.aborted) {
-                    console.log(`📩 Новое сообщение в чате ${chatId}:`, message);
-                    if (onMessage) onMessage(message);
-                }
-            });
-            
-            stream.on('error', (error) => {
-                // Игнорируем ошибку отмены
-                if (error.code === 1 && error.details === 'Cancelled on client') {
-                    console.log(`📴 Стрим для чата ${chatId} был отменен клиентом`);
-                    return;
-                }
-                console.error(`❌ Ошибка стрима для чата ${chatId}:`, error);
-                if (onError && !abortController.signal.aborted) onError(error);
-            });
-            
-            stream.on('end', () => {
-                if (!abortController.signal.aborted) {
-                    console.log(`📴 Стрим для чата ${chatId} завершен сервером`);
-                }
+        stream.on('error', (error) => {
+            if (error.code === 1) {
+                console.log(`📴 Стрим для чата ${chatId} был остановлен`);
                 this.streams.delete(chatId);
-                this.activeStreams.delete(chatId);
-                if (onEnd && !abortController.signal.aborted) onEnd();
-            });
-            
-            this.streams.set(chatId, stream);
-            return stream;
-            
-        } catch (error) {
-            console.error(`❌ Ошибка создания стрима для чата ${chatId}:`, error);
-            this.activeStreams.delete(chatId);
-            throw error;
-        }
+                return;
+            }
+            console.error(`❌ Ошибка стрима для чата ${chatId}:`, error);
+            if (onError) onError(error);
+        });
+        
+        stream.on('end', () => {
+            console.log(`📴 Стрим для чата ${chatId} завершен сервером`);
+            this.streams.delete(chatId);
+            if (onEnd) onEnd();
+        });
+        
+        this.streams.set(chatId, stream);
+        return stream;
+        
+    } catch (error) {
+        console.error(`❌ Ошибка создания стрима для чата ${chatId}:`, error);
+        throw error;
+    }
     }
 
     stopMessageStream(chatId) {
@@ -131,25 +114,16 @@ class GrpcService {
             stream.removeAllListeners('error');
             stream.removeAllListeners('end');
             
-            // Отменяем стрим
-            stream.cancel();
+            try {
+                stream.cancel();
+            } catch (e) {
+                // Игнорируем ошибку CANCELLED
+                if (e.code !== 1) {
+                    console.warn(`Ошибка при отмене стрима ${chatId}:`, e);
+                }
+            }
             this.streams.delete(chatId);
         }
-        
-        // Очищаем активный контроллер
-        this.activeStreams.delete(chatId);
-    }
-
-    stopAllStreams() {
-        console.log(`🛑 Остановка всех стримов (${this.streams.size})`);
-        this.streams.forEach((stream, chatId) => {
-            stream.removeAllListeners('data');
-            stream.removeAllListeners('error');
-            stream.removeAllListeners('end');
-            stream.cancel();
-        });
-        this.streams.clear();
-        this.activeStreams.clear();
     }
 }
 

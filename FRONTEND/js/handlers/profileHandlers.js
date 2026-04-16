@@ -48,11 +48,7 @@ function setupProfileHandlers() {
         
         newDarkOption.addEventListener('click', () => {
             console.log('🌙 Переключение на темную тему');
-            
-            // Сохраняем тему
             saveTheme(THEMES.DARK);
-            
-            // Перезагружаем приложение
             window.location.reload();
         });
     }
@@ -63,11 +59,7 @@ function setupProfileHandlers() {
         
         newLightOption.addEventListener('click', () => {
             console.log('☀️ Переключение на светлую тему');
-            
-            // Сохраняем тему
             saveTheme(THEMES.LIGHT);
-            
-            // Перезагружаем приложение
             window.location.reload();
         });
     }
@@ -148,11 +140,9 @@ function setupProfileHandlers() {
         newLogoutBtn.addEventListener('click', () => {
             console.log('🚪 Выход из системы через профиль');
             
-            // Очищаем localStorage от данных сессии
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
             
-            // Сбрасываем состояние
             state.isAuthenticated = false;
             state.currentUser = null;
             state.token = null;
@@ -160,18 +150,33 @@ function setupProfileHandlers() {
             state.userAvatar = null;
             state.chats = [];
             
-            // Показываем экран входа
             showScreen('login');
         });
     }
     
+   
+   
+   
     // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {
         const newCloseBtn = closeBtn.cloneNode(true);
         closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
         
-        newCloseBtn.addEventListener('click', () => {
+        newCloseBtn.addEventListener('click', async () => {
+            console.log('🔙 Возврат из профиля в чат');
+            
+            // Получаем последний активный чат
+            const { getCurrentChat, loadChatsFromServer } = await import('./chat/chat-core.js');
+            const { resetChatInitialization } = await import('./chat/index.js');
+            
+            // Сбрасываем флаг инициализации, чтобы чат перезагрузился
+            resetChatInitialization();
+            
+            // Загружаем чаты
+            await loadChatsFromServer();
+            
+            // Переходим в чат
             showScreen('chat');
         });
     }

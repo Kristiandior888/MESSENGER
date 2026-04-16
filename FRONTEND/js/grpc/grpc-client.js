@@ -15,7 +15,7 @@ if (typeof require !== 'undefined') {
 const PROTO_PATH = 'proto/messenger.proto';
 
 // Используем HTTPS порт 7212
-const SERVER_IP = '192.168.0.21';
+const SERVER_IP = '192.168.0.11';
 const SERVER_PORT = 7212;
 const SERVER_ADDRESS = `${SERVER_IP}:${SERVER_PORT}`;
 
