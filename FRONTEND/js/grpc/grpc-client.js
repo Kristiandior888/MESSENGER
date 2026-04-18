@@ -7,8 +7,13 @@ const fs = require('fs');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 
-// ПРЯМОЙ АБСОЛЮТНЫЙ ПУТЬ к протофайлу в бэкенде
-const PROTO_PATH = 'C:/Users/Кристина/Desktop/messenger/backend/gov_messenger/Protos/messenger.proto';
+
+// Текущая директория: FRONTEND
+console.log('__dirname:', __dirname);
+
+// Пробуем относительный путь
+let PROTO_PATH = path.join(__dirname, '../backend/gov_messenger/Protos/messenger.proto');
+
 
 // Адрес сервера
 const SERVER_ADDRESS = '192.168.0.106:7212';
