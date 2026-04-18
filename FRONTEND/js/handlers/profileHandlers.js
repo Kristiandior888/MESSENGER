@@ -47,7 +47,7 @@ function setupProfileHandlers() {
         darkThemeOption.parentNode.replaceChild(newDarkOption, darkThemeOption);
         
         newDarkOption.addEventListener('click', () => {
-            console.log('🌙 Переключение на темную тему');
+            console.log('Переключение на темную тему');
             saveTheme(THEMES.DARK);
             window.location.reload();
         });
@@ -58,7 +58,7 @@ function setupProfileHandlers() {
         lightThemeOption.parentNode.replaceChild(newLightOption, lightThemeOption);
         
         newLightOption.addEventListener('click', () => {
-            console.log('☀️ Переключение на светлую тему');
+            console.log('Переключение на светлую тему');
             saveTheme(THEMES.LIGHT);
             window.location.reload();
         });
@@ -138,7 +138,7 @@ function setupProfileHandlers() {
         logoutProfileBtn.parentNode.replaceChild(newLogoutBtn, logoutProfileBtn);
         
         newLogoutBtn.addEventListener('click', () => {
-            console.log('🚪 Выход из системы через профиль');
+            console.log('Выход из системы через профиль');
             
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');

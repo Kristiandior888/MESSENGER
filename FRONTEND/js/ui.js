@@ -69,7 +69,7 @@ export async function initScreens() {
     hideAllScreens();
     
     isInitialized = true;
-    console.log('✅ Все экраны инициализированы');
+    console.log('Все экраны инициализированы');
 }
 
 // Скрыть все экраны

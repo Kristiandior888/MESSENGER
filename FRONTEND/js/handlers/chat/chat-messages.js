@@ -295,5 +295,5 @@ export async function stopAllMessageStreams() {
 
 export function resetMessagesState() {
     isLoadingMessages = false;
-    console.log('🔄 Состояние сообщений сброшено');
+    console.log('Состояние сообщений сброшено');
 }

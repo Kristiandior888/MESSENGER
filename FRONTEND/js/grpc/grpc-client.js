@@ -7,24 +7,11 @@ const fs = require('fs');
 const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 
-console.log('✅ gRPC загружен через require в Electron');
-
 // ПРЯМОЙ АБСОЛЮТНЫЙ ПУТЬ к протофайлу в бэкенде
 const PROTO_PATH = 'C:/Users/Кристина/Desktop/messenger/backend/gov_messenger/Protos/messenger.proto';
 
-console.log('📁 Загружаем proto из:', PROTO_PATH);
-
-// Проверяем существование файла
-if (!fs.existsSync(PROTO_PATH)) {
-    console.error('❌ Протофайл не найден!');
-    throw new Error(`Proto file not found: ${PROTO_PATH}`);
-}
-
-console.log('✅ Протофайл найден!');
-
 // Адрес сервера
-const SERVER_ADDRESS = '192.168.0.11:7212';
-console.log('🌐 Подключаемся к серверу:', SERVER_ADDRESS);
+const SERVER_ADDRESS = '192.168.0.106:7212';
 
 // Загружаем proto
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -43,7 +30,7 @@ const sslCredentials = grpc.credentials.createSsl(null, null, null, { rejectUnau
 
 const client = new messenger.Messenger(SERVER_ADDRESS, sslCredentials);
 
-console.log('✅ gRPC клиент создан для адреса:', SERVER_ADDRESS);
+console.log('gRPC клиент создан для адреса:', SERVER_ADDRESS);
 
 // Экспортируем Metadata для использования в других модулях
 if (typeof window !== 'undefined') {

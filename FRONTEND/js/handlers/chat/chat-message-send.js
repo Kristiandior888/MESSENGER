@@ -14,13 +14,13 @@ let pendingMessages = new Map(); // Храним временные ID сооб�
  */
 export async function sendMessage() {
     if (isSending) {
-        console.log('⏳ Сообщение уже отправляется...');
+        console.log('Сообщение уже отправляется...');
         return;
     }
 
     const messageField = document.getElementById('message-field');
     if (!messageField) {
-        console.error('❌ Поле ввода не найдено');
+        console.error(' Поле ввода не найдено');
         return;
     }
 
@@ -28,7 +28,7 @@ export async function sendMessage() {
     const hasFiles = attachedFiles.length > 0;
 
     if (!text && !hasFiles) {
-        console.log('📭 Нет текста и файлов для отправки');
+        console.log('Нет текста и файлов для отправки');
         return;
     }
 
@@ -40,7 +40,7 @@ export async function sendMessage() {
 
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) {
-        console.error('❌ Контейнер сообщений не найден');
+        console.error('Контейнер сообщений не найден');
         return;
     }
 
@@ -56,7 +56,7 @@ export async function sendMessage() {
     pendingMessages.set(tempId, { text, files: filesToSend, chatId });
     
     // Показываем сообщение в DOM с временным ID и статусом "sending"
-    console.log('📝 Добавляем сообщение в DOM с временным ID:', tempId);
+    console.log('Добавляем сообщение в DOM с временным ID:', tempId);
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
     // Очищаем поле ввода
@@ -65,12 +65,12 @@ export async function sendMessage() {
     try {
         const { service } = await initGrpc();
         
-        console.log('📤 Отправка сообщения на сервер:', text);
+        console.log('Отправка сообщения на сервер:', text);
         
         // Отправляем на сервер
         const response = await service.sendMessage(chatId, text);
         
-        console.log('✅ Сообщение отправлено, ответ сервера:', response);
+        console.log('Сообщение отправлено, ответ сервера:', response);
         
         if (response.success && response.message) {
             const realMessageId = response.message.id;
@@ -109,7 +109,7 @@ export async function sendMessage() {
         }
         
     } catch (error) {
-        console.error('❌ Ошибка отправки на сервер:', error);
+        console.error('Ошибка отправки на сервер:', error);
         
         // Обновляем статус временного сообщения на ошибку
         updateTempMessageStatus(tempId, 'error');
@@ -153,7 +153,7 @@ function updateTempMessageStatus(tempId, newStatus) {
  */
 export function setupMessageSending() {
     if (isInitialized) {
-        console.log('⚠️ setupMessageSending уже был вызван, пропускаем');
+        console.log('setupMessageSending уже был вызван, пропускаем');
         return;
     }
     
@@ -163,7 +163,7 @@ export function setupMessageSending() {
     const messageField = document.getElementById('message-field');
 
     if (!sendBtn || !messageField) {
-        console.error('❌ Кнопка отправки или поле ввода не найдены');
+        console.error('Кнопка отправки или поле ввода не найдены');
         return;
     }
 
@@ -195,5 +195,5 @@ export function setupMessageSending() {
     });
     
     isInitialized = true;
-    console.log('✅ Отправка сообщений настроена');
+    console.log('Отправка сообщений настроена');
 }

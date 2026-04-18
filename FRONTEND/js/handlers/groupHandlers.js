@@ -98,7 +98,7 @@ function setupGroupModalHandlers() {
                     throw new Error(response.error || 'Не удалось создать группу');
                 }
             } catch (error) {
-                console.error('❌ Ошибка создания группы:', error);
+                console.error('Ошибка создания группы:', error);
                 alert('Не удалось создать группу: ' + error.message);
             }
         }

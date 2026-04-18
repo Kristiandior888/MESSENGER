@@ -11,7 +11,7 @@ function setupLoginHandlers() {
     const passwordInput = document.getElementById('password');
 
     if (!loginBtn) {
-        console.error('❌ Кнопка логина не найдена');
+        console.error('Кнопка логина не найдена');
         return;
     }
 
@@ -28,12 +28,12 @@ function setupLoginHandlers() {
         loginBtn.disabled = true;
 
         try {
-            console.log('🔄 Отправка запроса на сервер...');
+            console.log(' Отправка запроса на сервер...');
             console.log('Email:', email);
 
             const response = await grpcService.login(email, password);
 
-            console.log('✅ Ответ от сервера:', response);
+            console.log('Ответ от сервера:', response);
 
             if (response.success) {
                 state.isAuthenticated = true;
@@ -51,7 +51,7 @@ function setupLoginHandlers() {
                 localStorage.setItem('token', response.token);
                 localStorage.setItem('userData', JSON.stringify(state.currentUser));
 
-                console.log('👋 Привет,', state.currentUser.name);
+                console.log('Привет,', state.currentUser.name);
                 
                 // Переходим в чат, но без выбранного чата
                 showScreen('chat').then(() => {
@@ -68,7 +68,7 @@ function setupLoginHandlers() {
                 loginBtn.disabled = false;
             }
         } catch (error) {
-            console.error('❌ Ошибка соединения с сервером:', error);
+            console.error('Ошибка соединения с сервером:', error);
             alert('Не удалось подключиться к серверу. Проверьте, запущен ли бэкенд!');
             loginBtn.textContent = 'Войти';
             loginBtn.disabled = false;

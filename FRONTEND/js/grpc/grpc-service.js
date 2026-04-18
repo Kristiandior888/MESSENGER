@@ -84,7 +84,7 @@ startGlobalStream(onMessage) {
     const chatIds = state.chats?.map(chat => chat.id) || [];
     
     if (chatIds.length === 0) {
-        console.log('⚠️ Нет чатов для стрима, откладываем запуск');
+        console.log(' Нет чатов для стрима, откладываем запуск');
         // Подождём, пока загрузятся чаты
         setTimeout(() => {
             if (state.chats?.length > 0) {
@@ -100,7 +100,7 @@ startGlobalStream(onMessage) {
         this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);
         
         this.stream.on('data', (message) => {
-            console.log(`📩 Новое сообщение в чате ${message.chat_id}:`, message);
+            console.log(`Новое сообщение в чате ${message.chat_id}:`, message);
             if (this.onMessageCallback) {
                 this.onMessageCallback(message);
             }
@@ -108,14 +108,14 @@ startGlobalStream(onMessage) {
         
         this.stream.on('error', (error) => {
             if (error.code === 1) {
-                console.log(`📴 Глобальный стрим был остановлен`);
+                console.log(`Глобальный стрим был остановлен`);
                 this.stream = null;
                 return;
             }
-            console.error(`❌ Ошибка глобального стрима:`, error);
+            console.error(`Ошибка глобального стрима:`, error);
             // Переподключаемся через 5 секунд
             setTimeout(() => {
-                console.log(`🔄 Переподключение глобального стрима...`);
+                console.log(`Переподключение глобального стрима...`);
                 this.startGlobalStream(this.onMessageCallback);
             }, 5000);
         });
@@ -126,7 +126,7 @@ startGlobalStream(onMessage) {
             // Не переподключаемся сразу, дадим время
             setTimeout(() => {
                 if (state.chats?.length > 0) {
-                    console.log(`🔄 Переподключение глобального стрима...`);
+                    console.log(`Переподключение глобального стрима...`);
                     this.startGlobalStream(this.onMessageCallback);
                 }
             }, 3000);
@@ -160,7 +160,7 @@ startGlobalStream(onMessage) {
 
     stopMessageStream(chatId) {
         // Не останавливаем стрим при переключении чата
-        console.log(`⚠️ stopMessageStream вызван для ${chatId}, но стрим не останавливается`);
+        console.log(`stopMessageStream вызван для ${chatId}, но стрим не останавливается`);
     }
 
     stopAllStreams() {
