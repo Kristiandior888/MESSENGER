@@ -16,7 +16,7 @@ let PROTO_PATH = path.join(__dirname, '../backend/gov_messenger/Protos/messenger
 
 
 // Адрес сервера
-const SERVER_ADDRESS = '192.168.0.106:7212';
+const SERVER_ADDRESS = '192.168.0.114:7212';
 
 // Загружаем proto
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
