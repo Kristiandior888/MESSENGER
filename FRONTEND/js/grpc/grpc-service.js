@@ -2,6 +2,7 @@
 import client from './grpc-client.js';
 import { state } from '../app.js';
 
+
 const Metadata = window.grpc?.Metadata || (client && client.Metadata);
 
 class GrpcService {
@@ -94,7 +95,7 @@ startGlobalStream(onMessage) {
         return null;
     }
     
-    console.log(`📡 Запуск глобального стрима для чатов:`, chatIds);
+    console.log(`Запуск глобального стрима для чатов:`, chatIds);
     
     try {
         this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);

@@ -2,72 +2,12 @@
 import { state } from '../../app.js';
 import { initGrpc, getCurrentChat, isGroupChat, getChatDisplayName } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
+import { formatMessageTime, formatMessageDate } from '../../utils/dateUtils.js';
 
 let isLoadingMessages = false;
 let lastProcessedMessageIds = new Set();
 let isStreamStarted = false;
 
-export function formatMessageTime(timestamp) {
-    if (!timestamp) return '';
-    
-    try {
-        let date;
-        const timestampNum = Number(timestamp);
-        
-        if (timestampNum < 10000000000) {
-            date = new Date(timestampNum * 1000);
-        } else {
-            date = new Date(timestampNum);
-        }
-        
-        if (isNaN(date.getTime())) {
-            return '';
-        }
-        
-        return date.toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        console.error('❌ Ошибка форматирования времени:', error);
-        return '';
-    }
-}
-
-export function formatMessageDate(timestamp) {
-    if (!timestamp) return '';
-    
-    try {
-        const timestampNum = Number(timestamp);
-        let date;
-        
-        if (timestampNum < 10000000000) {
-            date = new Date(timestampNum * 1000);
-        } else {
-            date = new Date(timestampNum);
-        }
-        
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (date.toDateString() === today.toDateString()) {
-            return 'Сегодня';
-        }
-        
-        if (date.toDateString() === yesterday.toDateString()) {
-            return 'Вчера';
-        }
-        
-        return date.toLocaleDateString('ru-RU', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    } catch (error) {
-        return '';
-    }
-}
 
 export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;

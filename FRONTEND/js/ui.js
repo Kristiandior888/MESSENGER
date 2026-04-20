@@ -81,7 +81,7 @@ function hideAllScreens() {
 
 // Показать нужный экран
 export async function showScreen(screenName) {
-    console.log('🎬 Показ экрана:', screenName);
+    console.log('Показ экрана:', screenName);
     
     if (!isInitialized) {
         await initScreens();

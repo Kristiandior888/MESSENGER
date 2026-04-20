@@ -1,7 +1,7 @@
 // js/handlers/chat/index.js
 import { state } from '../../app.js';
 import { showScreen } from '../../ui.js';
-import { showCreateGroupModal } from '../groupHandlers.js';
+import { showCreateGroupModal } from '../groups/index.js';
 
 import { 
     initGrpc, 
@@ -87,7 +87,7 @@ function updateUserInfo() {
     const userEmail = document.getElementById('user-email');
     if (userEmail && state.currentUser) {
         userEmail.textContent = state.currentUser.email;
-        console.log('✅ Email пользователя обновлен:', state.currentUser.email);
+        console.log('Email пользователя обновлен:', state.currentUser.email);
     }
     
     const chatAvatar = document.getElementById('chat-avatar');
@@ -121,14 +121,14 @@ export async function setupChatHandlers() {
     }
     
     if (isChatInitialized) {
-        console.log('⚠️ Чат уже был инициализирован, но перезагружаем');
+        console.log('Чат уже был инициализирован, но перезагружаем');
         // Сбрасываем состояние сообщений
         resetMessagesState();
         await stopAllMessageStreams();
         isChatInitialized = false; // Сбрасываем флаг для полной перезагрузки
     }
     
-    console.log('📱 Чат загружается!');
+    console.log('Чат загружается!');
     
     await loadChatsFromServer();
     updateUserInfo();
@@ -143,5 +143,5 @@ export async function setupChatHandlers() {
     await updateChatAreaUI();
     
     isChatInitialized = true;
-    console.log('✅ Чат полностью инициализирован');
+    console.log('Чат полностью инициализирован');
 }

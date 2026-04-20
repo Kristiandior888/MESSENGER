@@ -48,7 +48,7 @@ export async function loadChatsFromServer() {
     
     try {
         const response = await service.getChats();
-        console.log('📋 Получены чаты:', response.chats);
+        console.log('Получены чаты:', response.chats);
 
         state.chats = response.chats || [];
         
@@ -71,7 +71,7 @@ export async function loadChatsFromServer() {
 
         return response.chats;
     } catch (error) {
-        console.error('❌ Ошибка загрузки чатов:', error);
+        console.error('Ошибка загрузки чатов:', error);
         showErrorMessage('Не удалось загрузить список чатов');
         return [];
     }
@@ -89,11 +89,11 @@ export async function createNewChat(participantId, participantName) {
                     participant_ids: [participantId]
                 });
                 
-                console.log('✅ Новый чат создан на сервере:', response);
+                console.log('Новый чат создан на сервере:', response);
                 await loadChatsFromServer();
                 return response.chat || response;
             } catch (serverError) {
-                console.warn('⚠️ Метод createChat на сервере не реализован, создаем локальный чат');
+                console.warn('Метод createChat на сервере не реализован, создаем локальный чат');
             }
         }
         
@@ -115,11 +115,11 @@ export async function createNewChat(participantId, participantName) {
             chatsList.appendChild(chatItem);
         }
         
-        console.log('✅ Новый чат создан локально:', newChat);
+        console.log('Новый чат создан локально:', newChat);
         return newChat;
         
     } catch (error) {
-        console.error('❌ Ошибка создания чата:', error);
+        console.error('Ошибка создания чата:', error);
         showErrorMessage('Не удалось создать чат');
         return null;
     }

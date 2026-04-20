@@ -1,9 +1,9 @@
-// js/handlers/profileHandlers.js
+// js/handlers/profileHandlers.js (исправленный импорт)
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
-import { THEMES, applyTheme, saveTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
-import { showCreateGroupModal } from './groupHandlers.js';
+import { THEMES, saveTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
+import { showCreateGroupModal } from './groups/index.js'; 
 
 // НАСТРОЙКА СТРАНИЦЫ ПРОФИЛЯ
 function setupProfileHandlers() {

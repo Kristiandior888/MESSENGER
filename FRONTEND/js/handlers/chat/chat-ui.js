@@ -3,7 +3,7 @@ import { state } from '../../app.js';
 import { showScreen } from '../../ui.js';
 import { setCurrentChat, getCurrentChat, getChatDisplayName, isGroupChat } from './chat-core.js';
 import { loadMessagesFromServer } from './chat-messages.js';
-import { showChatContextMenu } from '../groupHandlers.js';
+import { showChatContextMenu } from '../groups/index.js';
 
 /**
  * Экранирование HTML
@@ -22,7 +22,7 @@ function escapeHtml(str) {
  * Обновление UI в зависимости от выбранного чата (полное, с загрузкой сообщений)
  */
 export async function updateChatAreaUI() {
-    console.log('🔄 Полное обновление UI чата, currentChat:', state.currentChat);
+    console.log('Полное обновление UI чата, currentChat:', state.currentChat);
     
     const messagesDiv = document.getElementById('messages');
     const messageInput = document.querySelector('.message-input');
@@ -61,7 +61,7 @@ export async function updateChatAreaUI() {
  * Обновление UI чата БЕЗ загрузки сообщений (только отображение)
  */
 export async function updateChatAreaUIOnly() {
-    console.log('🔄 Обновление UI чата (без загрузки сообщений), currentChat:', state.currentChat);
+    console.log('Обновление UI чата (без загрузки сообщений), currentChat:', state.currentChat);
     
     const messagesDiv = document.getElementById('messages');
     const messageInput = document.querySelector('.message-input');
