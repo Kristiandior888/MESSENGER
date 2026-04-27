@@ -44,6 +44,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<ChatRepository>();
+builder.Services.AddScoped<EmailCodeRepository>();
 
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<AuthService>();
