@@ -12,11 +12,11 @@ const protoLoader = require('@grpc/proto-loader');
 console.log('__dirname:', __dirname);
 
 // Пробуем относительный путь
-let PROTO_PATH = path.join(__dirname, '../backend/gov_messenger/Protos/messenger.proto');
+let PROTO_PATH = path.join(__dirname, 'Protos/messenger.proto');
 
 
 // Адрес сервера
-const SERVER_ADDRESS = '192.168.0.106:7212';
+const SERVER_ADDRESS = '192.168.0.14:7212';
 
 // Загружаем proto
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
