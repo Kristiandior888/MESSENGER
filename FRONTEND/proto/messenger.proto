@@ -5,8 +5,6 @@ option csharp_namespace = "gov_messenger";
 package messenger;
 
 service Messenger {
-  rpc Stub (StubRequest) returns (StubResponse);
-
   rpc Login (LoginRequest) returns (LoginResponse);
 
   rpc GetUser (GetUserRequest) returns (GetUserResponse);
@@ -18,13 +16,6 @@ service Messenger {
   rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
 
   rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
-}
-
-message StubRequest {
-}
-
-message StubResponse {
-	string msg = 1;
 }
 
 // Authentication
@@ -56,9 +47,7 @@ message User {
   bytes public_key = 7;
 }
 
-message GetUserRequest {
-  string user_id = 1;
-}
+message GetUserRequest {}
 
 message GetUserResponse {
   User user = 1;
@@ -158,8 +147,6 @@ message SendMessageRequest {
   bytes ciphertext = 5;
 
   bytes nonce = 6;
-
-  string sender_id = 7;
 }
 
 message SendMessageResponse {
