@@ -1,4 +1,4 @@
-// Для отладки - делаем state доступным в консоли
+/*// Для отладки - делаем state доступным в консоли
 // Делаем state глобальным для отладки
 window.state = state;
 
@@ -47,9 +47,7 @@ window.debugLastMessage = () => {
         console.log('  Стиль before:', window.getComputedStyle(statusSpan, '::before').content);
     }
 };
-
-
-
+*/
 
 
 
@@ -61,6 +59,10 @@ import { showScreen, initScreens } from './js/ui.js';
 import { initTheme } from './js/utils/themeUtils.js';
 import { applyAllSettings } from './js/utils/settingsUtils.js';
 
+/// renderer.js - заменить существующий код восстановления
+
+
+/*
 // Проверяем сохраненного пользователя
 const token = localStorage.getItem('token');
 const userData = localStorage.getItem('userData');
@@ -73,17 +75,32 @@ if (token && userData) {
         console.log('👋 Добро пожаловать обратно,', state.currentUser.email);
     } catch (e) {
         console.error('Ошибка восстановления:', e);
-        localStorage.removeItem('token');
-        localStorage.removeItem('userData');
+        clearAuthData();
         state.isAuthenticated = false;
     }
 } else {
     state.isAuthenticated = false;
 }
+    */
+
+state.isAuthenticated = false;
+localStorage.clear(); // Очищаем сразу
+
+// Функция очистки данных авторизации
+function clearAuthData() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('userData');
+    localStorage.removeItem('userAvatar');
+    localStorage.removeItem('pendingEmail');
+    state.token = null;
+    state.currentUser = null;
+    state.userAvatar = null;
+}
 
 // Инициализируем тему и настройки
 initTheme();
 applyAllSettings();
+
 
 // ЗАПУСК ПРИ ЗАГРУЗКЕ
 document.addEventListener('DOMContentLoaded', async () => {
@@ -95,7 +112,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (state.isAuthenticated) {
         await showScreen('chat');
     } else {
-        await showScreen('login');
+        // Показываем экран запроса email (первый шаг)
+        await showScreen('loginRequest');
     }
 });
 

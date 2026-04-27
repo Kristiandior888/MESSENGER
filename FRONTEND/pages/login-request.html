@@ -1,0 +1,71 @@
+<!-- pages/login-request.html -->
+<div class="login-container">
+    <h1>Добро пожаловать</h1>
+    <p>Введите корпоративную почту</p>
+    
+    <input type="email" id="email" placeholder="Email" class="login-input">
+    <button id="request-code-btn" class="login-btn">Получить код</button>
+    
+    <div id="login-error" class="login-error-message" style="display: none;"></div>
+</div>
+
+<style>
+.login-btn {
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #ffffff;
+    background: transparent;
+    border: 2px solid #d4af37;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+    margin-top: 20px;
+}
+
+.login-btn:hover {
+    background: #d4af37;
+    color: #222831;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+.login-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    border-color: #a0a8b4;
+}
+
+.login-error-message {
+    color: #e05a5a;
+    background: rgba(224, 90, 90, 0.1);
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid rgba(224, 90, 90, 0.3);
+}
+
+.login-input {
+    width: 300px;
+    padding: 12px;
+    margin: 10px 0;
+    border: 1px solid #3a424c;
+    border-radius: 8px;
+    background: #1a1e24;
+    color: white;
+    font-size: 16px;
+}
+
+.login-input:focus {
+    outline: none;
+    border-color: #d4af37;
+}
+
+.login-input.error {
+    border-color: #e05a5a !important;
+}
+</style>

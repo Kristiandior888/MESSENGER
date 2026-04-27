@@ -2,7 +2,8 @@
 
 // Хранилище всех экранов
 const screens = {
-    login: null,
+    loginRequest: null,
+    loginVerify: null,
     chat: null,
     profile: null,
     settings: null
@@ -25,42 +26,53 @@ async function loadPage(url) {
 export async function initScreens() {
     if (isInitialized) return;
     
-    console.log('🚀 Инициализация всех экранов...');
+    console.log('Инициализация всех экранов...');
     
     const content = document.getElementById('content');
     if (!content) return;
     
     // Загружаем все страницы
-    const [loginHtml, chatHtml, profileHtml, settingsHtml] = await Promise.all([
-        loadPage('pages/login.html'),
+    const [loginRequestHtml, loginVerifyHtml, chatHtml, profileHtml, settingsHtml] = await Promise.all([
+        loadPage('pages/login-request.html'),
+        loadPage('pages/login-verify.html'),
         loadPage('pages/chat.html'),
         loadPage('pages/profile.html'),
         loadPage('pages/settings.html')
     ]);
     
-    // Создаем контейнеры для каждой страницы
-    screens.login = document.createElement('div');
-    screens.login.id = 'screen-login';
-    screens.login.className = 'screen';
-    screens.login.innerHTML = loginHtml;
+    // Создаём экран запроса email
+    screens.loginRequest = document.createElement('div');
+    screens.loginRequest.id = 'screen-login-request';
+    screens.loginRequest.className = 'screen';
+    screens.loginRequest.innerHTML = loginRequestHtml;
     
+    // Создаём экран подтверждения кода
+    screens.loginVerify = document.createElement('div');
+    screens.loginVerify.id = 'screen-login-verify';
+    screens.loginVerify.className = 'screen';
+    screens.loginVerify.innerHTML = loginVerifyHtml;
+    
+    // Создаём экран чата
     screens.chat = document.createElement('div');
     screens.chat.id = 'screen-chat';
     screens.chat.className = 'screen';
     screens.chat.innerHTML = chatHtml;
     
+    // Создаём экран профиля
     screens.profile = document.createElement('div');
     screens.profile.id = 'screen-profile';
     screens.profile.className = 'screen';
     screens.profile.innerHTML = profileHtml;
     
+    // Создаём экран настроек
     screens.settings = document.createElement('div');
     screens.settings.id = 'screen-settings';
     screens.settings.className = 'screen';
     screens.settings.innerHTML = settingsHtml;
     
     // Добавляем все экраны в DOM
-    content.appendChild(screens.login);
+    content.appendChild(screens.loginRequest);
+    content.appendChild(screens.loginVerify);
     content.appendChild(screens.chat);
     content.appendChild(screens.profile);
     content.appendChild(screens.settings);
@@ -69,7 +81,7 @@ export async function initScreens() {
     hideAllScreens();
     
     isInitialized = true;
-    console.log('Все экраны инициализированы');
+    console.log('✅ Все экраны инициализированы');
 }
 
 // Скрыть все экраны
@@ -81,7 +93,7 @@ function hideAllScreens() {
 
 // Показать нужный экран
 export async function showScreen(screenName) {
-    console.log('Показ экрана:', screenName);
+    console.log('📺 Показ экрана:', screenName);
     
     if (!isInitialized) {
         await initScreens();
@@ -95,13 +107,16 @@ export async function showScreen(screenName) {
     if (targetScreen) {
         targetScreen.style.display = 'block';
         
-        // Вызываем соответствующие обработчики (если нужно)
+        // Вызываем соответствующие обработчики
         if (screenName === 'chat') {
             const chatModule = await import('./handlers/chat/index.js');
             await chatModule.setupChatHandlers();
-        } else if (screenName === 'login') {
-            const { setupLoginHandlers } = await import('./handlers/loginHandlers.js');
-            setupLoginHandlers();
+        } else if (screenName === 'loginRequest') {
+            const { setupLoginRequestHandlers } = await import('./handlers/loginRequestHandlers.js');
+            setupLoginRequestHandlers();
+        } else if (screenName === 'loginVerify') {
+            const { setupLoginVerifyHandlers } = await import('./handlers/loginVerifyHandlers.js');
+            setupLoginVerifyHandlers();
         } else if (screenName === 'profile') {
             const { setupProfileHandlers } = await import('./handlers/profileHandlers.js');
             setupProfileHandlers();
@@ -110,7 +125,7 @@ export async function showScreen(screenName) {
             setupSettingsHandlers();
         }
     } else {
-        console.error('Экран не найден:', screenName);
+        console.error('❌ Экран не найден:', screenName);
     }
 }
 

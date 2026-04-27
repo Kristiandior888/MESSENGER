@@ -1,3 +1,4 @@
+/*
 // js/handlers/loginHandlers.js
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
@@ -201,3 +202,5 @@ function setupLoginHandlers() {
 }
 
 export { setupLoginHandlers };
+
+*/
