@@ -22,63 +22,70 @@ namespace gov_messenger.Services
             _chatService = chatService;
         }
 
-        public override async Task<SendMessageResponse> SendMessage(
-            SendMessageRequest request,
+        //public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
+        //{
+        //    var user = await _authService.LoginAsync(
+        //        request.Email,
+        //        request.Password
+        //    );
+
+        //    if (user == null)
+        //    {
+        //        return new LoginResponse
+        //        {
+        //            Success = false,
+        //            Error = "Invalid email or password"
+        //        };
+        //    }
+
+        //    var grpcUser = new User
+        //    {
+        //        Id = user.id.ToString(),
+        //        Email = user.email,
+        //        Name = user.name ?? "",
+        //        AvatarUrl = user.avatar_url ?? "",
+        //        Status = user.status ?? "",
+        //        LastSeen = user.last_seen != null
+        //            ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+        //            : 0
+        //    };
+
+        //    return new LoginResponse
+        //    {
+        //        Success = true,
+        //        Token = user.id.ToString(), // temp token
+        //        User = grpcUser
+        //    };
+        //}
+
+        public override async Task<RequestEmailCodeResponse> RequestEmailCode(
+            RequestEmailCodeRequest request,
             ServerCallContext context)
         {
-            var entity = await _messageService.SendMessageAsync(
-                request.ChatId, 
-                request.SenderId, 
-                request.Text);
+            var ok = await _authService.RequestCodeAsync(request.Email);
 
-            var message = new Message
+            if (!ok)
             {
-                Id = entity.id.ToString(),
-                ChatId = entity.chat_id.ToString(),
-                SenderId = entity.sender_id.ToString(),
-                Text = entity.text,
-                Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-            };
-
-            return new SendMessageResponse
-            {
-                Success = true,
-                Message = message
-            };
-        }
-
-        public override async Task<GetMessagesResponse> GetMessages(
-            GetMessagesRequest request,
-            ServerCallContext context)
-        {
-            var messages = await _messageService.GetMessagesAsync(
-                request.ChatId,
-                request.Limit,
-                request.Cursor
-            );
-
-            var response = new GetMessagesResponse();
-
-            foreach (var entity in messages)
-            {
-                response.Messages.Add(new Message
+                return new RequestEmailCodeResponse
                 {
-                    Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
-                    SenderId = entity.sender_id.ToString(),
-                    Text = entity.text,
-                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-                });
+                    Success = false,
+                    Error = "User not found"
+                };
             }
 
-            return response;
+            return new RequestEmailCodeResponse
+            {
+                Success = true
+            };
         }
 
-        public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
+        public override async Task<LoginResponse> VerifyEmailCode(
+            VerifyEmailCodeRequest request,
+            ServerCallContext context)
         {
-            var user = await _authService.LoginAsync(
+            var user = await _authService.VerifyCodeAsync(
                 request.Email,
-                request.Password
+                request.Code
             );
 
             if (user == null)
@@ -86,7 +93,7 @@ namespace gov_messenger.Services
                 return new LoginResponse
                 {
                     Success = false,
-                    Error = "Invalid email or password"
+                    Error = "Invalid or expired code"
                 };
             }
 
@@ -105,7 +112,7 @@ namespace gov_messenger.Services
             return new LoginResponse
             {
                 Success = true,
-                Token = user.id.ToString(), // temp token
+                Token = user.id.ToString(),
                 User = grpcUser
             };
         }
@@ -168,6 +175,58 @@ namespace gov_messenger.Services
                     Type = (ChatType)chat.type,
                     AvatarUrl = chat.avatar_url ?? "",
                     CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds()
+                });
+            }
+
+            return response;
+        }
+
+        public override async Task<SendMessageResponse> SendMessage(
+            SendMessageRequest request,
+            ServerCallContext context)
+        {
+            var entity = await _messageService.SendMessageAsync(
+                request.ChatId, 
+                request.SenderId, 
+                request.Text);
+
+            var message = new Message
+            {
+                Id = entity.id.ToString(),
+                ChatId = entity.chat_id.ToString(),
+                SenderId = entity.sender_id.ToString(),
+                Text = entity.text,
+                Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
+            };
+
+            return new SendMessageResponse
+            {
+                Success = true,
+                Message = message
+            };
+        }
+
+        public override async Task<GetMessagesResponse> GetMessages(
+            GetMessagesRequest request,
+            ServerCallContext context)
+        {
+            var messages = await _messageService.GetMessagesAsync(
+                request.ChatId,
+                request.Limit,
+                request.Cursor
+            );
+
+            var response = new GetMessagesResponse();
+
+            foreach (var entity in messages)
+            {
+                response.Messages.Add(new Message
+                {
+                    Id = entity.id.ToString(),
+                    ChatId = entity.chat_id.ToString(),
+                    SenderId = entity.sender_id.ToString(),
+                    Text = entity.text,
+                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
                 });
             }
 

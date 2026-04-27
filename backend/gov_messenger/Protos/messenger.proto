@@ -16,6 +16,9 @@ service Messenger {
   rpc SendMessage (SendMessageRequest) returns (SendMessageResponse);
 
   rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
+
+  rpc RequestEmailCode (RequestEmailCodeRequest) returns (RequestEmailCodeResponse);
+  rpc VerifyEmailCode (VerifyEmailCodeRequest) returns (LoginResponse);
 }
 
 // Authentication
@@ -163,4 +166,20 @@ message SendMessageResponse {
 
 message StreamMessagesRequest {
   repeated string chat_ids = 1;
+}
+
+// Email
+
+message RequestEmailCodeRequest {
+  string email = 1;
+}
+
+message RequestEmailCodeResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message VerifyEmailCodeRequest {
+  string email = 1;
+  string code = 2;
 }
