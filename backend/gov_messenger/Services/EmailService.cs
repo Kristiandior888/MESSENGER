@@ -37,9 +37,11 @@ namespace gov_messenger.Services
                 true
             );
 
+            var emailPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
+
             await client.AuthenticateAsync(
                 _config["Email:Username"],
-                _config["Email:Password"]
+                emailPassword
             );
 
             await client.SendAsync(message);

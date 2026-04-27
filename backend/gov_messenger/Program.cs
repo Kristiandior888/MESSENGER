@@ -5,7 +5,10 @@ using gov_messenger.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using DotNetEnv;
 using System.Text;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,8 +17,10 @@ builder.Services.AddGrpc();
 
 builder.Services.AddGrpc(options => {options.Interceptors.Add<AuthInterceptor>();});
 
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default") + dbPassword)
 );
 
 builder.Services.AddSingleton<JwtService>();

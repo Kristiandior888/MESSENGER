@@ -16,7 +16,9 @@ namespace gov_messenger.Services
 
         public string GenerateToken(string userId, string email)
         {
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
