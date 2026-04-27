@@ -36,8 +36,16 @@ class GrpcService {
         });
     }
 
-    async login(email, password) {
-        return this.#call('Login', { email, password }, true);
+    // async login(email, password) {
+    //     return this.#call('Login', { email, password }, true);
+    // }
+
+    async requestEmailCode(email) {
+        return this.#call('RequestEmailCode', { email }, true);
+    }
+
+    async verifyEmailCode(email, code) {
+        return this.#call('VerifyEmailCode', { email, code }, true);
     }
 
     async getChats() {
