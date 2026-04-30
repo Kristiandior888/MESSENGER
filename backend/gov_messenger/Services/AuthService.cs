@@ -9,13 +9,16 @@ namespace gov_messenger.Services
     {
         private readonly UserRepository _userRepository;
         private readonly EmailService _emailService;
+        private readonly EmailCodeRepository _codeRepository;
 
-        private static Dictionary<string, (string hash, DateTime expiry)> _codes = new();
-
-        public AuthService(UserRepository userRepository, EmailService emailService)
+        public AuthService(
+            UserRepository userRepository,
+            EmailService emailService,
+            EmailCodeRepository codeRepository)
         {
             _userRepository = userRepository;
             _emailService = emailService;
+            _codeRepository = codeRepository;
         }
 
         public async Task<bool> RequestCodeAsync(string email)
@@ -25,11 +28,22 @@ namespace gov_messenger.Services
             if (user == null)
                 return false;
 
-            var code = new Random().Next(100000, 999999).ToString();
+            await _codeRepository.DeleteOldCodes(email);
+
+            var code = RandomNumberGenerator.GetInt32(100000, 999999).ToString();
 
             var hash = Hash(code);
 
-            _codes[email] = (hash, DateTime.UtcNow.AddMinutes(5));
+            var entity = new EmailCodeEntity
+            {
+                email = email,
+                code_hash = hash,
+                created_at = DateTime.UtcNow,
+                expires_at = DateTime.UtcNow.AddMinutes(5),
+                used = false
+            };
+
+            await _codeRepository.CreateAsync(entity);
 
             await _emailService.SendCodeAsync(email, code);
 
@@ -38,18 +52,24 @@ namespace gov_messenger.Services
 
         public async Task<UserEntity?> VerifyCodeAsync(string email, string code)
         {
-            if (!_codes.TryGetValue(email, out var entry))
+            var record = await _codeRepository.GetLatestAsync(email);
+
+            if (record == null)
                 return null;
 
-            if (entry.expiry < DateTime.UtcNow)
+            if (record.used)
+                return null;
+
+            if (record.expires_at < DateTime.UtcNow)
                 return null;
 
             var hash = Hash(code);
 
-            if (entry.hash != hash)
+            if (record.code_hash != hash)
                 return null;
 
-            _codes.Remove(email); // one-time code
+            // Disposability
+            await _codeRepository.MarkUsedAsync(record);
 
             return await _userRepository.GetByEmailAsync(email);
         }
