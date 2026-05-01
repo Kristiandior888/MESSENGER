@@ -1,25 +1,24 @@
 // js/grpc/grpc-client.js
-// В Electron мы можем использовать require
+// Отключаем проверку сертификата для разработки
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-// Динамический импорт для Node.js модулей
-let grpc, protoLoader;
+const path = require('path');
+const fs = require('fs');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
 
-// Проверяем, в Electron ли мы
-if (typeof require !== 'undefined') {
-    // В Electron используем require
-    grpc = require('@grpc/grpc-js');
-    protoLoader = require('@grpc/proto-loader');
-    console.log('✅ gRPC загружен через require в Electron');
-} else {
-    // В браузере (не должно случиться)
-    throw new Error('Это приложение должно запускаться в Electron');
-}
 
-const PROTO_PATH = 'proto/messenger.proto';
-const SERVER_ADDRESS = 'localhost:5077';
+// Текущая директория: FRONTEND
+console.log('__dirname:', __dirname);
 
-console.log('📁 Загружаем proto из:', PROTO_PATH);
+// Пробуем относительный путь
+let PROTO_PATH = path.join(__dirname, 'Protos/messenger.proto');
 
+
+// Адрес сервера
+const SERVER_ADDRESS = '192.168.0.21:7212';
+
+// Загружаем proto
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
     longs: String,
@@ -31,15 +30,14 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 const messenger = protoDescriptor.messenger;
 
-// Создаем клиент
-const client = new messenger.Messenger(
-    SERVER_ADDRESS,
-    grpc.credentials.createInsecure()
-);
+// Создаем клиент с SSL (отключаем проверку для разработки)
+const sslCredentials = grpc.credentials.createSsl(null, null, null, { rejectUnauthorized: false });
 
-console.log('✅ gRPC клиент создан');
+const client = new messenger.Messenger(SERVER_ADDRESS, sslCredentials);
 
-// Для совместимости с вашим кодом, добавляем Metadata в глобальную область
+console.log('gRPC клиент создан для адреса:', SERVER_ADDRESS);
+
+// Экспортируем Metadata для использования в других модулях
 if (typeof window !== 'undefined') {
     window.grpc = window.grpc || {};
     window.grpc.Metadata = grpc.Metadata;

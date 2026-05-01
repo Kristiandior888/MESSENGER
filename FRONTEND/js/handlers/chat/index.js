@@ -1,15 +1,15 @@
 // js/handlers/chat/index.js
 import { state } from '../../app.js';
 import { showScreen } from '../../ui.js';
-import { showCreateGroupModal } from '../groupHandlers.js';
+import { showCreateGroupModal } from '../groups/index.js';
 
-// Импортируем все модули
 import { 
     initGrpc, 
     loadChatsFromServer, 
     setCurrentChat,
     getCurrentChat,
-    createNewChat 
+    createNewChat,
+    cleanupChatResources
 } from './chat-core.js';
 
 import { 
@@ -19,9 +19,11 @@ import {
 } from './chat-ui.js';
 
 import { 
-    loadMessagesForChat,
     loadMessagesFromServer,
-    addNewMessage
+    appendNewMessage,
+    stopMessageStreamForChat,
+    stopAllMessageStreams,
+    resetMessagesState  // Добавляем импорт
 } from './chat-messages.js';
 
 import { 
@@ -42,21 +44,23 @@ import {
     setupEmojiPanel 
 } from './chat-emoji.js';
 
-// Флаг для предотвращения множественной инициализации
 let isChatInitialized = false;
 
+// Экспортируем все функции
 export {
     initGrpc,
     loadChatsFromServer,
     setCurrentChat,
     getCurrentChat,
     createNewChat,
+    cleanupChatResources,
     updateChatAreaUI,
     setupAvatar,
     showErrorMessage,
-    loadMessagesForChat,
     loadMessagesFromServer,
-    addNewMessage,
+    appendNewMessage,
+    stopMessageStreamForChat,
+    stopAllMessageStreams,
     setupFileAttachment,
     clearAttachedFiles,
     setupMessageSending,
@@ -65,9 +69,6 @@ export {
     setupEmojiPanel
 };
 
-/**
- * Настройка кнопки создания группы
- */
 function setupCreateGroupButton() {
     const createGroupBtn = document.getElementById('create-group-btn');
     if (createGroupBtn) {
@@ -82,41 +83,65 @@ function setupCreateGroupButton() {
     }
 }
 
-/**
- * Сброс флага инициализации (при выходе из чата)
- */
+function updateUserInfo() {
+    const userEmail = document.getElementById('user-email');
+    if (userEmail && state.currentUser) {
+        userEmail.textContent = state.currentUser.email;
+        console.log('Email пользователя обновлен:', state.currentUser.email);
+    }
+    
+    const chatAvatar = document.getElementById('chat-avatar');
+    if (chatAvatar && state.userAvatar) {
+        chatAvatar.src = state.userAvatar;
+    } else if (chatAvatar) {
+        const savedAvatar = localStorage.getItem('userAvatar');
+        if (savedAvatar) {
+            state.userAvatar = savedAvatar;
+            chatAvatar.src = savedAvatar;
+        }
+    }
+}
+
 export function resetChatInitialization() {
     isChatInitialized = false;
     console.log('🔄 Флаг инициализации чата сброшен');
 }
 
-/**
- * ГЛАВНАЯ ФУНКЦИЯ НАСТРОЙКИ ЧАТА
- */
+
 export async function setupChatHandlers() {
-    if (isChatInitialized) {
-        console.log('⚠️ Чат уже был инициализирован, пропускаем');
-        return;
+    updateUserInfo();
+    
+    // При загрузке чата сбрасываем текущий выбранный чат
+    if (state.currentChat) {
+        // Проверяем, существует ли ещё этот чат у нового пользователя
+        const chatExists = state.chats?.some(c => c.id === state.currentChat);
+        if (!chatExists) {
+            state.currentChat = null;
+        }
     }
     
-    console.log('📱 Чат загружен!');
-
-    await loadChatsFromServer();
-
-    const userEmail = document.getElementById('user-email');
-    if (userEmail && state.currentUser) {
-        userEmail.textContent = state.currentUser.email;
+    if (isChatInitialized) {
+        console.log('Чат уже был инициализирован, но перезагружаем');
+        // Сбрасываем состояние сообщений
+        resetMessagesState();
+        await stopAllMessageStreams();
+        isChatInitialized = false; // Сбрасываем флаг для полной перезагрузки
     }
-
+    
+    console.log('Чат загружается!');
+    
+    await loadChatsFromServer();
+    updateUserInfo();
+    
     setupAvatar();
     setupCreateGroupButton();
     setupFileAttachment();
     setupMessageSending();
     setupSearch();
     setupEmojiPanel();
-
-    updateChatAreaUI();
+    
+    await updateChatAreaUI();
     
     isChatInitialized = true;
-    console.log('✅ Чат полностью инициализирован');
+    console.log('Чат полностью инициализирован');
 }

@@ -1,12 +1,12 @@
+<!-- pages/chat.html -->
 <div class="chat-container">
     <div class="sidebar">
         <div class="user-info">
             <div class="avatar-wrapper" id="avatar-wrapper" style="cursor: pointer;">
                 <img src="images/default-avatar.png" alt="avatar" class="avatar" id="chat-avatar">
             </div>
-            <span id="user-email">user@company.com</span>
+            <span id="user-email"></span> <!-- Убираем текст-заглушку! -->
         </div>
-
 
         <!-- ПОИСК ПО СООБЩЕНИЯМ -->
         <div class="search-section">
@@ -27,12 +27,10 @@
             </div>
         </div>
 
-        <!-- СПИСОК ЧАТОВ - ПОЛНОСТЬЮ ПУСТОЙ! -->
+        <!-- СПИСОК ЧАТОВ -->
         <div class="chats-list" id="chats-list">
             <!-- Чаты будут созданы через JavaScript -->
         </div>
-
-        
     </div>
 
     <div class="chat-area">
@@ -48,8 +46,6 @@
             
             <input type="text" id="message-field" placeholder="Написать сообщение...">
 
-
-            
             <button id="emoji-btn" class="emoji-btn" title="Эмодзи">
                 <span>😊</span>
             </button>
@@ -57,27 +53,25 @@
             <!-- Панель с эмодзи (скрыта по умолчанию) -->
             <div id="emoji-panel" class="emoji-panel" style="display: none;">
                 <div class="emoji-categories">
-            <button class="emoji-category active" data-category="recent">🕒</button>
-            <button class="emoji-category" data-category="smileys">😊</button>
-            <button class="emoji-category" data-category="people">👋</button>
-            <button class="emoji-category" data-category="animals">🐻</button>
-            <button class="emoji-category" data-category="food">🍔</button>
-            <button class="emoji-category" data-category="activities">⚽</button>
-            <button class="emoji-category" data-category="travel">🚗</button>
-            <button class="emoji-category" data-category="objects">💡</button>
-            <button class="emoji-category" data-category="symbols">❤️</button>
-            <button class="emoji-category" data-category="flags">🏁</button>
+                    <button class="emoji-category active" data-category="recent">🕒</button>
+                    <button class="emoji-category" data-category="smileys">😊</button>
+                    <button class="emoji-category" data-category="people">👋</button>
+                    <button class="emoji-category" data-category="animals">🐻</button>
+                    <button class="emoji-category" data-category="food">🍔</button>
+                    <button class="emoji-category" data-category="activities">⚽</button>
+                    <button class="emoji-category" data-category="travel">🚗</button>
+                    <button class="emoji-category" data-category="objects">💡</button>
+                    <button class="emoji-category" data-category="symbols">❤️</button>
+                    <button class="emoji-category" data-category="flags">🏁</button>
                 </div>
-            <div class="emoji-container" id="emoji-container">
-            <!-- Эмодзи будут загружаться сюда -->
-        </div>
+                <div class="emoji-container" id="emoji-container">
+                    <!-- Эмодзи будут загружаться сюда -->
+                </div>
             </div>
             <button id="send-btn">Отправить</button>
         </div>
     </div>
 </div>
-
-
 
 <style>
 .chat-placeholder {

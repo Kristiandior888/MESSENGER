@@ -1,44 +1,24 @@
-// Утилиты для поиска по сообщениям
-
+// js/utils/searchUtils.js
 import { state } from '../app.js';
-import { getMessages } from '../storage.js';
+import { initGrpc } from '../handlers/chat/chat-core.js';
+import { formatMessageTime, formatMessageDate } from './dateUtils.js';  // Импортируем из dateUtils
 
 // Состояние поиска
 let searchState = {
     query: '',
     results: [],
     currentIndex: -1,
-    groupedResults: {}, // Результаты, сгруппированные по датам
+    groupedResults: {},
     originalMessages: []
 };
 
-// Функция для форматирования даты
-function formatMessageDate(timestamp) {
-    // Если есть полная дата, используем её, иначе парсим время
-    if (timestamp) {
-        // Предполагаем, что время может быть в формате "ЧЧ:ММ"
-        // Для демо создадим дату на основе текущего дня
-        const today = new Date();
-        const [hours, minutes] = timestamp.split(':').map(Number);
-        today.setHours(hours, minutes, 0, 0);
-        
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        return today.toLocaleDateString('ru-RU', options);
-    }
-    return 'Сегодня';
-}
 
-// Функция для группировки сообщений по датам
+// Функция группировки сообщений по датам (использует formatMessageDate из dateUtils)
 function groupMessagesByDate(messages) {
     const grouped = {};
     
     messages.forEach((message, index) => {
-        const date = formatMessageDate(message.time);
+        const date = formatMessageDate(message.timestamp);  // Используем импортированную функцию
         if (!grouped[date]) {
             grouped[date] = [];
         }
@@ -48,55 +28,44 @@ function groupMessagesByDate(messages) {
     return grouped;
 }
 
-// Функция поиска по сообщениям
-function searchMessages(query) {
+// Поиск по сообщениям
+async function searchMessages(query) {
     if (!query || query.trim() === '') {
         clearSearch();
         return [];
     }
     
-    const messages = getMessages(state.currentChat);
     const searchQuery = query.toLowerCase().trim();
     
-    // Ищем во всех сообщениях
-    const results = messages.reduce((acc, message, index) => {
-        let matched = false;
+    try {
+        const { service } = await initGrpc();
+        const response = await service.getMessages(state.currentChat, 100);
+        const messages = response.messages || [];
         
-        // Ищем в тексте сообщения
-        if (message.text && message.text.toLowerCase().includes(searchQuery)) {
-            acc.push({
-                index: index,
-                message: message,
-                matchType: 'text',
-                matchedText: message.text
-            });
-            matched = true;
-        }
+        const results = messages.reduce((acc, message, index) => {
+            // Ищем в тексте сообщения
+            if (message.text && message.text.toLowerCase().includes(searchQuery)) {
+                acc.push({
+                    index: index,
+                    message: message,
+                    matchType: 'text',
+                    matchedText: message.text
+                });
+            }
+            return acc;
+        }, []);
         
-        // Ищем в названиях файлов
-        if (!matched && message.files && message.files.length > 0) {
-            message.files.forEach(file => {
-                if (file.name.toLowerCase().includes(searchQuery)) {
-                    acc.push({
-                        index: index,
-                        message: message,
-                        matchType: 'file',
-                        fileName: file.name,
-                        matchedText: file.name
-                    });
-                }
-            });
-        }
+        searchState.query = query;
+        searchState.results = results;
+        searchState.groupedResults = groupMessagesByDate(results.map(r => r.message));
+        searchState.currentIndex = results.length > 0 ? 0 : -1;
         
-        return acc;
-    }, []);
-    
-    searchState.query = query;
-    searchState.results = results;
-    searchState.groupedResults = groupMessagesByDate(results.map(r => r.message));
-    searchState.currentIndex = results.length > 0 ? 0 : -1;
-    
-    return results;
+        renderSearchResults();
+        return results;
+    } catch (error) {
+        console.error('Ошибка поиска:', error);
+        return [];
+    }
 }
 
 // Подсветка найденных сообщений
@@ -189,7 +158,7 @@ function renderSearchResults() {
         header.className = 'search-results-header';
         header.innerHTML = `
             <span class="search-results-count">Найдено: ${searchState.results.length}</span>
-            <span class="search-query">"${searchState.query}"</span>
+            <span class="search-query">"${escapeHtml(searchState.query)}"</span>
         `;
         list.appendChild(header);
         
@@ -202,52 +171,28 @@ function renderSearchResults() {
             list.appendChild(dateSeparator);
             
             // Добавляем сообщения этой даты
-            messages.forEach((msg, idx) => {
-                const originalIndex = searchState.results.findIndex(r => r.message === msg);
+            messages.forEach((msg) => {
+                const originalIndex = searchState.results.findIndex(r => r.message.id === msg.id);
                 const result = searchState.results[originalIndex];
+                const timeStr = formatMessageTime(msg.timestamp);  // Используем импортированную функцию
+                const senderId = msg.sender_id;
+                const isSent = senderId === state.currentUser?.id;
                 
                 const resultItem = document.createElement('div');
                 resultItem.className = `search-result-item ${originalIndex === searchState.currentIndex ? 'current-result' : ''}`;
-                resultItem.setAttribute('data-message-index', msg.originalIndex);
+                resultItem.setAttribute('data-message-id', msg.id);
                 
-                // Определяем иконку в зависимости от типа
-                let icon = '';
-                let contentHtml = '';
-                
-                if (result.matchType === 'file') {
-                    icon = '📎';
-                    contentHtml = `
-                        <div class="search-result-file">
-                            <span class="file-icon">📎</span>
-                            <span class="file-name">${highlightText(result.fileName, searchState.query)}</span>
-                        </div>
-                    `;
-                } else if (msg.type === 'system') {
-                    icon = '📢';
-                    contentHtml = `<div class="search-result-text system">${highlightText(msg.text, searchState.query)}</div>`;
-                } else {
-                    icon = msg.type === 'sent' ? '📤' : '📥';
-                    contentHtml = `<div class="search-result-text">${highlightText(msg.text, searchState.query)}</div>`;
-                }
-                
-                // Получаем имя отправителя
-                let senderName = '';
-                if (msg.type === 'sent') {
-                    senderName = 'Вы';
-                } else if (msg.type === 'system') {
-                    senderName = 'Система';
-                } else {
-                    // Здесь можно подставить имя из контактов
-                    senderName = msg.senderName || 'Собеседник';
-                }
+                let icon = isSent ? '📤' : '📥';
+                let contentHtml = `<div class="search-result-text">${highlightText(msg.text || '', searchState.query)}</div>`;
+                let senderName = isSent ? 'Вы' : 'Собеседник';
                 
                 resultItem.innerHTML = `
                     <div class="search-result-content">
                         <div class="search-result-icon">${icon}</div>
                         <div class="search-result-info">
                             <div class="search-result-header">
-                                <span class="search-result-sender">${senderName}</span>
-                                <span class="search-result-time">${msg.time}</span>
+                                <span class="search-result-sender">${escapeHtml(senderName)}</span>
+                                <span class="search-result-time">${timeStr}</span>
                             </div>
                             ${contentHtml}
                         </div>
@@ -261,7 +206,7 @@ function renderSearchResults() {
                     renderSearchResults();
                     
                     // Прокручиваем к сообщению и подсвечиваем
-                    const messageElement = document.querySelectorAll('.message')[msg.originalIndex];
+                    const messageElement = document.querySelector(`.message[data-message-id="${msg.id}"]`);
                     if (messageElement) {
                         messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         messageElement.classList.add('highlight-flash');
@@ -291,21 +236,6 @@ function renderSearchResults() {
         });
         list.appendChild(backButton);
         
-        // Обработчик для кнопки очистки
-        const clearBtn = document.getElementById('clear-search-from-panel');
-        if (clearBtn) {
-            clearBtn.addEventListener('click', () => {
-                clearSearch();
-                panel.style.display = 'none';
-                if (chatsList) {
-                    chatsList.style.display = 'block';
-                }
-                if (searchInput) {
-                    searchInput.value = '';
-                }
-            });
-        }
-        
     } else if (searchState.query) {
         // Нет результатов
         panel.style.display = 'flex';
@@ -317,7 +247,7 @@ function renderSearchResults() {
             <div class="search-no-results">
                 <div class="no-results-icon">🔍</div>
                 <div class="no-results-text">Ничего не найдено</div>
-                <div class="no-results-query">по запросу "${searchState.query}"</div>
+                <div class="no-results-query">по запросу "${escapeHtml(searchState.query)}"</div>
                 <button class="search-back-button" id="back-from-no-results">← Назад к списку чатов</button>
             </div>
         `;
@@ -343,13 +273,27 @@ function renderSearchResults() {
     }
 }
 
-
+// Экранирование HTML
+function escapeHtml(str) {
+    if (!str) return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 // Подсветка искомого текста
 function highlightText(text, query) {
-    if (!text || !query) return text;
-    const regex = new RegExp(`(${query})`, 'gi');
-    return text.replace(regex, '<span class="highlight">$1</span>');
+    if (!text || !query) return escapeHtml(text);
+    const regex = new RegExp(`(${escapeRegex(query)})`, 'gi');
+    return escapeHtml(text).replace(regex, '<span class="highlight">$1</span>');
+}
+
+// Экранирование регулярного выражения
+function escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Обновление UI поиска

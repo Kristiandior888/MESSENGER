@@ -1,9 +1,9 @@
-// js/handlers/profileHandlers.js
+// js/handlers/profileHandlers.js (исправленный импорт)
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
-import { THEMES, applyTheme, saveTheme, getCurrentTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
-import { showCreateGroupModal } from './groupHandlers.js';
+import { THEMES, saveTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
+import { showCreateGroupModal } from './groups/index.js'; 
 
 // НАСТРОЙКА СТРАНИЦЫ ПРОФИЛЯ
 function setupProfileHandlers() {
@@ -43,18 +43,24 @@ function setupProfileHandlers() {
     updateThemeSwitcherUI();
     
     if (darkThemeOption) {
-        darkThemeOption.addEventListener('click', () => {
-            applyTheme(THEMES.DARK);
+        const newDarkOption = darkThemeOption.cloneNode(true);
+        darkThemeOption.parentNode.replaceChild(newDarkOption, darkThemeOption);
+        
+        newDarkOption.addEventListener('click', () => {
+            console.log('Переключение на темную тему');
             saveTheme(THEMES.DARK);
-            updateThemeSwitcherUI();
+            window.location.reload();
         });
     }
     
     if (lightThemeOption) {
-        lightThemeOption.addEventListener('click', () => {
-            applyTheme(THEMES.LIGHT);
+        const newLightOption = lightThemeOption.cloneNode(true);
+        lightThemeOption.parentNode.replaceChild(newLightOption, lightThemeOption);
+        
+        newLightOption.addEventListener('click', () => {
+            console.log('Переключение на светлую тему');
             saveTheme(THEMES.LIGHT);
-            updateThemeSwitcherUI();
+            window.location.reload();
         });
     }
     
@@ -63,7 +69,10 @@ function setupProfileHandlers() {
     const avatarUpload = document.getElementById('avatar-upload');
     
     if (avatarContainer && avatarUpload) {
-        avatarContainer.addEventListener('click', () => {
+        const newAvatarContainer = avatarContainer.cloneNode(true);
+        avatarContainer.parentNode.replaceChild(newAvatarContainer, avatarContainer);
+        
+        newAvatarContainer.addEventListener('click', () => {
             avatarUpload.click();
         });
         
@@ -87,8 +96,9 @@ function setupProfileHandlers() {
                 saveAvatarToStorage(imageData);
                 updateAllAvatars(imageData);
                 
-                if (profileAvatar) {
-                    profileAvatar.src = imageData;
+                const profileAvatarEl = document.getElementById('profile-avatar');
+                if (profileAvatarEl) {
+                    profileAvatarEl.src = imageData;
                 }
                 
                 console.log('Аватар успешно обновлен');
@@ -102,7 +112,10 @@ function setupProfileHandlers() {
     // НАСТРАИВАЕМ КНОПКУ НАСТРОЕК
     const settingsBtn = document.getElementById('settings-btn');
     if (settingsBtn) {
-        settingsBtn.addEventListener('click', () => {
+        const newSettingsBtn = settingsBtn.cloneNode(true);
+        settingsBtn.parentNode.replaceChild(newSettingsBtn, settingsBtn);
+        
+        newSettingsBtn.addEventListener('click', () => {
             showScreen('settings');
         });
     }
@@ -110,39 +123,60 @@ function setupProfileHandlers() {
     // НАСТРАИВАЕМ КНОПКУ "СОЗДАТЬ ГРУППУ"
     const createGroupBtn = document.getElementById('create-group-btn');
     if (createGroupBtn) {
-        createGroupBtn.addEventListener('click', () => {
+        const newCreateGroupBtn = createGroupBtn.cloneNode(true);
+        createGroupBtn.parentNode.replaceChild(newCreateGroupBtn, createGroupBtn);
+        
+        newCreateGroupBtn.addEventListener('click', () => {
             showCreateGroupModal();
         });
     }
     
-    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ" - ИСПРАВЛЕНО!
+    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ"
     const logoutProfileBtn = document.getElementById('logout-profile-btn');
     if (logoutProfileBtn) {
-        logoutProfileBtn.addEventListener('click', () => {
-            console.log('🚪 Выход из системы через профиль');
+        const newLogoutBtn = logoutProfileBtn.cloneNode(true);
+        logoutProfileBtn.parentNode.replaceChild(newLogoutBtn, logoutProfileBtn);
+        
+        newLogoutBtn.addEventListener('click', () => {
+            console.log('Выход из системы через профиль');
             
-            // Очищаем localStorage от данных сессии
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
             
-            // Сбрасываем состояние приложения
             state.isAuthenticated = false;
             state.currentUser = null;
             state.token = null;
             state.currentChat = null;
             state.userAvatar = null;
+            state.chats = [];
             
-            console.log('✅ Сессия очищена, переход на экран входа');
-            
-            // Показываем экран входа
             showScreen('login');
         });
     }
     
+   
+   
+   
     // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        
+        newCloseBtn.addEventListener('click', async () => {
+            console.log('🔙 Возврат из профиля в чат');
+            
+            // Получаем последний активный чат
+            const { getCurrentChat, loadChatsFromServer } = await import('./chat/chat-core.js');
+            const { resetChatInitialization } = await import('./chat/index.js');
+            
+            // Сбрасываем флаг инициализации, чтобы чат перезагрузился
+            resetChatInitialization();
+            
+            // Загружаем чаты
+            await loadChatsFromServer();
+            
+            // Переходим в чат
             showScreen('chat');
         });
     }

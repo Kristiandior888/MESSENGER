@@ -16,5 +16,16 @@ namespace gov_messenger.Services
         {
             return await _repository.GetUserChatsAsync(Guid.Parse(userId));
         }
+
+        public async Task<bool> IsUserInChat(string userId, string chatId)
+        {
+            if (!Guid.TryParse(userId, out var uid) ||
+                !Guid.TryParse(chatId, out var cid))
+            {
+                return false;
+            }
+
+            return await _repository.IsUserInChatAsync(uid, cid);
+        }
     }
 }

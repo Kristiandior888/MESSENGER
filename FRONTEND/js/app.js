@@ -6,7 +6,7 @@ const state = {
     userAvatar: null,
     chats: [
         //тут были чаты для примера 
-    ]
+    ],
 };
 
 export { state };

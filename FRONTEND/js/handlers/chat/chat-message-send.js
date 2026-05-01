@@ -1,26 +1,26 @@
 // js/handlers/chat/chat-message-send.js
 import { state } from '../../app.js';
-import { addMessage, updateLastMessageStatusUI } from '../../utils/messageUtils.js';
-import { updateLastMessageStatus } from '../../storage.js';
+import { addMessage } from '../../utils/messageUtils.js';
 import { initGrpc, getCurrentChat } from './chat-core.js';
 import { attachedFiles, clearAttachedFiles } from './chat-files.js';
 import { showErrorMessage } from './chat-ui.js';
 
 let isSending = false;
 let isInitialized = false;
+let pendingMessages = new Map(); // Храним временные ID сообщений
 
 /**
  * Отправка сообщения
  */
 export async function sendMessage() {
     if (isSending) {
-        console.log('⏳ Сообщение уже отправляется...');
+        console.log('Сообщение уже отправляется...');
         return;
     }
 
     const messageField = document.getElementById('message-field');
     if (!messageField) {
-        console.error('❌ Поле ввода не найдено');
+        console.error(' Поле ввода не найдено');
         return;
     }
 
@@ -28,7 +28,7 @@ export async function sendMessage() {
     const hasFiles = attachedFiles.length > 0;
 
     if (!text && !hasFiles) {
-        console.log('📭 Нет текста и файлов для отправки');
+        console.log('Нет текста и файлов для отправки');
         return;
     }
 
@@ -38,14 +38,26 @@ export async function sendMessage() {
         return;
     }
 
+    const messagesDiv = document.getElementById('messages');
+    if (!messagesDiv) {
+        console.error('Контейнер сообщений не найден');
+        return;
+    }
+
     isSending = true;
     
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
-    // ✅ СРАЗУ показываем сообщение в DOM
-    console.log('📝 Добавляем сообщение в DOM');
-    addMessage(text, 'sent', true, 'sending', filesToSend);
+    // Генерируем временный ID для сообщения
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Сохраняем временный ID в pendingMessages
+    pendingMessages.set(tempId, { text, files: filesToSend, chatId });
+    
+    // Показываем сообщение в DOM с временным ID и статусом "sending"
+    console.log('Добавляем сообщение в DOM с временным ID:', tempId);
+    addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
     // Очищаем поле ввода
     messageField.value = '';
@@ -53,35 +65,86 @@ export async function sendMessage() {
     try {
         const { service } = await initGrpc();
         
-        console.log('📤 Отправка сообщения на сервер:', text);
+        console.log('Отправка сообщения на сервер:', text);
         
-        // Отправляем на сервер (не блокируем UI)
-        service.sendMessage(chatId, text).then(response => {
-            console.log('✅ Сообщение отправлено, ответ сервера:', response);
+        // Отправляем на сервер
+        const response = await service.sendMessage(chatId, text);
+        
+        console.log('Сообщение отправлено, ответ сервера:', response);
+        
+        if (response.success && response.message) {
+            const realMessageId = response.message.id;
             
-            // Обновляем статус сообщения в DOM
-            updateLastMessageStatusUI('sent');
-            updateLastMessageStatus(chatId, 'sent');
+            // Удаляем временное сообщение из DOM
+            const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
+            if (tempMessage) {
+                tempMessage.remove();
+            }
             
-        }).catch(error => {
-            console.error('❌ Ошибка отправки на сервер:', error);
+            // Проверяем, не добавил ли уже стрим это сообщение
+            const existingMessage = document.querySelector(`.message[data-message-id="${realMessageId}"]`);
             
-            // Показываем ошибку в UI
-            updateLastMessageStatusUI('error');
+            if (!existingMessage) {
+                // Если стрим ещё не добавил, добавляем сами
+                addMessage(text, 'sent', true, 'sent', filesToSend, realMessageId);
+            } else {
+                // Если сообщение уже есть, просто обновляем статус
+                const statusSpan = existingMessage.querySelector('.message-status');
+                if (statusSpan) {
+                    statusSpan.className = 'message-status sent';
+                }
+            }
+            
+            // Удаляем из pendingMessages
+            pendingMessages.delete(tempId);
+        } else {
+            // Если ошибка, обновляем статус временного сообщения
+            updateTempMessageStatus(tempId, 'error');
             showErrorMessage('Не удалось отправить сообщение');
             
             // Возвращаем текст обратно при ошибке
             if (!hasFiles) {
                 messageField.value = text;
             }
-        });
+        }
         
     } catch (error) {
-        console.error('❌ Ошибка инициализации gRPC:', error);
-        updateLastMessageStatusUI('error');
-        showErrorMessage('Ошибка соединения с сервером');
+        console.error('Ошибка отправки на сервер:', error);
+        
+        // Обновляем статус временного сообщения на ошибку
+        updateTempMessageStatus(tempId, 'error');
+        showErrorMessage('Не удалось отправить сообщение');
+        
+        // Возвращаем текст обратно при ошибке
+        if (!hasFiles) {
+            messageField.value = text;
+        }
     } finally {
         isSending = false;
+        // Очищаем временные сообщения, которые не были удалены
+        setTimeout(() => {
+            pendingMessages.forEach((_, id) => {
+                const tempMessage = document.querySelector(`.message[data-message-id="${id}"]`);
+                if (tempMessage) {
+                    tempMessage.remove();
+                }
+                pendingMessages.delete(id);
+            });
+        }, 5000);
+    }
+}
+
+/**
+ * Обновление статуса временного сообщения по ID
+ */
+function updateTempMessageStatus(tempId, newStatus) {
+    const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
+    if (tempMessage) {
+        const statusSpan = tempMessage.querySelector('.message-status');
+        if (statusSpan) {
+            statusSpan.className = `message-status ${newStatus}`;
+            console.log(`Статус сообщения ${tempId} обновлен на ${newStatus}`);
+        }
     }
 }
 
@@ -90,7 +153,7 @@ export async function sendMessage() {
  */
 export function setupMessageSending() {
     if (isInitialized) {
-        console.log('⚠️ setupMessageSending уже был вызван, пропускаем');
+        console.log('setupMessageSending уже был вызван, пропускаем');
         return;
     }
     
@@ -100,7 +163,7 @@ export function setupMessageSending() {
     const messageField = document.getElementById('message-field');
 
     if (!sendBtn || !messageField) {
-        console.error('❌ Кнопка отправки или поле ввода не найдены');
+        console.error('Кнопка отправки или поле ввода не найдены');
         return;
     }
 
@@ -132,5 +195,5 @@ export function setupMessageSending() {
     });
     
     isInitialized = true;
-    console.log('✅ Отправка сообщений настроена');
+    console.log('Отправка сообщений настроена');
 }

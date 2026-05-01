@@ -1,18 +1,19 @@
 {
-    "name": "sobor-loc-messenger",
-    "version": "1.0",
-    "type": "module",
-    "description": "Визуальная оболочка для локального мессенджера Собор",
-    "main": "main.cjs",
-    "scripts": {
-        "start": "electron ."
-    },
-    "devDependencies": {
-        "electron": "^40.4.1"
-    },
-    "dependencies": {
-        "@grpc/grpc-js": "^1.14.3",
-        "@grpc/proto-loader": "^0.8.0",
-        "google-protobuf": "^4.0.2"
-    }
+  "name": "sobor-loc-messenger",
+  "version": "1.0.0",
+  "description": "Визуальная оболочка для локального мессенджера Собор",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-packager . SoborMessenger --platform=win32 --arch=x64 --out=release --overwrite --icon=icon/icon.ico"
+  },
+  "devDependencies": {
+    "electron": "^40.4.1",
+    "electron-packager": "^17.1.2"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
+    "google-protobuf": "^4.0.2"
+  }
 }

@@ -10,6 +10,7 @@ namespace gov_messenger.Data
         public DbSet<UserEntity> Users { get; set; }
         public DbSet<ChatEntity> Chats { get; set; }
         public DbSet<ChatParticipantEntity> ChatParticipants { get; set; }
+        public DbSet<EmailCodeEntity> EmailCodes { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {

@@ -1,0 +1,35 @@
+<!-- pages/login-verify.html -->
+<div class="login-container">
+    <h1>Подтверждение</h1>
+    <p>Код отправлен на <strong id="verify-email"></strong></p>
+    <p>Введите код из письма</p>
+    
+    <input type="text" id="verify-code" placeholder="Код подтверждения" class="login-input" maxlength="6">
+    <button id="verify-code-btn" class="login-btn">Войти</button>
+    <button id="back-to-email-btn" class="login-btn-secondary">Назад</button>
+    
+    <div id="verify-error" class="login-error-message" style="display: none;"></div>
+</div>
+
+<style>
+.login-btn-secondary {
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a0a8b4;
+    background: transparent;
+    border: 2px solid #a0a8b4;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+    margin-top: 10px;
+}
+
+.login-btn-secondary:hover {
+    background: #a0a8b4;
+    color: #222831;
+}
+</style>
