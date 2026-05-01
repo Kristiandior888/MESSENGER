@@ -2,6 +2,7 @@
 using Grpc.Core.Interceptors;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 namespace gov_messenger.Interceptors
@@ -49,6 +50,7 @@ namespace gov_messenger.Interceptors
                 ValidAudience = _config["Jwt:Audience"],
 
                 ValidateLifetime = true,
+                ClockSkew = TimeSpan.Zero,
 
                 ValidateIssuerSigningKey = true,
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
@@ -56,7 +58,8 @@ namespace gov_messenger.Interceptors
 
             var principal = handler.ValidateToken(token, validationParameters, out _);
 
-            var userId = principal.Claims.FirstOrDefault(c => c.Type == "uid")?.Value;
+            var userId = principal.Claims.FirstOrDefault(
+                c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
             if (userId == null)
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid token"));
