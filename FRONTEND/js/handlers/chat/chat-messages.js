@@ -1,81 +1,47 @@
 // js/handlers/chat/chat-messages.js
 import { state } from '../../app.js';
-import { initGrpc, getCurrentChat } from './chat-core.js';
+import { initGrpc, getCurrentChat, isGroupChat, getChatDisplayName } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
+import { formatMessageTime, formatMessageDate } from '../../utils/dateUtils.js';
 
-let currentStreamChatId = null;
-let isLoadingMessages = false; // Флаг для предотвращения дублирования загрузки
-let lastProcessedMessageIds = new Set(); // Храним ID последних обработанных сообщений
+let isLoadingMessages = false;
+let lastProcessedMessageIds = new Set();
+let isStreamStarted = false;
 
-export function formatMessageTime(timestamp) {
-    if (!timestamp) return '';
-    
-    try {
-        let date;
-        const timestampNum = Number(timestamp);
-        
-        if (timestampNum < 10000000000) {
-            date = new Date(timestampNum * 1000);
-        } else {
-            date = new Date(timestampNum);
-        }
-        
-        if (isNaN(date.getTime())) {
-            return '';
-        }
-        
-        return date.toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        console.error('❌ Ошибка форматирования времени:', error);
-        return '';
-    }
-}
 
-export function formatMessageDate(timestamp) {
-    if (!timestamp) return '';
-    
-    try {
-        const timestampNum = Number(timestamp);
-        let date;
-        
-        if (timestampNum < 10000000000) {
-            date = new Date(timestampNum * 1000);
-        } else {
-            date = new Date(timestampNum);
-        }
-        
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (date.toDateString() === today.toDateString()) {
-            return 'Сегодня';
-        }
-        
-        if (date.toDateString() === yesterday.toDateString()) {
-            return 'Вчера';
-        }
-        
-        return date.toLocaleDateString('ru-RU', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    } catch (error) {
-        return '';
-    }
-}
-
-export function createMessageElement(msg) {
-    const type = msg.sender_id === state.currentUser?.id ? 'sent' : 'received';
+export function createMessageElement(msg, chat) {
+    const isSent = msg.sender_id === state.currentUser?.id;
+    const type = isSent ? 'sent' : 'received';
     const timeStr = formatMessageTime(msg.timestamp);
     
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.dataset.messageId = msg.id;
+
+    // Показываем имя отправителя только для полученных сообщений в групповых чатах
+    const isGroup = isGroupChat(chat);
+    
+    if (isGroup && !isSent) {
+        // Ищем имя отправителя среди участников чата
+        let senderName = 'Пользователь';
+        
+        if (chat.participants && Array.isArray(chat.participants)) {
+            const sender = chat.participants.find(p => p.id === msg.sender_id);
+            if (sender) {
+                senderName = sender.name || sender.email?.split('@')[0] || 'Пользователь';
+            }
+        }
+        
+        // Если есть поле sender_name в сообщении
+        if (msg.sender_name) {
+            senderName = msg.sender_name;
+        }
+        
+        const senderDiv = document.createElement('div');
+        senderDiv.className = 'message-sender';
+        senderDiv.textContent = senderName;
+        messageDiv.appendChild(senderDiv);
+    }
 
     if (msg.text) {
         const textDiv = document.createElement('div');
@@ -95,31 +61,30 @@ export function createMessageElement(msg) {
     }
 
     if (type === 'sent') {
-        const statusSpan = document.createElement('span');
-        const status = msg.status?.toLowerCase() || 'sent';
-        statusSpan.className = `message-status ${status}`;
-        metaDiv.appendChild(statusSpan);
-    }
+    const statusSpan = document.createElement('span');
+    const status = msg.status?.toLowerCase() || 'sent';
+    statusSpan.className = `message-status ${status}`;
+    
+    metaDiv.appendChild(statusSpan);
+}
 
     messageDiv.appendChild(metaDiv);
     
     return messageDiv;
 }
 
-export function appendNewMessage(chatId, message) {
+export function appendNewMessage(chatId, message, chat) {
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return false;
     
     const currentChat = getCurrentChat();
     if (currentChat !== chatId) return false;
     
-    // Проверяем, не обрабатывали ли мы уже это сообщение
     if (lastProcessedMessageIds.has(message.id)) {
         console.log('⚠️ Сообщение уже было обработано, пропускаем:', message.id);
         return false;
     }
     
-    // Проверяем, нет ли уже такого сообщения в DOM
     if (document.querySelector(`.message[data-message-id="${message.id}"]`)) {
         console.log('⚠️ Сообщение уже есть в DOM, пропускаем:', message.id);
         return false;
@@ -127,16 +92,14 @@ export function appendNewMessage(chatId, message) {
     
     console.log(`📥 Добавляем новое сообщение в чат ${chatId}:`, message);
     
-    // Добавляем ID в Set обработанных сообщений
     lastProcessedMessageIds.add(message.id);
     
-    // Ограничиваем размер Set (храним последние 100 ID)
     if (lastProcessedMessageIds.size > 100) {
         const toDelete = [...lastProcessedMessageIds][0];
         lastProcessedMessageIds.delete(toDelete);
     }
     
-    const messageElement = createMessageElement(message);
+    const messageElement = createMessageElement(message, chat);
     
     const noMessagesDiv = messagesDiv.querySelector('.no-messages');
     if (noMessagesDiv) {
@@ -149,22 +112,20 @@ export function appendNewMessage(chatId, message) {
     return true;
 }
 
-/**
- * Загрузка сообщений с сервера
- */
 export async function loadMessagesFromServer(chatId) {
     if (!chatId) return;
-    if (isLoadingMessages) {
-        console.log('⏳ Загрузка сообщений уже выполняется, пропускаем');
-        return;
-    }
     
     console.log(`🔄 Загрузка сообщений с сервера для чата ${chatId}...`);
     isLoadingMessages = true;
     
     try {
         const { service } = await initGrpc();
-        const response = await service.getMessages(chatId, 50);
+        const [response, chatResponse] = await Promise.all([
+            service.getMessages(chatId, 50),
+            service.getChats() // Получаем список чатов для информации о текущем чате
+        ]);
+        
+        const currentChat = chatResponse.chats?.find(c => c.id === chatId);
         
         console.log('💬 Получены сообщения:', response.messages?.length || 0);
         
@@ -172,13 +133,13 @@ export async function loadMessagesFromServer(chatId) {
         if (!messagesDiv) return;
         
         messagesDiv.innerHTML = '';
-        
-        // Очищаем Set обработанных сообщений при загрузке нового чата
         lastProcessedMessageIds.clear();
         
         if (!response.messages || response.messages.length === 0) {
             messagesDiv.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое сообщение!</div>';
-            startMessageStreamForChat(chatId);
+            if (!isStreamStarted) {
+                await startGlobalStreamOnce();
+            }
             isLoadingMessages = false;
             return;
         }
@@ -189,20 +150,20 @@ export async function loadMessagesFromServer(chatId) {
             return timeA - timeB;
         });
         
-        // Добавляем все сообщения в Set обработанных
         sortedMessages.forEach(msg => {
             lastProcessedMessageIds.add(msg.id);
         });
         
         sortedMessages.forEach(msg => {
-            const messageElement = createMessageElement(msg);
+            const messageElement = createMessageElement(msg, currentChat);
             messagesDiv.appendChild(messageElement);
         });
         
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
         
-        // Запускаем стриминг после загрузки сообщений
-        await startMessageStreamForChat(chatId);
+        if (!isStreamStarted) {
+            await startGlobalStreamOnce();
+        }
         
     } catch (error) {
         console.error('❌ Ошибка загрузки сообщений:', error);
@@ -212,60 +173,67 @@ export async function loadMessagesFromServer(chatId) {
     }
 }
 
-async function startMessageStreamForChat(chatId) {
+async function startGlobalStreamOnce() {
+    if (isStreamStarted) {
+        console.log('⚠️ Глобальный стрим уже запущен');
+        return;
+    }
+    
+    if (!state.chats || state.chats.length === 0) {
+        console.log('⏳ Ждём загрузки чатов...');
+        await new Promise(resolve => {
+            const checkChats = setInterval(() => {
+                if (state.chats && state.chats.length > 0) {
+                    clearInterval(checkChats);
+                    resolve();
+                }
+            }, 100);
+        });
+    }
+    
     try {
         const { service } = await initGrpc();
         
-        // Останавливаем предыдущий стрим
-        service.stopMessageStream(chatId);
-        
-        // Запускаем новый стрим
-        service.startMessageStream(
-            chatId,
-            (message) => {
-                console.log(`✨ Новое сообщение в реальном времени для чата ${chatId}:`, message);
-                appendNewMessage(chatId, message);
-            },
-            (error) => {
-                // Не показываем ошибку для отмененных стримов
-                if (error.code !== 1 || error.details !== 'Cancelled on client') {
-                    console.error(`❌ Ошибка стрима для чата ${chatId}:`, error);
-                    setTimeout(() => {
-                        if (getCurrentChat() === chatId && !isLoadingMessages) {
-                            console.log(`🔄 Переподключение стрима для чата ${chatId}...`);
-                            startMessageStreamForChat(chatId);
-                        }
-                    }, 5000);
-                }
-            },
-            () => {
-                console.log(`📴 Стрим для чата ${chatId} завершен`);
+        service.startGlobalStream(async (message) => {
+            const currentChatId = getCurrentChat();
+            
+            // Получаем информацию о чате для сообщения
+            const chat = state.chats?.find(c => c.id === message.chat_id);
+            
+            if (currentChatId === message.chat_id) {
+                console.log(`✨ Новое сообщение в реальном времени:`, message);
+                appendNewMessage(message.chat_id, message, chat);
+            } else {
+                console.log(`📩 Новое сообщение в чате ${message.chat_id}`);
+                // Можно добавить уведомление
             }
-        );
+        });
         
-        console.log(`✅ Стрим для чата ${chatId} запущен`);
+        isStreamStarted = true;
+        console.log(`✅ Глобальный стрим запущен`);
     } catch (error) {
-        console.error(`❌ Не удалось запустить стрим для чата ${chatId}:`, error);
+        console.error(`❌ Не удалось запустить стрим:`, error);
     }
 }
 
 export async function stopMessageStreamForChat(chatId) {
-    try {
-        const { service } = await initGrpc();
-        service.stopMessageStream(chatId);
-        console.log(`🛑 Стрим для чата ${chatId} остановлен`);
-    } catch (error) {
-        console.error(`❌ Ошибка остановки стрима:`, error);
-    }
+    console.log(`⚠️ stopMessageStreamForChat вызван для ${chatId}, но глобальный стрим не останавливается`);
 }
 
 export async function stopAllMessageStreams() {
     try {
         const { service } = await initGrpc();
-        service.stopAllStreams();
+        service.stopGlobalStream();
+        isStreamStarted = false;
         lastProcessedMessageIds.clear();
-        console.log(`🛑 Все стримы остановлены`);
+        isLoadingMessages = false;
+        console.log(`🛑 Глобальный стрим остановлен`);
     } catch (error) {
-        console.error(`❌ Ошибка остановки стримов:`, error);
+        console.error(`❌ Ошибка остановки стрима:`, error);
     }
+}
+
+export function resetMessagesState() {
+    isLoadingMessages = false;
+    console.log('Состояние сообщений сброшено');
 }

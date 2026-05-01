@@ -1,9 +1,9 @@
-// js/handlers/profileHandlers.js
+// js/handlers/profileHandlers.js (исправленный импорт)
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
-import { THEMES, applyTheme, saveTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
-import { showCreateGroupModal } from './groupHandlers.js';
+import { THEMES, saveTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
+import { showCreateGroupModal } from './groups/index.js'; 
 
 // НАСТРОЙКА СТРАНИЦЫ ПРОФИЛЯ
 function setupProfileHandlers() {
@@ -47,12 +47,8 @@ function setupProfileHandlers() {
         darkThemeOption.parentNode.replaceChild(newDarkOption, darkThemeOption);
         
         newDarkOption.addEventListener('click', () => {
-            console.log('🌙 Переключение на темную тему');
-            
-            // Сохраняем тему
+            console.log('Переключение на темную тему');
             saveTheme(THEMES.DARK);
-            
-            // Перезагружаем приложение
             window.location.reload();
         });
     }
@@ -62,12 +58,8 @@ function setupProfileHandlers() {
         lightThemeOption.parentNode.replaceChild(newLightOption, lightThemeOption);
         
         newLightOption.addEventListener('click', () => {
-            console.log('☀️ Переключение на светлую тему');
-            
-            // Сохраняем тему
+            console.log('Переключение на светлую тему');
             saveTheme(THEMES.LIGHT);
-            
-            // Перезагружаем приложение
             window.location.reload();
         });
     }
@@ -146,13 +138,11 @@ function setupProfileHandlers() {
         logoutProfileBtn.parentNode.replaceChild(newLogoutBtn, logoutProfileBtn);
         
         newLogoutBtn.addEventListener('click', () => {
-            console.log('🚪 Выход из системы через профиль');
+            console.log('Выход из системы через профиль');
             
-            // Очищаем localStorage от данных сессии
             localStorage.removeItem('authToken');
             localStorage.removeItem('userData');
             
-            // Сбрасываем состояние
             state.isAuthenticated = false;
             state.currentUser = null;
             state.token = null;
@@ -160,18 +150,33 @@ function setupProfileHandlers() {
             state.userAvatar = null;
             state.chats = [];
             
-            // Показываем экран входа
             showScreen('login');
         });
     }
     
+   
+   
+   
     // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {
         const newCloseBtn = closeBtn.cloneNode(true);
         closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
         
-        newCloseBtn.addEventListener('click', () => {
+        newCloseBtn.addEventListener('click', async () => {
+            console.log('🔙 Возврат из профиля в чат');
+            
+            // Получаем последний активный чат
+            const { getCurrentChat, loadChatsFromServer } = await import('./chat/chat-core.js');
+            const { resetChatInitialization } = await import('./chat/index.js');
+            
+            // Сбрасываем флаг инициализации, чтобы чат перезагрузился
+            resetChatInitialization();
+            
+            // Загружаем чаты
+            await loadChatsFromServer();
+            
+            // Переходим в чат
             showScreen('chat');
         });
     }

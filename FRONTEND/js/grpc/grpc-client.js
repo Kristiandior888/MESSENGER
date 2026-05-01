@@ -2,26 +2,23 @@
 // Отключаем проверку сертификата для разработки
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-let grpc, protoLoader;
+const path = require('path');
+const fs = require('fs');
+const grpc = require('@grpc/grpc-js');
+const protoLoader = require('@grpc/proto-loader');
 
-if (typeof require !== 'undefined') {
-    grpc = require('@grpc/grpc-js');
-    protoLoader = require('@grpc/proto-loader');
-    console.log('✅ gRPC загружен через require в Electron');
-} else {
-    throw new Error('Это приложение должно запускаться в Electron');
-}
 
-const PROTO_PATH = 'proto/messenger.proto';
+// Текущая директория: FRONTEND
+console.log('__dirname:', __dirname);
 
-// Используем HTTPS порт 7212
-const SERVER_IP = '192.168.0.21';
-const SERVER_PORT = 7212;
-const SERVER_ADDRESS = `${SERVER_IP}:${SERVER_PORT}`;
+// Пробуем относительный путь
+let PROTO_PATH = path.join(__dirname, 'Protos/messenger.proto');
 
-console.log('📁 Загружаем proto из:', PROTO_PATH);
-console.log('🌐 Подключаемся к серверу:', SERVER_ADDRESS);
 
+// Адрес сервера
+const SERVER_ADDRESS = '192.168.0.21:7212';
+
+// Загружаем proto
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
     longs: String,
@@ -33,21 +30,14 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
 const protoDescriptor = grpc.loadPackageDefinition(packageDefinition);
 const messenger = protoDescriptor.messenger;
 
-// Создаем клиент с SSL, отключая проверку сертификата для разработки
-const sslCredentials = grpc.credentials.createSsl(
-    null,           // корневой сертификат (null для самоподписанного)
-    null,           // закрытый ключ клиента
-    null,           // сертификат клиента
-    { rejectUnauthorized: false }  // ← ОТКЛЮЧАЕМ ПРОВЕРКУ!
-);
+// Создаем клиент с SSL (отключаем проверку для разработки)
+const sslCredentials = grpc.credentials.createSsl(null, null, null, { rejectUnauthorized: false });
 
-const client = new messenger.Messenger(
-    SERVER_ADDRESS,
-    sslCredentials
-);
+const client = new messenger.Messenger(SERVER_ADDRESS, sslCredentials);
 
-console.log('✅ gRPC клиент создан для адреса:', SERVER_ADDRESS);
+console.log('gRPC клиент создан для адреса:', SERVER_ADDRESS);
 
+// Экспортируем Metadata для использования в других модулях
 if (typeof window !== 'undefined') {
     window.grpc = window.grpc || {};
     window.grpc.Metadata = grpc.Metadata;

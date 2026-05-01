@@ -2,6 +2,12 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 
+
+if (process.env.PORTABLE_EXECUTABLE_DIR) {
+  const userDataPath = path.join(process.env.PORTABLE_EXECUTABLE_DIR, 'user-data');
+  app.setPath('userData', userDataPath);
+}
+
 function createWindow() {
     const win = new BrowserWindow({
         width: 1200,

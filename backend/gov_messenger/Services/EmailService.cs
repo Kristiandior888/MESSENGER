@@ -1,5 +1,6 @@
 ﻿using MailKit.Net.Smtp;
 using MimeKit;
+using MailKit.Security;
 
 namespace gov_messenger.Services
 {
@@ -34,7 +35,7 @@ namespace gov_messenger.Services
             await client.ConnectAsync(
                 _config["Email:SmtpHost"],
                 int.Parse(_config["Email:SmtpPort"]),
-                true
+                SecureSocketOptions.StartTls
             );
 
             var emailPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");

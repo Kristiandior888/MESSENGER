@@ -38,6 +38,8 @@ namespace gov_messenger.Interceptors
 
             var handler = new JwtSecurityTokenHandler();
 
+            var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+
             var validationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -49,7 +51,7 @@ namespace gov_messenger.Interceptors
                 ValidateLifetime = true,
 
                 ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
             };
 
             var principal = handler.ValidateToken(token, validationParameters, out _);
