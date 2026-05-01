@@ -25,8 +25,7 @@ namespace gov_messenger.Services
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId),
-                new Claim(JwtRegisteredClaimNames.Email, email),
-                new Claim("uid", userId)
+                new Claim(JwtRegisteredClaimNames.Email, email)
             };
 
             var token = new JwtSecurityToken(
