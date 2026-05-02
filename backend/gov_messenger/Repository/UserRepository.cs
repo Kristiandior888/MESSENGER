@@ -29,5 +29,14 @@ namespace gov_messenger.Repository
             await _db.SaveChangesAsync();
             return user;
         }
+
+        public async Task<List<UserEntity>> GetAllUsersAsync()
+        {
+            var query = _db.Users;
+
+            return await query
+                .OrderBy(u => u.email ?? "")
+                .ToListAsync();
+        }
     }
 }

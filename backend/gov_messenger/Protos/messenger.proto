@@ -56,6 +56,10 @@ message User {
 
   // E2EE
   bytes public_key = 7;
+
+  string role = 8;
+  bool is_blocked = 9;
+  bool is_deleted = 10;
 }
 
 message GetUserRequest {}
