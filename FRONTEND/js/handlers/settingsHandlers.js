@@ -1,3 +1,4 @@
+// js/handlers/settingsHandlers.js
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { 
@@ -6,6 +7,10 @@ import {
     updatePendingSettings, 
     applyPendingSettings 
 } from '../utils/settingsUtils.js';
+import { updateChatsList } from './groups/index.js';
+
+// Флаг, чтобы предотвратить повторную инициализацию
+let isApplying = false;
 
 // НАСТРОЙКА СТРАНИЦЫ НАСТРОЕК
 function setupSettingsHandlers() {
@@ -30,69 +35,79 @@ function setupSettingsHandlers() {
         previewBlock.style.fontSize = settings.fontSize + 'px';
     }
     
-    // Уменьшение шрифта (только в предпросмотре, не в чате)
+    // Уменьшение шрифта
     if (decreaseBtn) {
-        decreaseBtn.addEventListener('click', () => {
+        const newDecreaseBtn = decreaseBtn.cloneNode(true);
+        decreaseBtn.parentNode.replaceChild(newDecreaseBtn, decreaseBtn);
+        
+        newDecreaseBtn.addEventListener('click', () => {
             const currentSize = parseInt(fontSizeValue.textContent);
             const newSize = Math.max(12, currentSize - 1);
             fontSizeValue.textContent = newSize + 'px';
             
-            // Обновляем предпросмотр
             if (previewBlock) {
                 previewBlock.style.fontSize = newSize + 'px';
             }
             
-            // Сохраняем во временные настройки
             updatePendingSettings({ fontSize: newSize });
         });
     }
     
-    // Увеличение шрифта (только в предпросмотре, не в чате)
+    // Увеличение шрифта
     if (increaseBtn) {
-        increaseBtn.addEventListener('click', () => {
+        const newIncreaseBtn = increaseBtn.cloneNode(true);
+        increaseBtn.parentNode.replaceChild(newIncreaseBtn, increaseBtn);
+        
+        newIncreaseBtn.addEventListener('click', () => {
             const currentSize = parseInt(fontSizeValue.textContent);
             const newSize = Math.min(20, currentSize + 1);
             fontSizeValue.textContent = newSize + 'px';
             
-            // Обновляем предпросмотр
             if (previewBlock) {
                 previewBlock.style.fontSize = newSize + 'px';
             }
             
-            // Сохраняем во временные настройки
             updatePendingSettings({ fontSize: newSize });
         });
     }
     
-    // Переключатели (чекбоксы) - сохраняем во временные настройки
+    // Переключатели (чекбоксы)
     const soundCheckbox = document.getElementById('sound-notifications');
     if (soundCheckbox) {
-        soundCheckbox.checked = settings.soundNotifications;
-        soundCheckbox.addEventListener('change', (e) => {
+        const newSoundCheckbox = soundCheckbox.cloneNode(true);
+        soundCheckbox.parentNode.replaceChild(newSoundCheckbox, soundCheckbox);
+        newSoundCheckbox.checked = settings.soundNotifications;
+        newSoundCheckbox.addEventListener('change', (e) => {
             updatePendingSettings({ soundNotifications: e.target.checked });
         });
     }
     
     const popupCheckbox = document.getElementById('popup-notifications');
     if (popupCheckbox) {
-        popupCheckbox.checked = settings.popupNotifications;
-        popupCheckbox.addEventListener('change', (e) => {
+        const newPopupCheckbox = popupCheckbox.cloneNode(true);
+        popupCheckbox.parentNode.replaceChild(newPopupCheckbox, popupCheckbox);
+        newPopupCheckbox.checked = settings.popupNotifications;
+        newPopupCheckbox.addEventListener('change', (e) => {
             updatePendingSettings({ popupNotifications: e.target.checked });
         });
     }
     
     const showTimeCheckbox = document.getElementById('show-time');
     if (showTimeCheckbox) {
-        showTimeCheckbox.checked = settings.showTime;
-        showTimeCheckbox.addEventListener('change', (e) => {
+        const newShowTimeCheckbox = showTimeCheckbox.cloneNode(true);
+        showTimeCheckbox.parentNode.replaceChild(newShowTimeCheckbox, showTimeCheckbox);
+        newShowTimeCheckbox.checked = settings.showTime;
+        newShowTimeCheckbox.addEventListener('change', (e) => {
             updatePendingSettings({ showTime: e.target.checked });
         });
     }
     
     const compactModeCheckbox = document.getElementById('compact-mode');
     if (compactModeCheckbox) {
-        compactModeCheckbox.checked = settings.compactMode;
-        compactModeCheckbox.addEventListener('change', (e) => {
+        const newCompactModeCheckbox = compactModeCheckbox.cloneNode(true);
+        compactModeCheckbox.parentNode.replaceChild(newCompactModeCheckbox, compactModeCheckbox);
+        newCompactModeCheckbox.checked = settings.compactMode;
+        newCompactModeCheckbox.addEventListener('change', (e) => {
             updatePendingSettings({ compactMode: e.target.checked });
         });
     }
@@ -100,47 +115,89 @@ function setupSettingsHandlers() {
     // КНОПКА "ПРИМЕНИТЬ НАСТРОЙКИ"
     const applyBtn = document.getElementById('apply-settings-btn');
     if (applyBtn) {
-        applyBtn.addEventListener('click', () => {
+        const newApplyBtn = applyBtn.cloneNode(true);
+        applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
+        
+        newApplyBtn.addEventListener('click', async () => {
+            if (isApplying) return;
+            isApplying = true;
+            
             console.log('Применяем настройки...');
             
-            // Применяем все настройки к приложению
+            // Применяем настройки к приложению
             applyPendingSettings();
             
             // Показываем уведомление
             showNotification('Настройки успешно применены!');
             
-            // Возвращаемся в чат, чтобы увидеть изменения
+            // Обновляем список чатов БЕЗ дублирования
+            await refreshChatsWithoutDuplication();
+            
+            // Возвращаемся в профиль
             setTimeout(() => {
-                showScreen('chat');
-            }, 1500);
+                showScreen('profile');
+                isApplying = false;
+            }, 1000);
         });
     }
     
     // Кнопка закрытия
     const closeBtn = document.getElementById('close-settings-btn');
     if (closeBtn) {
-        closeBtn.addEventListener('click', () => {
+        const newCloseBtn = closeBtn.cloneNode(true);
+        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+        
+        newCloseBtn.addEventListener('click', () => {
             showScreen('profile');
         });
     }
 }
 
+// Функция для обновления списка чатов без дублирования
+async function refreshChatsWithoutDuplication() {
+    const chatsList = document.getElementById('chats-list');
+    if (!chatsList) return;
+    
+    // ОЧИЩАЕМ список перед добавлением (это ключевой момент!)
+    chatsList.innerHTML = '';
+    
+    if (!state.chats || state.chats.length === 0) {
+        chatsList.innerHTML = '<div class="no-chats">Нет чатов. Создайте новый чат или напишите кому-нибудь.</div>';
+        return;
+    }
+    
+    // Импортируем функцию создания элемента чата
+    const { createChatItemElement } = await import('./chat/chat-ui.js');
+    
+    // Добавляем чаты заново (без дублей, так как список очищен)
+    for (const chat of state.chats) {
+        const chatItem = createChatItemElement(chat);
+        chatsList.appendChild(chatItem);
+    }
+    
+    // Если есть активный чат, подсвечиваем его
+    if (state.currentChat) {
+        const activeChat = chatsList.querySelector(`.chat-item[data-chat-id="${state.currentChat}"]`);
+        if (activeChat) {
+            activeChat.classList.add('active');
+        }
+    }
+    
+    console.log('✅ Список чатов обновлен, чатов:', state.chats.length);
+}
+
 // Функция для показа уведомления
 function showNotification(message) {
-    // Создаем элемент уведомления
     const notification = document.createElement('div');
     notification.className = 'settings-notification';
     notification.textContent = message;
     
-    // Добавляем на страницу
     document.body.appendChild(notification);
     
-    // Показываем с анимацией
     setTimeout(() => {
         notification.classList.add('show');
     }, 10);
     
-    // Удаляем через 2 секунды
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => {
