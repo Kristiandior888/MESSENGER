@@ -14,7 +14,7 @@ namespace gov_messenger.Services
             _config = config;
         }
 
-        public string GenerateToken(string userId, string email)
+        public string GenerateToken(string userId, string email, string role)
         {
             var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
 
@@ -25,7 +25,8 @@ namespace gov_messenger.Services
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId),
-                new Claim(JwtRegisteredClaimNames.Email, email)
+                new Claim(JwtRegisteredClaimNames.Email, email),
+                new Claim("role", role)
             };
 
             var token = new JwtSecurityToken(

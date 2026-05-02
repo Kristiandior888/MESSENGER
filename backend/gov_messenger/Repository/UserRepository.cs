@@ -22,5 +22,12 @@ namespace gov_messenger.Repository
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.id == id);
         }
+
+        public async Task<UserEntity> AddUserAsync(UserEntity user)
+        {
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+            return user;
+        }
     }
 }

@@ -1,7 +1,7 @@
-using gov_messenger;
+using gov_messenger.Services;
 using Grpc.Core;
 
-namespace gov_messenger.Services
+namespace gov_messenger.GrpcServices
 {
     public class MessengerGrpcService : Messenger.MessengerBase
     {
@@ -66,7 +66,8 @@ namespace gov_messenger.Services
 
             var token = _jwtService.GenerateToken(
                 user.id.ToString(),
-                user.email
+                user.email,
+                user.role
             );
 
             return new LoginResponse
