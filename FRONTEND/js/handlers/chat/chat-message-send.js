@@ -7,7 +7,26 @@ import { showErrorMessage } from './chat-ui.js';
 
 let isSending = false;
 let isInitialized = false;
-let pendingMessages = new Map(); // Храним временные ID сообщений
+let pendingMessages = new Map();
+
+// Функция для автоматического расширения textarea
+function autoResizeTextarea(textarea) {
+    if (!textarea) return;
+    
+    // Сбрасываем высоту, чтобы получить правильную scrollHeight
+    textarea.style.height = 'auto';
+    
+    // Устанавливаем новую высоту с ограничением 200px
+    const newHeight = Math.min(textarea.scrollHeight, 200);
+    textarea.style.height = newHeight + 'px';
+    
+    // Показываем/скрываем скролл при необходимости
+    if (textarea.scrollHeight > 200) {
+        textarea.style.overflowY = 'auto';
+    } else {
+        textarea.style.overflowY = 'hidden';
+    }
+}
 
 /**
  * Отправка сообщения
@@ -20,7 +39,7 @@ export async function sendMessage() {
 
     const messageField = document.getElementById('message-field');
     if (!messageField) {
-        console.error(' Поле ввода не найдено');
+        console.error('Поле ввода не найдено');
         return;
     }
 
@@ -49,25 +68,21 @@ export async function sendMessage() {
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
-    // Генерируем временный ID для сообщения
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
-    // Сохраняем временный ID в pendingMessages
     pendingMessages.set(tempId, { text, files: filesToSend, chatId });
     
-    // Показываем сообщение в DOM с временным ID и статусом "sending"
-    console.log('Добавляем сообщение в DOM с временным ID:', tempId);
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
     
-    // Очищаем поле ввода
+    // Очищаем поле и сбрасываем высоту
     messageField.value = '';
+    autoResizeTextarea(messageField);
 
     try {
         const { service } = await initGrpc();
         
         console.log('Отправка сообщения на сервер:', text);
         
-        // Отправляем на сервер
         const response = await service.sendMessage(chatId, text);
         
         console.log('Сообщение отправлено, ответ сервера:', response);
@@ -75,53 +90,45 @@ export async function sendMessage() {
         if (response.success && response.message) {
             const realMessageId = response.message.id;
             
-            // Удаляем временное сообщение из DOM
             const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
             if (tempMessage) {
                 tempMessage.remove();
             }
             
-            // Проверяем, не добавил ли уже стрим это сообщение
             const existingMessage = document.querySelector(`.message[data-message-id="${realMessageId}"]`);
             
             if (!existingMessage) {
-                // Если стрим ещё не добавил, добавляем сами
                 addMessage(text, 'sent', true, 'sent', filesToSend, realMessageId);
             } else {
-                // Если сообщение уже есть, просто обновляем статус
                 const statusSpan = existingMessage.querySelector('.message-status');
                 if (statusSpan) {
                     statusSpan.className = 'message-status sent';
                 }
             }
             
-            // Удаляем из pendingMessages
             pendingMessages.delete(tempId);
         } else {
-            // Если ошибка, обновляем статус временного сообщения
             updateTempMessageStatus(tempId, 'error');
             showErrorMessage('Не удалось отправить сообщение');
             
-            // Возвращаем текст обратно при ошибке
             if (!hasFiles) {
                 messageField.value = text;
+                autoResizeTextarea(messageField);
             }
         }
         
     } catch (error) {
         console.error('Ошибка отправки на сервер:', error);
         
-        // Обновляем статус временного сообщения на ошибку
         updateTempMessageStatus(tempId, 'error');
         showErrorMessage('Не удалось отправить сообщение');
         
-        // Возвращаем текст обратно при ошибке
         if (!hasFiles) {
             messageField.value = text;
+            autoResizeTextarea(messageField);
         }
     } finally {
         isSending = false;
-        // Очищаем временные сообщения, которые не были удалены
         setTimeout(() => {
             pendingMessages.forEach((_, id) => {
                 const tempMessage = document.querySelector(`.message[data-message-id="${id}"]`);
@@ -134,9 +141,6 @@ export async function sendMessage() {
     }
 }
 
-/**
- * Обновление статуса временного сообщения по ID
- */
 function updateTempMessageStatus(tempId, newStatus) {
     const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
     if (tempMessage) {
@@ -160,7 +164,7 @@ export function setupMessageSending() {
     console.log('🔧 Настройка отправки сообщений');
     
     const sendBtn = document.getElementById('send-btn');
-    const messageField = document.getElementById('message-field');
+    let messageField = document.getElementById('message-field');
 
     if (!sendBtn || !messageField) {
         console.error('Кнопка отправки или поле ввода не найдены');
@@ -173,26 +177,31 @@ export function setupMessageSending() {
     
     const newMessageField = messageField.cloneNode(true);
     messageField.parentNode.replaceChild(newMessageField, messageField);
+    messageField = newMessageField;
     
-    // Добавляем новые обработчики
+    // Добавляем обработчик для авто-расширения
+    messageField.addEventListener('input', function() {
+        autoResizeTextarea(this);
+    });
+    
+    // Обработчик для Enter (без Shift - отправка, с Shift - новая строка)
+    messageField.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+    
     newSendBtn.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         sendMessage();
     });
     
-    newMessageField.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            sendMessage();
-        }
-    });
-
-    newMessageField.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-    });
+    // Инициализируем высоту
+    setTimeout(() => {
+        autoResizeTextarea(messageField);
+    }, 0);
     
     isInitialized = true;
     console.log('Отправка сообщений настроена');
