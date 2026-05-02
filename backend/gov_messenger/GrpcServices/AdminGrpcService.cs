@@ -28,22 +28,30 @@ namespace gov_messenger.GrpcServices
         {
             EnsureSuperAdmin(context);
 
-            var user = await _adminService.CreateUserAsync(request.Email, request.Name);
-
-            return new CreateUserResponse
+            try
             {
-                User = new User
+                var user = await _adminService.CreateUserAsync(request.Email, request.Name);
+
+                return new CreateUserResponse
                 {
-                    Id = user.id.ToString(),
-                    Email = user.email,
-                    Name = user.name ?? "",
-                    AvatarUrl = user.avatar_url ?? "",
-                    Status = user.status ?? "",
-                    LastSeen = user.last_seen != null
-                        ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                        : 0
-                }
-            };
+                    User = new User
+                    {
+                        Id = user.id.ToString(),
+                        Email = user.email,
+                        Name = user.name ?? "",
+                        AvatarUrl = user.avatar_url ?? "",
+                        Status = user.status ?? "",
+                        LastSeen = user.last_seen != null
+                            ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                            : 0
+                    }
+                };
+            }
+
+            catch (Exception ex)
+            {
+                throw new RpcException(new Status(StatusCode.AlreadyExists, ex.Message));
+            }
         }
     }
 }

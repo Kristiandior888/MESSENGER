@@ -20,10 +20,15 @@ namespace gov_messenger.Services
 
         public async Task<UserEntity?> CreateUserAsync(string email, string name)
         {
+            var existing = await _userRepository.GetByEmailAsync(email);
+
+            if (existing != null)
+                throw new Exception("User already exists");
+
             var user = new UserEntity
             {
                 id = Guid.NewGuid(),
-                email = email,
+                email = email.Trim().ToLower(),
                 name = name
             };
 
