@@ -52,7 +52,6 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<EmailService>();
-builder.Services.AddScoped<AdminService>();
 
 var app = builder.Build();
 

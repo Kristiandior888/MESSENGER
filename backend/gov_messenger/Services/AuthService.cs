@@ -23,9 +23,9 @@ namespace gov_messenger.Services
 
         public async Task<bool> RequestCodeAsync(string email)
         {
-            var user = await _userRepository.GetByEmailAsync(email);
+            var user = await _userRepository.GetUserByEmailAsync(email);
 
-            if (user == null)
+            if (user == null || user.is_deleted)
                 return false;
 
             await _codeRepository.DeleteOldCodes(email);
@@ -71,7 +71,7 @@ namespace gov_messenger.Services
             // Disposability
             await _codeRepository.MarkUsedAsync(record);
 
-            return await _userRepository.GetByEmailAsync(email);
+            return await _userRepository.GetUserByEmailAsync(email);
         }
 
         private string Hash(string input)

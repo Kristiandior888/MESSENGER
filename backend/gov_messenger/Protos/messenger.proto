@@ -22,11 +22,11 @@ service Messenger {
 }
 
 service Admin {  
-  rpc CreateUser (CreateUserRequest) returns (CreateUserResponse);
+  rpc CreateUser (CreateUserRequest) returns (UserResponse);
   rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
-  rpc EditUser (EditUserRequest) returns (EditUserResponse);
-  rpc DeleteUser (DeleteUserRequest) returns (DeleteUserResponse);
   rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersResponse);
+  rpc EditUser (EditUserRequest) returns (UserResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (UserResponse);
 }
 
 // Authentication
@@ -201,7 +201,7 @@ message CreateUserRequest  {
 	string name = 2;
 }
 
-message CreateUserResponse  {
+message UserResponse  {
 	bool success = 1;
 	User user = 2;
 	string error = 3;
@@ -217,29 +217,19 @@ message GetUserByEmailResponse  {
 	string error = 3;
 }
 
+message GetAllUsersRequest {}
+
+message GetAllUsersResponse {
+  repeated User users = 1;
+  string error = 2;
+}
+
 message EditUserRequest  {
 	string user_id = 1;
 	optional string email = 2;
 	optional string name = 3;
 }
 
-message EditUserResponse  {
-	bool success = 1;
-	string error = 2;
-}
-
 message DeleteUserRequest  {
 	string user_id = 1;
-}
-
-message DeleteUserResponse  {
-	bool success = 1;
-	string error = 2;
-}
-
-message GetAllUsersRequest {}
-
-message GetAllUsersResponse {
-  repeated User users = 1;
-  string error = 2;
 }
