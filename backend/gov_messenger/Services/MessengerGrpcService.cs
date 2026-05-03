@@ -1,5 +1,8 @@
 using gov_messenger;
+using gov_messenger.Entities;
+using gov_messenger.Repository;
 using Grpc.Core;
+using static Grpc.Core.Metadata;
 
 namespace gov_messenger.Services
 {
@@ -9,86 +12,56 @@ namespace gov_messenger.Services
         private readonly AuthService _authService;
         private readonly UserService _userService;
         private readonly ChatService _chatService;
+        private readonly JwtService _jwtService;
         private readonly FileService _fileService;
+        private readonly MessageFileRepository _messageFileRepository;
 
         public MessengerGrpcService(
-            MessageService messageService, 
+            MessageService messageService,
             AuthService authService,
             ChatService chatService,
             UserService userService,
-            FileService fileService)
+            JwtService jwtService,
+            FileService fileService,
+            MessageFileRepository messageFileRepository)
         {
             _messageService = messageService;
             _authService = authService;
             _userService = userService;
             _chatService = chatService;
+            _jwtService = jwtService;
             _fileService = fileService;
+            _messageFileRepository = messageFileRepository;
         }
 
-        public override async Task<SendMessageResponse> SendMessage(
-            SendMessageRequest request,
+        public override async Task<RequestEmailCodeResponse> RequestEmailCode(
+            RequestEmailCodeRequest request,
             ServerCallContext context)
         {
-            var entity = await _messageService.SendMessageAsync(
-                request.ChatId,
-                request.SenderId,
-                request.Text,
-                (int)request.Type,
-                request.FileId
-            );
+            var ok = await _authService.RequestCodeAsync(request.Email);
 
-            var message = new Message
+            if (!ok)
             {
-                Id = entity.id.ToString(),
-                ChatId = entity.chat_id.ToString(),
-                SenderId = entity.sender_id.ToString(),
-                Text = entity.text,
-                FileId = entity.file_id?.ToString() ?? "",
-                Type = (MessageType)entity.type,
-                Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-            };
-
-            return new SendMessageResponse
-            {
-                Success = true,
-                Message = message
-            };
-        }
-
-        public override async Task<GetMessagesResponse> GetMessages(
-            GetMessagesRequest request,
-            ServerCallContext context)
-        {
-            var messages = await _messageService.GetMessagesAsync(
-                request.ChatId,
-                request.Limit,
-                request.Cursor
-            );
-
-            var response = new GetMessagesResponse();
-
-            foreach (var entity in messages)
-            {
-                response.Messages.Add(new Message
+                return new RequestEmailCodeResponse
                 {
-                    Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
-                    SenderId = entity.sender_id.ToString(),
-                    Text = entity.text,
-                    FileId = entity.file_id?.ToString() ?? "",
-                    Type = (MessageType)entity.type,
-                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-                });
+                    Success = false,
+                    Error = "User not found"
+                };
             }
 
-            return response;
+            return new RequestEmailCodeResponse
+            {
+                Success = true
+            };
         }
 
-        public override async Task<LoginResponse> Login(LoginRequest request, ServerCallContext context)
+        public override async Task<LoginResponse> VerifyEmailCode(
+            VerifyEmailCodeRequest request,
+            ServerCallContext context)
         {
-            var user = await _authService.LoginAsync(
+            var user = await _authService.VerifyCodeAsync(
                 request.Email,
-                request.Password
+                request.Code
             );
 
             if (user == null)
@@ -96,27 +69,30 @@ namespace gov_messenger.Services
                 return new LoginResponse
                 {
                     Success = false,
-                    Error = "Invalid email or password"
+                    Error = "Invalid or expired code"
                 };
             }
 
-            var grpcUser = new User
-            {
-                Id = user.id.ToString(),
-                Email = user.email,
-                Name = user.name ?? "",
-                AvatarUrl = user.avatar_url ?? "",
-                Status = user.status ?? "",
-                LastSeen = user.last_seen != null
-                    ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                    : 0
-            };
+            var token = _jwtService.GenerateToken(
+                user.id.ToString(),
+                user.email
+            );
 
             return new LoginResponse
             {
                 Success = true,
-                Token = user.id.ToString(), // temp token
-                User = grpcUser
+                Token = token,
+                User = new User
+                {
+                    Id = user.id.ToString(),
+                    Email = user.email,
+                    Name = user.name ?? "",
+                    AvatarUrl = user.avatar_url ?? "",
+                    Status = user.status ?? "",
+                    LastSeen = user.last_seen != null
+                        ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                        : 0
+                }
             };
         }
 
@@ -124,15 +100,12 @@ namespace gov_messenger.Services
             GetUserRequest request,
             ServerCallContext context)
         {
-            var user = await _userService.GetUserAsync(request.UserId);
+            var userId = context.UserState["userId"] as string;
+
+            var user = await _userService.GetUserAsync(userId);
 
             if (user == null)
-            {
-                return new GetUserResponse
-                {
-                    Error = "User not found"
-                };
-            }
+                return new GetUserResponse { Error = "User not found" };
 
             return new GetUserResponse
             {
@@ -154,14 +127,13 @@ namespace gov_messenger.Services
             GetChatsRequest request,
             ServerCallContext context)
         {
-            var authHeader = context.RequestHeaders.FirstOrDefault(h => h.Key == "authorization")?.Value;
-            var userId = authHeader?.Replace("Bearer ", "");
+            var userId = context.UserState["userId"] as string;
 
             if (string.IsNullOrEmpty(userId))
             {
                 return new GetChatsResponse
                 {
-                    Error = "User id missing"
+                    Error = "Unauthorized"
                 };
             }
 
@@ -184,6 +156,83 @@ namespace gov_messenger.Services
             return response;
         }
 
+        public override async Task<SendMessageResponse> SendMessage(
+            SendMessageRequest request,
+            ServerCallContext context)
+        {
+            var senderId = context.UserState["userId"] as string;
+
+            if (senderId == null)
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "No user"));
+            }
+
+            var isMember = await _chatService.IsUserInChat(senderId, request.ChatId);
+
+            if (!isMember)
+            {
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied"));
+            }
+
+            var entity = await _messageService.SendMessageAsync(
+                request.ChatId,
+                senderId,
+                request.Text,
+                request.FileIds.ToList()
+            );
+
+            return new SendMessageResponse
+            {
+                Success = true,
+                Message = new Message
+                {
+                    Id = entity.id.ToString(),
+                    ChatId = entity.chat_id.ToString(),
+                    SenderId = entity.sender_id.ToString(),
+                    Text = entity.text,
+                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
+                }
+            };
+        }
+
+        public override async Task<GetMessagesResponse> GetMessages(
+            GetMessagesRequest request,
+            ServerCallContext context)
+        {
+            var userId = context.UserState["userId"] as string;
+
+            var isMember = await _chatService.IsUserInChat(userId, request.ChatId);
+
+            if (!isMember)
+            {
+                throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied"));
+            }
+
+            var messages = await _messageService.GetMessagesAsync(
+                request.ChatId,
+                request.Limit,
+                request.Cursor
+            );
+
+            var response = new GetMessagesResponse();
+
+            foreach (var entity in messages)
+            {
+                var fileIds = await _messageFileRepository.GetFileIdsByMessageId(entity.id);
+
+                response.Messages.Add(new Message
+                {
+                    Id = entity.id.ToString(),
+                    ChatId = entity.chat_id.ToString(),
+                    SenderId = entity.sender_id.ToString(),
+                    Text = entity.text,
+                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
+                });
+            }
+
+            return response;
+        }
+
         public override async Task StreamMessages(
             StreamMessagesRequest request,
             IServerStreamWriter<Message> responseStream,
@@ -191,15 +240,13 @@ namespace gov_messenger.Services
         {
             var tasks = new List<Task>();
             var cancellationToken = context.CancellationToken;
-            
-            // Subscribe to each chat from the request
+
             foreach (var chatId in request.ChatIds)
             {
                 var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
                 tasks.Add(task);
             }
-            
-            // Wait until all subscriptions are completed
+
             await Task.WhenAll(tasks);
         }
 
@@ -207,54 +254,43 @@ namespace gov_messenger.Services
             IAsyncStreamReader<UploadFileRequest> requestStream,
             ServerCallContext context)
         {
-            var ms = new MemoryStream();
-            string fileName = "unknown";
+            var fileId = Guid.NewGuid();
+            var path = Path.Combine("uploads", fileId.ToString());
+
+            Directory.CreateDirectory("uploads");
+
+            await using var fs = new FileStream(path, FileMode.Create);
+
+            string fileName = "";
+            string contentType = "";
+            long totalSize = 0;
 
             await foreach (var chunk in requestStream.ReadAllAsync())
             {
                 if (!string.IsNullOrEmpty(chunk.FileName))
+                {
                     fileName = chunk.FileName;
+                    contentType = chunk.ContentType;
+                }
 
-                if (chunk.Chunk.Length > 0)
-                    await ms.WriteAsync(chunk.Chunk.ToByteArray());
+                var bytes = chunk.Chunk.ToByteArray();
+                totalSize += bytes.Length;
+
+                await fs.WriteAsync(bytes);
             }
 
-            ms.Position = 0;
-
-            var userId = context.RequestHeaders
-                .FirstOrDefault(h => h.Key == "authorization")?.Value
-                ?.Replace("Bearer ", "");
-
-            var fileId = await _fileService.SaveFileAsync(userId, fileName, ms);
+            await _fileService.SaveFileAsync(
+                fileId,
+                fileName,
+                contentType,
+                path,
+                totalSize
+            );
 
             return new UploadFileResponse
             {
-                FileId = fileId
+                FileId = fileId.ToString()
             };
-        }
-
-        public override async Task DownloadFile(
-            DownloadFileRequest request,
-            IServerStreamWriter<DownloadFileResponse> responseStream,
-            ServerCallContext context)
-        {
-            var path = await _fileService.GetFilePathAsync(request.FileId);
-
-            if (path == null)
-                return;
-
-            using var fs = new FileStream(path, FileMode.Open);
-
-            var buffer = new byte[8192];
-
-            int bytesRead;
-            while ((bytesRead = await fs.ReadAsync(buffer)) > 0)
-            {
-                await responseStream.WriteAsync(new DownloadFileResponse
-                {
-                    Chunk = Google.Protobuf.ByteString.CopyFrom(buffer, 0, bytesRead)
-                });
-            }
         }
     }
 }

@@ -352,15 +352,21 @@ body {
 }
 
 .message-status.sending::before {
-    content: "⟳";
+    content: "\27F3";  /* ⟳ */
+    animation: spin 1s linear infinite;
 }
 
 .message-status.sent {
     color: var(--text-muted);
 }
 
+.message-status {
+    font-family: "Segoe UI", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
+    font-size: 14px;
+    margin-left: 5px;
+}
 .message-status.sent::before {
-    content: "✓";
+    content: "\2713";  /* ✓ */
 }
 
 .message-status.delivered {
@@ -368,7 +374,7 @@ body {
 }
 
 .message-status.delivered::before {
-    content: "✓✓";
+    content: "\2713\2713";  /* ✓✓ */
     letter-spacing: 2px;
 }
 
@@ -377,8 +383,9 @@ body {
 }
 
 .message-status.read::before {
-    content: "✓✓";
+    content: "\2713\2713";  /* ✓✓ */
     letter-spacing: 2px;
+    color: #4CAF50;
 }
 
 .message.highlight {
@@ -1988,4 +1995,77 @@ input:checked + .slider:before {
 
 .chat-area .placeholder-content p {
     color: var(--text-muted) !important;
+}
+
+/* отопражение имени отправителя*/
+
+.message-sender {
+    font-size: 12px;
+    color: #8e9eae;
+    margin-bottom: 4px;
+    font-weight: 500;
+}
+
+.message.received .message-sender {
+    color: #d4af37;
+}
+
+/* Иконка типа чата */
+.chat-item .chat-type-icon {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* Стили для ошибок входа */
+.login-error {
+    animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+.login-input.error {
+    border-color: #e05a5a !important;
+    box-shadow: 0 0 0 2px rgba(224, 90, 90, 0.1);
+}
+
+.login-input.error:focus {
+    border-color: #e05a5a !important;
+}
+
+/* новые стили логина! */
+
+.login-btn-secondary {
+    padding: 15px 40px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a0a8b4;
+    background: transparent;
+    border: 2px solid #a0a8b4;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+    margin-top: 10px;
+}
+
+.login-btn-secondary:hover {
+    background: #a0a8b4;
+    color: #222831;
+}
+
+.login-error-message {
+    color: #e05a5a;
+    background: rgba(224, 90, 90, 0.1);
+    padding: 10px 20px;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid rgba(224, 90, 90, 0.3);
 }

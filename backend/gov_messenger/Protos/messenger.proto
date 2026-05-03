@@ -17,8 +17,10 @@ service Messenger {
 
   rpc StreamMessages (StreamMessagesRequest) returns (stream Message);
 
+  rpc RequestEmailCode (RequestEmailCodeRequest) returns (RequestEmailCodeResponse);
+  rpc VerifyEmailCode (VerifyEmailCodeRequest) returns (LoginResponse);
+
   rpc UploadFile (stream UploadFileRequest) returns (UploadFileResponse);
-  rpc DownloadFile (DownloadFileRequest) returns (stream DownloadFileResponse);
 }
 
 // Authentication
@@ -50,9 +52,7 @@ message User {
   bytes public_key = 7;
 }
 
-message GetUserRequest {
-  string user_id = 1;
-}
+message GetUserRequest {}
 
 message GetUserResponse {
   User user = 1;
@@ -121,11 +121,18 @@ message Message {
   // field for testing purposes
   string text = 7;
 
-  string file_id = 8;
+  repeated string file_ids = 8;
 
   // E2EE
   bytes ciphertext = 9;
   bytes nonce = 10;
+}
+
+message File {
+  string id = 1;
+  string file_name = 2;
+  string content_type = 3;
+  int64 size = 4;
 }
 
 // Message requests
@@ -146,14 +153,12 @@ message SendMessageRequest {
   string chat_id = 1;
   MessageType type = 2;
   string text = 3;
-  string file_id = 4;
+  repeated string file_ids = 4;
 
   // E2EE
   bytes ciphertext = 5;
 
   bytes nonce = 6;
-
-  string sender_id = 7;
 }
 
 message SendMessageResponse {
@@ -168,21 +173,30 @@ message StreamMessagesRequest {
   repeated string chat_ids = 1;
 }
 
+// Email
+
+message RequestEmailCodeRequest {
+  string email = 1;
+}
+
+message RequestEmailCodeResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message VerifyEmailCodeRequest {
+  string email = 1;
+  string code = 2;
+}
+
 // Files
 
 message UploadFileRequest {
   bytes chunk = 1;
   string file_name = 2;
+  string content_type = 3;
 }
 
 message UploadFileResponse {
   string file_id = 1;
-}
-
-message DownloadFileRequest {
-  string file_id = 1;
-}
-
-message DownloadFileResponse {
-  bytes chunk = 1;
 }

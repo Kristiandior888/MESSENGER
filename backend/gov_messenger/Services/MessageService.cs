@@ -7,50 +7,49 @@ namespace gov_messenger.Services
 {
     public class MessageService
     {
-        private readonly MessageRepository _repository;
+        private readonly MessageRepository _messageRepository;
+        private readonly MessageFileRepository _messageFileRepository;
         private static readonly ConcurrentDictionary<string, List<IServerStreamWriter<Message>>> _subscribers = new();
 
-        public MessageService(MessageRepository repository)
+        public MessageService(
+            MessageRepository messageRepository,
+            MessageFileRepository messageFileRepository)
         {
-            _repository = repository;
+            _messageRepository = messageRepository;
+            _messageFileRepository = messageFileRepository;
         }
 
         public async Task<MessageEntity> SendMessageAsync(
             string chatId,
             string senderId,
             string text,
-            int type,
-            string? fileId)
+            List<string> fileIds)
         {
-            Guid? parsedFileId = null;
-
-            if (!string.IsNullOrEmpty(fileId) && Guid.TryParse(fileId, out var guid))
-            {
-                parsedFileId = guid;
-            }
-
             var message = new MessageEntity
             {
                 id = Guid.NewGuid(),
                 chat_id = Guid.Parse(chatId),
                 sender_id = Guid.Parse(senderId),
                 text = text,
-                file_id = parsedFileId,
-                type = (short)type,
                 timestamp = DateTime.UtcNow
             };
 
-            var savedMessage = await _repository.AddAsync(message);
+            await _messageRepository.AddAsync(message);
 
-            await NotifySubscribers(chatId, savedMessage);
+            foreach (var fileId in fileIds)
+            {
+                await _messageFileRepository.AddAsync(
+                    message.id,
+                    Guid.Parse(fileId)
+                );
+            }
 
-            return savedMessage;
-            // return await _repository.AddAsync(message);
+            return message;
         }
 
         public async Task<List<MessageEntity>> GetMessagesAsync(string chatId, int limit, string cursor)
         {
-            return await _repository.GetMessagesAsync(Guid.Parse(chatId), limit, cursor);
+            return await _messageRepository.GetMessagesAsync(Guid.Parse(chatId), limit, cursor);
         }
 
         public async Task SubscribeToChat(string chatId, IServerStreamWriter<Message> stream, CancellationToken cancellationToken)

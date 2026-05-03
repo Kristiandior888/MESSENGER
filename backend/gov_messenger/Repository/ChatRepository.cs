@@ -22,5 +22,11 @@ namespace gov_messenger.Repository
 
             return await _db.Chats.Where(c => chatIds.Contains(c.id)).ToListAsync();
         }
+
+        public async Task<bool> IsUserInChatAsync(Guid userId, Guid chatId)
+        {
+            return await _db.ChatParticipants
+                .AnyAsync(cp => cp.user_id == userId && cp.chat_id == chatId);
+        }
     }
 }

@@ -5,42 +5,31 @@ namespace gov_messenger.Services
 {
     public class FileService
     {
-        private readonly FileRepository _repository;
+        private readonly FileRepository _fileRepository;
 
-        public FileService(FileRepository repository)
+        public FileService(FileRepository fileRepository)
         {
-            _repository = repository;
+            _fileRepository = fileRepository;
         }
 
-        public async Task<string> SaveFileAsync(string uploaderId, string fileName, Stream stream)
+        public async Task<FileEntity> SaveFileAsync(
+            Guid fileId,
+            string fileName,
+            string contentType,
+            string path,
+            long size)
         {
-            var fileId = Guid.NewGuid();
-            var path = Path.Combine("uploads", fileId.ToString());
-
-            await using var fs = new FileStream(path, FileMode.Create);
-
-            await stream.CopyToAsync(fs);
-
-            var file = new FileEntity
+            var entity = new FileEntity
             {
                 id = fileId,
-                uploader_id = Guid.Parse(uploaderId),
                 file_name = fileName,
-                file_path = path,
-                mime_type = "application/octet-stream",
-                size = fs.Length,
-                uploaded_at = DateTime.UtcNow
+                content_type = contentType,
+                path = path,
+                size = size,
+                created_at = DateTime.UtcNow
             };
 
-            await _repository.AddAsync(file);
-
-            return fileId.ToString();
-        }
-
-        public async Task<string?> GetFilePathAsync(string fileId)
-        {
-            var file = await _repository.GetAsync(Guid.Parse(fileId));
-            return file?.file_path;
+            return await _fileRepository.AddAsync(entity);
         }
     }
 }

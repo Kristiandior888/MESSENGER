@@ -1,6 +1,7 @@
 // js/utils/searchUtils.js
 import { state } from '../app.js';
 import { initGrpc } from '../handlers/chat/chat-core.js';
+import { formatMessageTime, formatMessageDate } from './dateUtils.js';  // Импортируем из dateUtils
 
 // Состояние поиска
 let searchState = {
@@ -11,75 +12,13 @@ let searchState = {
     originalMessages: []
 };
 
-// Форматирование даты из timestamp
-function formatMessageDateFromTimestamp(timestamp) {
-    if (!timestamp) return 'Сегодня';
-    
-    try {
-        const timestampNum = Number(timestamp);
-        let date;
-        
-        if (timestampNum < 10000000000) {
-            date = new Date(timestampNum * 1000);
-        } else {
-            date = new Date(timestampNum);
-        }
-        
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (date.toDateString() === today.toDateString()) {
-            return 'Сегодня';
-        }
-        
-        if (date.toDateString() === yesterday.toDateString()) {
-            return 'Вчера';
-        }
-        
-        return date.toLocaleDateString('ru-RU', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
-    } catch (error) {
-        return 'Сегодня';
-    }
-}
 
-// Форматирование времени сообщения
-function formatMessageTime(timestamp) {
-    if (!timestamp) return '';
-    
-    try {
-        let date;
-        const timestampNum = Number(timestamp);
-        
-        if (timestampNum < 10000000000) {
-            date = new Date(timestampNum * 1000);
-        } else {
-            date = new Date(timestampNum);
-        }
-        
-        if (isNaN(date.getTime())) {
-            return '';
-        }
-        
-        return date.toLocaleTimeString('ru-RU', {
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    } catch (error) {
-        return '';
-    }
-}
-
-// Группировка сообщений по датам
+// Функция группировки сообщений по датам (использует formatMessageDate из dateUtils)
 function groupMessagesByDate(messages) {
     const grouped = {};
     
     messages.forEach((message, index) => {
-        const date = formatMessageDateFromTimestamp(message.timestamp);
+        const date = formatMessageDate(message.timestamp);  // Используем импортированную функцию
         if (!grouped[date]) {
             grouped[date] = [];
         }
@@ -235,7 +174,7 @@ function renderSearchResults() {
             messages.forEach((msg) => {
                 const originalIndex = searchState.results.findIndex(r => r.message.id === msg.id);
                 const result = searchState.results[originalIndex];
-                const timeStr = formatMessageTime(msg.timestamp);
+                const timeStr = formatMessageTime(msg.timestamp);  // Используем импортированную функцию
                 const senderId = msg.sender_id;
                 const isSent = senderId === state.currentUser?.id;
                 
