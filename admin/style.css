@@ -568,3 +568,225 @@ body {
     color: #a0a8b4;
     margin-top: 5px;
 }
+/* Полноэкранная авторизация */
+.auth-fullscreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #1a1e24 0%, #222831 100%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-box {
+    background: #252b33;
+    border-radius: 24px;
+    padding: 40px;
+    width: 100%;
+    max-width: 400px;
+    border: 1px solid #3a424c;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.auth-logo {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.auth-logo-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.auth-logo h2 {
+    color: #ffffff;
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+.auth-logo .accent {
+    color: #d4af37;
+}
+
+.auth-step h3 {
+    color: #d4af37;
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.auth-desc {
+    color: #a0a8b4;
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.auth-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: #2a2f38;
+    border: 1px solid #3a424c;
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 16px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.auth-input:focus {
+    border-color: #d4af37;
+}
+
+.auth-input.error {
+    border-color: #e05a5a;
+}
+
+.auth-error {
+    color: #e05a5a;
+    background: rgba(224, 90, 90, 0.1);
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 15px;
+    text-align: center;
+    border: 1px solid rgba(224, 90, 90, 0.3);
+}
+
+.auth-btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: #d4af37;
+    color: #1a1e24;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 12px;
+}
+
+.auth-btn-primary:hover {
+    background: #e5c158;
+    transform: translateY(-1px);
+}
+
+.auth-btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.auth-btn-secondary {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid #3a424c;
+    color: #a0a8b4;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.auth-btn-secondary:hover {
+    border-color: #d4af37;
+    color: #d4af37;
+}
+
+/* Светлая тема для авторизации */
+body.light-theme .auth-fullscreen {
+    background: linear-gradient(135deg, #fefaf5 0%, #fdebd8 100%);
+}
+
+body.light-theme .auth-box {
+    background: #ffffff;
+    border-color: #e3d4c2;
+}
+
+body.light-theme .auth-logo h2 {
+    color: #3a2c21;
+}
+
+body.light-theme .auth-input {
+    background: #f0ece4;
+    border-color: #e3d4c2;
+    color: #3a2c21;
+}
+
+body.light-theme .auth-desc {
+    color: #7a684e;
+}
+
+body.light-theme .auth-btn-secondary {
+    border-color: #e3d4c2;
+    color: #7a684e;
+}
+
+body.light-theme .auth-btn-secondary:hover {
+    border-color: #c17b3a;
+    color: #c17b3a;
+}
+/* Вкладки */
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #3a424c;
+    padding: 0 20px;
+    background: #252b33;
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #a0a8b4;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+}
+
+.tab-btn:hover {
+    color: #d4af37;
+}
+
+.tab-btn.active {
+    color: #d4af37;
+    border-bottom-color: #d4af37;
+}
+
+/* Светлая тема */
+body.light-theme .tabs {
+    background: #ffffff;
+    border-bottom-color: #e3d4c2;
+}
+
+body.light-theme .tab-btn {
+    color: #7a684e;
+}
+
+body.light-theme .tab-btn:hover {
+    color: #c17b3a;
+}
+
+body.light-theme .tab-btn.active {
+    color: #c17b3a;
+    border-bottom-color: #c17b3a;
+}

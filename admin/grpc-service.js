@@ -132,6 +132,11 @@ class AdminGrpcService {
         });
     }
 
+    async restoreUser(userId) {
+    console.log('🔄 Восстановление пользователя:', userId);
+    return this.#callAdmin('EditUser', { user_id: userId, is_deleted: false });
+    }
+
     async checkAuth() {
         try {
             await this.getAllUsers();
