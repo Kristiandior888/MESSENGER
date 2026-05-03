@@ -1,11 +1,8 @@
 ﻿using MailKit.Net.Smtp;
 using MimeKit;
-using MailKit.Security; 
-
-
+using MailKit.Security;
 
 namespace gov_messenger.Services
-
 {
     public class EmailService
     {

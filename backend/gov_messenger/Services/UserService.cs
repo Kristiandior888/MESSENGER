@@ -13,7 +13,7 @@ namespace gov_messenger.Services
             _repository = repository;
         }
 
-        public async Task<UserEntity?> GetUserAsync(string id)
+        public async Task<UserEntity?> GetUserByIdAsync(string id)
         {
             if (!Guid.TryParse(id, out var guid))
             {
@@ -21,6 +21,16 @@ namespace gov_messenger.Services
             }
 
             return await _repository.GetByIdAsync(guid);
+        }
+
+        public async Task<UserEntity?> GetUserByEmailAsync(string email)
+        {
+            return await _repository.GetByEmailAsync(email);
+        }
+
+        public async Task<List<UserEntity>> GetAllUsersAsync()
+        {
+            return await _repository.GetAllUsersAsync();
         }
     }
 }
