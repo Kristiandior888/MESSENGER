@@ -208,7 +208,7 @@ namespace gov_messenger.Services
                 throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied"));
             }
 
-            var messages = await _messageService.GetMessagesAsync(
+            var messages = await _messageService.GetMessagesWithFilesAsync(
                 request.ChatId,
                 request.Limit,
                 request.Cursor
@@ -216,18 +216,29 @@ namespace gov_messenger.Services
 
             var response = new GetMessagesResponse();
 
-            foreach (var entity in messages)
+            foreach (var (entity, files) in messages)
             {
-                var fileIds = await _messageFileRepository.GetFileIdsByMessageId(entity.id);
-
-                response.Messages.Add(new Message
+                var grpcMessage = new Message
                 {
                     Id = entity.id.ToString(),
                     ChatId = entity.chat_id.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-                });
+                };
+
+                foreach (var file in files)
+                {
+                    grpcMessage.Files.Add(new File
+                    {
+                        Id = file.id.ToString(),
+                        FileName = file.file_name ?? "",
+                        ContentType = file.content_type ?? "",
+                        Size = file.size
+                    });
+                }
+
+                response.Messages.Add(grpcMessage);
             }
 
             return response;
@@ -255,15 +266,18 @@ namespace gov_messenger.Services
             ServerCallContext context)
         {
             var fileId = Guid.NewGuid();
-            var path = Path.Combine("uploads", fileId.ToString());
+            var uploadsDir = Path.Combine(Directory.GetCurrentDirectory(), "uploads");
 
-            Directory.CreateDirectory("uploads");
+            if (!Directory.Exists(uploadsDir))
+                Directory.CreateDirectory(uploadsDir);
+
+            var path = Path.Combine(uploadsDir, fileId.ToString());
 
             await using var fs = new FileStream(path, FileMode.Create);
 
             string fileName = "";
             string contentType = "";
-            long totalSize = 0;
+            long size = 0;
 
             await foreach (var chunk in requestStream.ReadAllAsync())
             {
@@ -274,7 +288,7 @@ namespace gov_messenger.Services
                 }
 
                 var bytes = chunk.Chunk.ToByteArray();
-                totalSize += bytes.Length;
+                size += bytes.Length;
 
                 await fs.WriteAsync(bytes);
             }
@@ -284,13 +298,37 @@ namespace gov_messenger.Services
                 fileName,
                 contentType,
                 path,
-                totalSize
+                size
             );
 
             return new UploadFileResponse
             {
                 FileId = fileId.ToString()
             };
+        }
+
+        public override async Task DownloadFile(
+            DownloadFileRequest request,
+            IServerStreamWriter<DownloadFileResponse> responseStream,
+            ServerCallContext context)
+        {
+            var file = await _fileService.GetFileAsync(request.FileId);
+
+            if (file == null)
+                throw new RpcException(new Status(StatusCode.NotFound, "File not found"));
+
+            await using var fs = new FileStream(file.path, FileMode.Open);
+
+            var buffer = new byte[64 * 1024];
+
+            int bytesRead;
+            while ((bytesRead = await fs.ReadAsync(buffer)) > 0)
+            {
+                await responseStream.WriteAsync(new DownloadFileResponse
+                {
+                    Chunk = Google.Protobuf.ByteString.CopyFrom(buffer, 0, bytesRead)
+                });
+            }
         }
     }
 }

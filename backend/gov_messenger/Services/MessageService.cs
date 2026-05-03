@@ -9,14 +9,17 @@ namespace gov_messenger.Services
     {
         private readonly MessageRepository _messageRepository;
         private readonly MessageFileRepository _messageFileRepository;
+        private readonly FileRepository _fileRepository;
         private static readonly ConcurrentDictionary<string, List<IServerStreamWriter<Message>>> _subscribers = new();
 
         public MessageService(
             MessageRepository messageRepository,
-            MessageFileRepository messageFileRepository)
+            MessageFileRepository messageFileRepository,
+            FileRepository fileRepository)
         {
             _messageRepository = messageRepository;
             _messageFileRepository = messageFileRepository;
+            _fileRepository = fileRepository;
         }
 
         public async Task<MessageEntity> SendMessageAsync(
@@ -114,6 +117,33 @@ namespace gov_messenger.Services
                     streams.Remove(dead);
                 }
             }
+        }
+
+        public async Task<List<(MessageEntity, List<FileEntity>)>> GetMessagesWithFilesAsync(
+            string chatId,
+            int limit,
+            string cursor)
+        {
+            var messages = await _messageRepository.GetMessagesAsync(
+                Guid.Parse(chatId),
+                limit,
+                cursor
+            );
+
+            var result = new List<(MessageEntity, List<FileEntity>)>();
+
+            foreach (var message in messages)
+            {
+                var fileIds = await _messageFileRepository
+                    .GetFileIdsByMessageId(message.id);
+
+                var files = await _fileRepository
+                    .GetFilesByIdsAsync(fileIds);
+
+                result.Add((message, files));
+            }
+
+            return result;
         }
     }
 }

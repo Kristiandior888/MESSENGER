@@ -31,5 +31,13 @@ namespace gov_messenger.Services
 
             return await _fileRepository.AddAsync(entity);
         }
+
+        public async Task<FileEntity?> GetFileAsync(string fileId)
+        {
+            if (!Guid.TryParse(fileId, out var guid))
+                return null;
+
+            return await _fileRepository.GetFileByIdAsync(guid);
+        }
     }
 }

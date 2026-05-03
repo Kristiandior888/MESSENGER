@@ -21,6 +21,7 @@ service Messenger {
   rpc VerifyEmailCode (VerifyEmailCodeRequest) returns (LoginResponse);
 
   rpc UploadFile (stream UploadFileRequest) returns (UploadFileResponse);
+  rpc DownloadFile (DownloadFileRequest) returns (stream DownloadFileResponse);
 }
 
 // Authentication
@@ -121,7 +122,7 @@ message Message {
   // field for testing purposes
   string text = 7;
 
-  repeated string file_ids = 8;
+  repeated File files = 8;
 
   // E2EE
   bytes ciphertext = 9;
@@ -199,4 +200,12 @@ message UploadFileRequest {
 
 message UploadFileResponse {
   string file_id = 1;
+}
+
+message DownloadFileRequest {
+  string file_id = 1;
+}
+
+message DownloadFileResponse {
+  bytes chunk = 1;
 }

@@ -1,5 +1,6 @@
 ﻿using gov_messenger.Data;
 using gov_messenger.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace gov_messenger.Repository
 {
@@ -25,10 +26,10 @@ namespace gov_messenger.Repository
 
         public async Task<List<Guid>> GetFileIdsByMessageId(Guid messageId)
         {
-            return _db.MessageFiles
+            return await _db.MessageFiles
                 .Where(x => x.message_id == messageId)
                 .Select(x => x.file_id)
-                .ToList();
+                .ToListAsync();
         }
     }
 }
