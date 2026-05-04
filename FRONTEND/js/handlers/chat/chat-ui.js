@@ -101,13 +101,12 @@ export async function updateChatAreaUIOnly() {
 export function createChatItemElement(chat) {
     const chatItem = document.createElement('div');
     chatItem.className = 'chat-item';
-    chatItem.dataset.chatId = chat.id;
+    chatItem.dataset.chatId = chat.id;  // ВАЖНО: устанавливаем data-chat-id
     
     const displayName = getChatDisplayName(chat);
     const pinIcon = chat.pinned ? '📌 ' : '';
     const unreadBadge = chat.unread_count > 0 ? `<span class="unread-badge">${chat.unread_count}</span>` : '';
     
-    // Иконка в зависимости от типа чата
     const isGroup = isGroupChat(chat);
     const typeIcon = isGroup ? '👥 ' : '💬 ';
     

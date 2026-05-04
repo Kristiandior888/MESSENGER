@@ -24,16 +24,17 @@ function loadSavedTheme() {
     return currentTheme;
 }
 
-// Применить тему
+// Применить тему (без перезагрузки)
 function applyTheme(theme) {
     const linkElement = document.getElementById('theme-style');
+    const isLight = theme === THEMES.LIGHT;
     
     if (!linkElement) {
         const newLink = document.createElement('link');
         newLink.id = 'theme-style';
         newLink.rel = 'stylesheet';
         
-        if (theme === THEMES.LIGHT) {
+        if (isLight) {
             newLink.href = 'style-light.css';
         } else {
             newLink.href = 'style.css';
@@ -41,15 +42,24 @@ function applyTheme(theme) {
         
         document.head.appendChild(newLink);
     } else {
-        if (theme === THEMES.LIGHT) {
+        if (isLight) {
             linkElement.href = 'style-light.css';
         } else {
             linkElement.href = 'style.css';
         }
     }
     
+    // Обновляем класс на body
+    if (isLight) {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+    } else {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+    }
+    
     currentTheme = theme;
-    console.log(`Тема применена: ${theme}`);
+    console.log(`🎨 Тема применена: ${theme}`);
 }
 
 // Сохранить тему
@@ -57,7 +67,7 @@ function saveTheme(theme) {
     try {
         localStorage.setItem(THEME_STORAGE_KEY, theme);
         currentTheme = theme;
-        console.log(`Тема сохранена: ${theme}`);
+        console.log(`💾 Тема сохранена: ${theme}`);
         return true;
     } catch (error) {
         console.error('Ошибка сохранения темы:', error);

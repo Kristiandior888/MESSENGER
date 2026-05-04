@@ -1,9 +1,9 @@
-// js/handlers/profileHandlers.js (исправленный импорт)
+// js/handlers/profileHandlers.js
 import { state } from '../app.js';
 import { showScreen } from '../ui.js';
 import { saveAvatarToStorage, updateAllAvatars, fileToDataURL } from '../utils/avatarUtils.js';
-import { THEMES, saveTheme, updateThemeSwitcherUI } from '../utils/themeUtils.js';
-import { showCreateGroupModal } from './groups/index.js'; 
+import { THEMES, saveTheme, applyTheme, updateThemeSwitcherUI, getCurrentTheme, initTheme } from '../utils/themeUtils.js';
+import { showCreateGroupModal } from './groups/index.js';
 
 // НАСТРОЙКА СТРАНИЦЫ ПРОФИЛЯ
 function setupProfileHandlers() {
@@ -36,20 +36,29 @@ function setupProfileHandlers() {
         }
     }
     
-    // НАСТРАИВАЕМ ПЕРЕКЛЮЧЕНИЕ ТЕМЫ
+    // НАСТРАИВАЕМ ПЕРЕКЛЮЧЕНИЕ ТЕМЫ (БЕЗ ПЕРЕЗАГРУЗКИ)
     const darkThemeOption = document.getElementById('theme-dark');
     const lightThemeOption = document.getElementById('theme-light');
     
+    // Обновляем UI переключателя в соответствии с текущей темой
     updateThemeSwitcherUI();
     
     if (darkThemeOption) {
         const newDarkOption = darkThemeOption.cloneNode(true);
         darkThemeOption.parentNode.replaceChild(newDarkOption, darkThemeOption);
         
-        newDarkOption.addEventListener('click', () => {
-            console.log('Переключение на темную тему');
+        newDarkOption.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🔄 Переключение на темную тему (без перезагрузки)');
+            
+            // Сохраняем тему
             saveTheme(THEMES.DARK);
-            window.location.reload();
+            
+            // Применяем тему без перезагрузки
+            applyThemeWithoutReload(THEMES.DARK);
+            
+            // Обновляем активный класс в переключателе
+            updateThemeSwitcherUI();
         });
     }
     
@@ -57,10 +66,18 @@ function setupProfileHandlers() {
         const newLightOption = lightThemeOption.cloneNode(true);
         lightThemeOption.parentNode.replaceChild(newLightOption, lightThemeOption);
         
-        newLightOption.addEventListener('click', () => {
-            console.log('Переключение на светлую тему');
+        newLightOption.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('🔄 Переключение на светлую тему (без перезагрузки)');
+            
+            // Сохраняем тему
             saveTheme(THEMES.LIGHT);
-            window.location.reload();
+            
+            // Применяем тему без перезагрузки
+            applyThemeWithoutReload(THEMES.LIGHT);
+            
+            // Обновляем активный класс в переключателе
+            updateThemeSwitcherUI();
         });
     }
     
@@ -138,10 +155,11 @@ function setupProfileHandlers() {
         logoutProfileBtn.parentNode.replaceChild(newLogoutBtn, logoutProfileBtn);
         
         newLogoutBtn.addEventListener('click', () => {
-            console.log('Выход из системы через профиль');
+            console.log('🚪 Выход из системы через профиль');
             
-            localStorage.removeItem('authToken');
+            localStorage.removeItem('token');
             localStorage.removeItem('userData');
+            localStorage.removeItem('userAvatar');
             
             state.isAuthenticated = false;
             state.currentUser = null;
@@ -150,13 +168,10 @@ function setupProfileHandlers() {
             state.userAvatar = null;
             state.chats = [];
             
-            showScreen('login');
+            showScreen('loginRequest');
         });
     }
     
-   
-   
-   
     // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {
@@ -166,19 +181,149 @@ function setupProfileHandlers() {
         newCloseBtn.addEventListener('click', async () => {
             console.log('🔙 Возврат из профиля в чат');
             
-            // Получаем последний активный чат
-            const { getCurrentChat, loadChatsFromServer } = await import('./chat/chat-core.js');
+            const { loadChatsFromServer } = await import('./chat/chat-core.js');
             const { resetChatInitialization } = await import('./chat/index.js');
             
-            // Сбрасываем флаг инициализации, чтобы чат перезагрузился
             resetChatInitialization();
-            
-            // Загружаем чаты
             await loadChatsFromServer();
-            
-            // Переходим в чат
             showScreen('chat');
         });
+    }
+}
+
+// Функция для применения темы без перезагрузки страницы
+function applyThemeWithoutReload(theme) {
+    const linkElement = document.getElementById('theme-style');
+    const isLight = theme === THEMES.LIGHT;
+    
+    // Меняем CSS файл
+    if (linkElement) {
+        if (isLight) {
+            linkElement.href = 'style-light.css';
+        } else {
+            linkElement.href = 'style.css';
+        }
+    }
+    
+    // Обновляем класс на body для дополнительных стилей
+    if (isLight) {
+        document.body.classList.add('light-theme');
+        document.body.classList.remove('dark-theme');
+    } else {
+        document.body.classList.add('dark-theme');
+        document.body.classList.remove('light-theme');
+    }
+    
+    // Обновляем цвета для существующих элементов (чтобы не ждать загрузки CSS)
+    updateElementColors(isLight);
+    
+    console.log(`✅ Тема применена: ${theme}`);
+}
+
+// Обновление цветов существующих элементов
+function updateElementColors(isLight) {
+    // Обновляем фон body
+    document.body.style.backgroundColor = isLight ? '#fefaf5' : '#1a1e24';
+    
+    // Обновляем фон контейнера чата
+    const chatContainer = document.querySelector('.chat-container');
+    if (chatContainer) {
+        chatContainer.style.backgroundColor = isLight ? '#fefaf5' : '#1e242b';
+    }
+    
+    // Обновляем боковую панель
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        sidebar.style.background = isLight 
+            ? 'linear-gradient(135deg, #fff5ed 0%, #fef0e6 40%, #fdeadd 100%)'
+            : '#252b33';
+    }
+    
+    // Обновляем фон области чата
+    const chatArea = document.querySelector('.chat-area');
+    if (chatArea) {
+        chatArea.style.backgroundColor = isLight ? '#fefaf5' : '#1a1e24';
+    }
+    
+    // Обновляем панель ввода
+    const messageInput = document.querySelector('.message-input');
+    if (messageInput) {
+        messageInput.style.backgroundColor = isLight ? '#fffbf7' : '#252b33';
+        messageInput.style.borderTopColor = isLight ? '#efe3d4' : '#3a424c';
+    }
+    
+    // Обновляем поле ввода
+    const messageField = document.getElementById('message-field');
+    if (messageField) {
+        messageField.style.backgroundColor = isLight ? '#f0ece4' : '#2a2f38';
+        messageField.style.color = isLight ? '#3a2c21' : '#ffffff';
+        messageField.style.borderColor = isLight ? '#e3d4c2' : '#3a424c';
+    }
+    
+    // Обновляем кнопки
+    const sendBtn = document.getElementById('send-btn');
+    if (sendBtn) {
+        sendBtn.style.color = isLight ? '#c17b3a' : '#d4af37';
+        sendBtn.style.borderColor = isLight ? '#c17b3a' : '#d4af37';
+    }
+    
+    const attachBtn = document.querySelector('.attach-btn');
+    if (attachBtn) {
+        attachBtn.style.color = isLight ? '#7a684e' : '#a0a8b4';
+        attachBtn.style.borderColor = isLight ? '#e3d4c2' : '#3a424c';
+    }
+    
+    const emojiBtn = document.querySelector('.emoji-btn');
+    if (emojiBtn) {
+        emojiBtn.style.color = isLight ? '#7a684e' : '#a0a8b4';
+        emojiBtn.style.borderColor = isLight ? '#e3d4c2' : '#3a424c';
+    }
+    
+    // Обновляем сообщения
+    document.querySelectorAll('.message.sent').forEach(msg => {
+        msg.style.background = isLight 
+            ? 'linear-gradient(115deg, #feeadc 0%, #fde5d4 40%, #fcdfcb 70%, #fbd9c2 100%)'
+            : 'linear-gradient(135deg, #3a424c 0%, #2d343c 100%)';
+        msg.style.color = isLight ? '#3a2c21' : '#ffffff';
+        msg.style.border = isLight ? '1px solid #e3d4c2' : '1px solid #4a535f';
+    });
+    
+    document.querySelectorAll('.message.received').forEach(msg => {
+        msg.style.background = isLight ? '#ffffff' : '#2d343c';
+        msg.style.color = isLight ? '#3a2c21' : '#e0e0e0';
+        msg.style.border = isLight ? '1px solid #efe3d4' : 'none';
+    });
+    
+    // Обновляем элементы чата в списке
+    document.querySelectorAll('.chat-item').forEach(item => {
+        item.style.color = isLight ? '#7a684e' : '#d0d8e2';
+        if (item.classList.contains('active')) {
+            item.style.background = isLight ? '#fef4e8' : '#2d363f';
+            item.style.color = isLight ? '#c17b3a' : '#ffffff';
+        } else {
+            item.style.background = isLight ? 'transparent' : 'transparent';
+        }
+    });
+    
+    // Обновляем информацию о пользователе
+    const userInfo = document.querySelector('.user-info');
+    if (userInfo) {
+        userInfo.style.background = isLight 
+            ? 'linear-gradient(95deg, #fff8f0 0%, #fef2e7 50%, #fdecde 100%)'
+            : '#252b33';
+        userInfo.style.borderBottomColor = isLight ? '#efe3d4' : '#3a424c';
+    }
+    
+    // Обновляем скроллбары (через CSS переменные)
+    const root = document.documentElement;
+    if (isLight) {
+        root.style.setProperty('--scrollbar-track', '#fefaf5');
+        root.style.setProperty('--scrollbar-thumb', '#decbaa');
+        root.style.setProperty('--scrollbar-thumb-hover', '#c17b3a');
+    } else {
+        root.style.setProperty('--scrollbar-track', '#252b33');
+        root.style.setProperty('--scrollbar-thumb', '#4a535f');
+        root.style.setProperty('--scrollbar-thumb-hover', '#d4af37');
     }
 }
 

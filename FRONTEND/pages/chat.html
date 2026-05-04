@@ -5,7 +5,7 @@
             <div class="avatar-wrapper" id="avatar-wrapper" style="cursor: pointer;">
                 <img src="images/default-avatar.png" alt="avatar" class="avatar" id="chat-avatar">
             </div>
-            <span id="user-email"></span> <!-- Убираем текст-заглушку! -->
+            <span id="user-email"></span>
         </div>
 
         <!-- ПОИСК ПО СООБЩЕНИЯМ -->
@@ -23,19 +23,16 @@
                 <button id="close-search-results" class="close-search-btn">✕</button>
             </div>
             <div class="search-results-list" id="search-results-list">
-                <!-- Сюда будут добавляться результаты -->
             </div>
         </div>
 
         <!-- СПИСОК ЧАТОВ -->
         <div class="chats-list" id="chats-list">
-            <!-- Чаты будут созданы через JavaScript -->
         </div>
     </div>
 
     <div class="chat-area">
         <div class="messages" id="messages">
-            <!-- Сообщения добавляются через JavaScript -->
         </div>
         
         <div class="message-input">
@@ -44,13 +41,12 @@
             </button>
             <input type="file" id="file-upload" style="display: none;" multiple>
             
-            <input type="text" id="message-field" placeholder="Написать сообщение...">
+            <textarea id="message-field" placeholder="Написать сообщение..." rows="1"></textarea>
 
             <button id="emoji-btn" class="emoji-btn" title="Эмодзи">
                 <span>😊</span>
             </button>
     
-            <!-- Панель с эмодзи (скрыта по умолчанию) -->
             <div id="emoji-panel" class="emoji-panel" style="display: none;">
                 <div class="emoji-categories">
                     <button class="emoji-category active" data-category="recent">🕒</button>
@@ -65,7 +61,6 @@
                     <button class="emoji-category" data-category="flags">🏁</button>
                 </div>
                 <div class="emoji-container" id="emoji-container">
-                    <!-- Эмодзи будут загружаться сюда -->
                 </div>
             </div>
             <button id="send-btn">Отправить</button>
@@ -106,18 +101,27 @@
     color: #a0a8b4;
 }
 
-/* Скрываем messages по умолчанию, пока не выбран чат */
 #messages {
     display: none;
 }
 
 .message-input {
-    display: none; /* Скрыто по умолчанию */
+    display: none;
 }
 
-/* Когда чат выбран - показываем */
 .chat-selected #messages,
 .chat-selected .message-input {
     display: flex;
+}
+
+/* Дополнительно: убираем лишние отступы у контейнера сообщений */
+.messages {
+    margin: 0;
+    padding: 20px;
+}
+
+.chat-area {
+    margin: 0;
+    padding: 0;
 }
 </style>
