@@ -17,10 +17,10 @@ namespace gov_messenger.GrpcServices
         {
             var role = context.UserState["role"] as string;
 
-            if (role != "super-admin")
-            {
-                throw new RpcException(new Status(StatusCode.PermissionDenied, "Admins only"));
-            }
+            if (role != null)
+                {
+                    throw new RpcException(new Status(StatusCode.PermissionDenied, "Admins only"));
+                }
         }
 
         private UserResponse MapUser(UserEntity user)

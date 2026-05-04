@@ -6,7 +6,7 @@ const fs = require('fs');
 
 const PROTO_PATH = path.join(__dirname, 'messenger.proto');
 // ВАЖНО: используем https, а не http
-const SERVER_ADDRESS = '192.168.0.106:7212';
+const SERVER_ADDRESS = '192.168.0.104:7212';
 
 console.log('🔌 Подключение к C# gRPC серверу (HTTPS/TLS)');
 
