@@ -1,7 +1,7 @@
-using gov_messenger;
+using gov_messenger.Services;
 using Grpc.Core;
 
-namespace gov_messenger.Services
+namespace gov_messenger.GrpcServices
 {
     public class MessengerGrpcService : Messenger.MessengerBase
     {
@@ -66,7 +66,8 @@ namespace gov_messenger.Services
 
             var token = _jwtService.GenerateToken(
                 user.id.ToString(),
-                user.email
+                user.email,
+                user.role
             );
 
             return new LoginResponse
@@ -82,7 +83,10 @@ namespace gov_messenger.Services
                     Status = user.status ?? "",
                     LastSeen = user.last_seen != null
                         ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                        : 0
+                        : 0,
+                    Role = user.role,
+                    IsBlocked = user.is_blocked,
+                    IsDeleted = user.is_deleted,
                 }
             };
         }
@@ -93,7 +97,7 @@ namespace gov_messenger.Services
         {
             var userId = context.UserState["userId"] as string;
 
-            var user = await _userService.GetUserAsync(userId);
+            var user = await _userService.GetUserByIdAsync(userId);
 
             if (user == null)
                 return new GetUserResponse { Error = "User not found" };
@@ -109,7 +113,10 @@ namespace gov_messenger.Services
                     Status = user.status ?? "",
                     LastSeen = user.last_seen != null
                         ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                        : 0
+                        : 0,
+                    Role = user.role,
+                    IsBlocked = user.is_blocked,
+                    IsDeleted = user.is_deleted,
                 }
             };
         }
