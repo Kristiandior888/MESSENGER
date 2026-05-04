@@ -62,7 +62,7 @@ namespace gov_messenger.Interceptors
             var userId = principal.Claims.FirstOrDefault(
                 c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            var role = principal.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
+            var role = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
 
             if (userId == null)
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid token"));
