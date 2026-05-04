@@ -9,9 +9,10 @@ let isAuthenticated = false;
 let pendingEmail = '';
 let isRequesting = false;
 let isVerifying = false;
+let serverAddress = 'localhost:7212';
 
 const adminContent = document.getElementById('admin-content');
-const authFullscreen = document.getElementById('auth-fullscreen');
+const authScreen = document.getElementById('auth-screen');
 const usersTableBody = document.getElementById('users-table-body');
 const activeUsersSpan = document.getElementById('active-users');
 const adminCountSpan = document.getElementById('admin-count');
@@ -27,20 +28,18 @@ const logoutBtn = document.getElementById('logout-btn');
 const createModal = document.getElementById('create-modal');
 const editModal = document.getElementById('edit-modal');
 const deleteModal = document.getElementById('delete-modal');
-const restoreModal = document.getElementById('restore-modal');
 
 let currentEditUserId = null;
 let currentDeleteUser = null;
-let currentRestoreUser = null;
 
 function showAdminContent() {
     if (adminContent) adminContent.style.display = 'block';
-    if (authFullscreen) authFullscreen.style.display = 'none';
+    if (authScreen) authScreen.style.display = 'none';
 }
 
 function showAuthScreen() {
     if (adminContent) adminContent.style.display = 'none';
-    if (authFullscreen) authFullscreen.style.display = 'flex';
+    if (authScreen) authScreen.style.display = 'flex';
 }
 
 function logout() {
@@ -48,22 +47,33 @@ function logout() {
     adminService.setAuthToken(null);
     pendingEmail = '';
     showAuthScreen();
-    const authEmail = document.getElementById('auth-email');
-    const authCode = document.getElementById('auth-code');
-    if (authEmail) authEmail.value = '';
-    if (authCode) authCode.value = '';
-    const stepEmail = document.getElementById('auth-step-email');
-    const stepCode = document.getElementById('auth-step-code');
-    if (stepEmail) stepEmail.style.display = 'block';
-    if (stepCode) stepCode.style.display = 'none';
+    // Сбрасываем форму
+    document.getElementById('auth-step-login').style.display = 'block';
+    document.getElementById('auth-step-code').style.display = 'none';
+    document.getElementById('server-address').value = serverAddress;
+    document.getElementById('auth-email').value = '';
+    document.getElementById('auth-code').value = '';
+    document.getElementById('auth-error').style.display = 'none';
+    document.getElementById('auth-code-error').style.display = 'none';
 }
 
+// Запрос кода (объединенный - сначала проверяем сервер, потом отправляем код)
 async function handleRequestCode() {
     if (isRequesting) return;
     
+    const serverInput = document.getElementById('server-address');
+    const serverAddr = serverInput ? serverInput.value.trim() : '';
     const emailInput = document.getElementById('auth-email');
     const email = emailInput ? emailInput.value.trim() : '';
     const errorDiv = document.getElementById('auth-error');
+    
+    if (!serverAddr) {
+        if (errorDiv) {
+            errorDiv.textContent = 'Введите адрес сервера';
+            errorDiv.style.display = 'block';
+        }
+        return;
+    }
     
     if (!email) {
         if (errorDiv) {
@@ -86,11 +96,21 @@ async function handleRequestCode() {
     const requestBtn = document.getElementById('auth-request-code');
     if (requestBtn) {
         requestBtn.disabled = true;
-        requestBtn.textContent = 'Отправка...';
+        requestBtn.textContent = 'Проверка...';
     }
     if (errorDiv) errorDiv.style.display = 'none';
     
     try {
+        // Обновляем адрес сервера
+        serverAddress = serverAddr;
+        adminService.updateServerAddress(serverAddress);
+        
+        // Проверяем подключение
+        await adminService.testConnection();
+        
+        // Отправляем код
+        if (requestBtn) requestBtn.textContent = 'Отправка кода...';
+        
         const response = await adminService.requestEmailCode(email);
         
         if (response.success) {
@@ -98,12 +118,11 @@ async function handleRequestCode() {
             adminService.setPendingEmail(email);
             const emailDisplay = document.getElementById('auth-email-display');
             if (emailDisplay) emailDisplay.textContent = email;
-            const stepEmail = document.getElementById('auth-step-email');
-            const stepCode = document.getElementById('auth-step-code');
-            if (stepEmail) stepEmail.style.display = 'none';
-            if (stepCode) stepCode.style.display = 'block';
+            document.getElementById('auth-step-login').style.display = 'none';
+            document.getElementById('auth-step-code').style.display = 'block';
             const codeInput = document.getElementById('auth-code');
             if (codeInput) codeInput.value = '';
+            showToast('Код отправлен на почту', 'success');
         } else {
             if (errorDiv) {
                 errorDiv.textContent = response.error || 'Не удалось отправить код';
@@ -164,18 +183,13 @@ async function handleVerifyCode() {
             showAdminContent();
             await loadUsers();
             showToast('Добро пожаловать в админ-панель!', 'success');
-            const stepCode = document.getElementById('auth-step-code');
-            const stepEmail = document.getElementById('auth-step-email');
-            if (stepCode) stepCode.style.display = 'none';
-            if (stepEmail) stepEmail.style.display = 'block';
-            const authEmail = document.getElementById('auth-email');
-            const authCode = document.getElementById('auth-code');
-            if (authEmail) authEmail.value = '';
-            if (authCode) authCode.value = '';
+            document.getElementById('auth-step-code').style.display = 'none';
+            document.getElementById('auth-step-login').style.display = 'block';
+            document.getElementById('auth-code').value = '';
         } else {
             if (errorDiv) {
                 if (response.error && response.error.includes('Admins only')) {
-                    errorDiv.textContent = 'У вашей учетной записи нет прав администратора.';
+                    errorDiv.textContent = '❌ У вас нет прав администратора. Доступ запрещен.';
                 } else {
                     errorDiv.textContent = response.error || 'Неверный код подтверждения';
                 }
@@ -188,7 +202,7 @@ async function handleVerifyCode() {
         }
     } catch (error) {
         if (errorDiv) {
-            errorDiv.textContent = error.message || 'Ошибка подключения к серверу';
+            errorDiv.textContent = error.message || 'Ошибка проверки кода';
             errorDiv.style.display = 'block';
         }
     } finally {
@@ -200,15 +214,11 @@ async function handleVerifyCode() {
     }
 }
 
-function backToEmail() {
-    const stepCode = document.getElementById('auth-step-code');
-    const stepEmail = document.getElementById('auth-step-email');
-    const codeInput = document.getElementById('auth-code');
-    const errorDiv = document.getElementById('auth-code-error');
-    if (stepCode) stepCode.style.display = 'none';
-    if (stepEmail) stepEmail.style.display = 'block';
-    if (codeInput) codeInput.value = '';
-    if (errorDiv) errorDiv.style.display = 'none';
+function backToLogin() {
+    document.getElementById('auth-step-code').style.display = 'none';
+    document.getElementById('auth-step-login').style.display = 'block';
+    document.getElementById('auth-code').value = '';
+    document.getElementById('auth-code-error').style.display = 'none';
 }
 
 function showToast(message, type) {
@@ -326,9 +336,6 @@ function renderUsers() {
         if (!isDeleted) {
             html += '<button class="action-btn edit" data-user-id="' + escapeHtml(user.id) + '" data-user-email="' + escapeHtml(user.email) + '" data-user-name="' + escapeHtml(user.name || '') + '">✏️</button>';
             html += '<button class="action-btn delete" data-user-id="' + escapeHtml(user.id) + '" data-user-name="' + escapeHtml(user.name || user.email) + '">🗑️</button>';
-        } else {
-            // Для удаленных пользователей только кнопка восстановления, без кнопки удаления
-            html += '<button class="action-btn restore" data-user-id="' + escapeHtml(user.id) + '" data-user-name="' + escapeHtml(user.name || user.email) + '">🔄 Восстановить</button>';
         }
         
         html += '</div></td></tr>';
@@ -336,7 +343,6 @@ function renderUsers() {
     
     if (usersTableBody) usersTableBody.innerHTML = html;
     
-    // Обработчики для редактирования
     document.querySelectorAll('.action-btn.edit').forEach(function(btn) {
         btn.addEventListener('click', function() {
             currentEditUserId = btn.dataset.userId;
@@ -348,17 +354,6 @@ function renderUsers() {
         });
     });
     
-    // Обработчики для восстановления
-    document.querySelectorAll('.action-btn.restore').forEach(function(btn) {
-        btn.addEventListener('click', function() {
-            currentRestoreUser = { id: btn.dataset.userId, name: btn.dataset.userName };
-            const restoreName = document.getElementById('restore-user-name');
-            if (restoreName) restoreName.textContent = btn.dataset.userName;
-            if (restoreModal) restoreModal.style.display = 'flex';
-        });
-    });
-    
-    // Обработчики для удаления (только для активных пользователей)
     document.querySelectorAll('.action-btn.delete').forEach(function(btn) {
         btn.addEventListener('click', function() {
             currentDeleteUser = { 
@@ -512,45 +507,6 @@ async function deleteUser() {
     }
 }
 
-async function restoreUser() {
-    if (!currentRestoreUser) return;
-    
-    const confirmBtn = document.querySelector('#restore-modal .restore-confirm');
-    if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Восстановление...';
-    }
-    
-    try {
-        // Пробуем восстановить через editUser, снимая флаг is_deleted
-        // Если API не поддерживает, пробуем другие методы
-        let response;
-        try {
-            // Пытаемся восстановить через editUser
-            response = await adminService.editUser(currentRestoreUser.id, null, null);
-        } catch (editError) {
-            // Если editUser не работает, пробуем другие подходы
-            console.log('editUser не сработал, пробуем другие методы');
-            response = { success: false, error: 'Метод восстановления не поддерживается сервером' };
-        }
-        
-        if (response.success) {
-            showToast('Пользователь "' + currentRestoreUser.name + '" восстановлен', 'success');
-            if (restoreModal) restoreModal.style.display = 'none';
-            await loadUsers();
-        } else {
-            showToast(response.error || 'Ошибка восстановления. Возможно, сервер не поддерживает восстановление.', 'error');
-        }
-    } catch (error) {
-        showToast(error.message, 'error');
-    } finally {
-        if (confirmBtn) {
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Восстановить';
-        }
-    }
-}
-
 function exportUsers() {
     const filteredUsers = getFilteredUsers();
     const headers = ['ID', 'Имя', 'Email', 'Роль', 'Статус', 'Последний визит'];
@@ -595,7 +551,6 @@ function closeModals() {
     if (createModal) createModal.style.display = 'none';
     if (editModal) editModal.style.display = 'none';
     if (deleteModal) deleteModal.style.display = 'none';
-    if (restoreModal) restoreModal.style.display = 'none';
 }
 
 function setupTabs() {
@@ -665,21 +620,26 @@ async function init() {
     const deleteConfirm = document.querySelector('#delete-modal .delete-confirm');
     if (deleteConfirm) deleteConfirm.addEventListener('click', deleteUser);
     
-    const restoreConfirm = document.querySelector('#restore-modal .restore-confirm');
-    if (restoreConfirm) restoreConfirm.addEventListener('click', restoreUser);
-    
+    // Кнопки авторизации
     const requestBtn = document.getElementById('auth-request-code');
     if (requestBtn) requestBtn.addEventListener('click', handleRequestCode);
     
     const verifyBtn = document.getElementById('auth-verify-code');
     if (verifyBtn) verifyBtn.addEventListener('click', handleVerifyCode);
     
-    const backBtn = document.getElementById('auth-back-email');
-    if (backBtn) backBtn.addEventListener('click', backToEmail);
+    const backToLoginBtn = document.getElementById('back-to-login');
+    if (backToLoginBtn) backToLoginBtn.addEventListener('click', backToLogin);
     
     const authEmail = document.getElementById('auth-email');
     if (authEmail) {
         authEmail.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleRequestCode();
+        });
+    }
+    
+    const serverAddressInput = document.getElementById('server-address');
+    if (serverAddressInput) {
+        serverAddressInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') handleRequestCode();
         });
     }
@@ -691,6 +651,7 @@ async function init() {
         });
     }
     
+    // Показываем экран авторизации
     showAuthScreen();
 }
 
