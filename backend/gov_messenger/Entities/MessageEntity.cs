@@ -8,5 +8,6 @@
         public string? text { get; set; }
         public short type { get; set; }
         public DateTime timestamp { get; set; }
+        public List<FileEntity> files { get; set; } = new();
     }
 }

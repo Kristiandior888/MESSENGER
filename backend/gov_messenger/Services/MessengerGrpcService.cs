@@ -14,7 +14,6 @@ namespace gov_messenger.Services
         private readonly ChatService _chatService;
         private readonly JwtService _jwtService;
         private readonly FileService _fileService;
-        private readonly MessageFileRepository _messageFileRepository;
 
         public MessengerGrpcService(
             MessageService messageService,
@@ -22,8 +21,7 @@ namespace gov_messenger.Services
             ChatService chatService,
             UserService userService,
             JwtService jwtService,
-            FileService fileService,
-            MessageFileRepository messageFileRepository)
+            FileService fileService)
         {
             _messageService = messageService;
             _authService = authService;
@@ -31,7 +29,6 @@ namespace gov_messenger.Services
             _chatService = chatService;
             _jwtService = jwtService;
             _fileService = fileService;
-            _messageFileRepository = messageFileRepository;
         }
 
         public override async Task<RequestEmailCodeResponse> RequestEmailCode(
@@ -178,20 +175,38 @@ namespace gov_messenger.Services
                 request.ChatId,
                 senderId,
                 request.Text,
-                request.FileIds.ToList()
+                request.FileIds.ToList(),
+                (short)request.Type
             );
+
+            // Get associated files for the response
+            var files = await _fileService.GetFilesByMessageIdAsync(entity.id);
+
+            var grpcMessage = new Message
+            {
+                Id = entity.id.ToString(),
+                ChatId = entity.chat_id.ToString(),
+                SenderId = entity.sender_id.ToString(),
+                Text = entity.text,
+                Type = (MessageType)entity.type,
+                Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
+            };
+
+            foreach (var file in files)
+            {
+                grpcMessage.Files.Add(new File
+                {
+                    Id = file.id.ToString(),
+                    FileName = file.file_name ?? "",
+                    ContentType = file.content_type ?? "",
+                    Size = file.size
+                });
+            }
 
             return new SendMessageResponse
             {
                 Success = true,
-                Message = new Message
-                {
-                    Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
-                    SenderId = entity.sender_id.ToString(),
-                    Text = entity.text,
-                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-                }
+                Message = grpcMessage
             };
         }
 
@@ -279,18 +294,21 @@ namespace gov_messenger.Services
             string contentType = "";
             long size = 0;
 
-            await foreach (var chunk in requestStream.ReadAllAsync())
+            await foreach (var request in requestStream.ReadAllAsync())
             {
-                if (!string.IsNullOrEmpty(chunk.FileName))
+                // Handle FileMetadata from oneof
+                if (request.DataCase == UploadFileRequest.DataOneofCase.Metadata)
                 {
-                    fileName = chunk.FileName;
-                    contentType = chunk.ContentType;
+                    fileName = request.Metadata.FileName;
+                    contentType = request.Metadata.ContentType;
                 }
-
-                var bytes = chunk.Chunk.ToByteArray();
-                size += bytes.Length;
-
-                await fs.WriteAsync(bytes);
+                // Handle chunk data from oneof
+                else if (request.DataCase == UploadFileRequest.DataOneofCase.Chunk)
+                {
+                    var bytes = request.Chunk.ToByteArray();
+                    size += bytes.Length;
+                    await fs.WriteAsync(bytes);
+                }
             }
 
             await _fileService.SaveFileAsync(

@@ -46,7 +46,6 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<ChatRepository>();
 builder.Services.AddScoped<EmailCodeRepository>();
 builder.Services.AddScoped<FileRepository>();
-builder.Services.AddScoped<MessageFileRepository>();
 
 builder.Services.AddScoped<MessageService>();
 builder.Services.AddScoped<AuthService>();

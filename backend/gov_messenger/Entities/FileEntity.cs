@@ -3,6 +3,8 @@
     public class FileEntity
     {
         public Guid id { get; set; }
+        public Guid message_id { get; set; }
+        public MessageEntity? message { get; set; }
         public string? file_name { get; set; }
         public string? content_type { get; set; }
         public Int64 size { get; set; }

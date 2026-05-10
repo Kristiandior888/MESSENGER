@@ -31,5 +31,37 @@ namespace gov_messenger.Repository
                 .Where(f => ids.Contains(f.id))
                 .ToListAsync();
         }
+
+        public async Task<List<FileEntity>> GetFilesByMessageIdAsync(Guid messageId)
+        {
+            return await _db.Files
+                .Where(f => f.message_id == messageId)
+                .ToListAsync();
+        }
+
+        public async Task<bool> UpdateFileMessageIdAsync(Guid fileId, Guid messageId)
+        {
+            var file = await _db.Files.FirstOrDefaultAsync(f => f.id == fileId);
+            if (file == null)
+                return false;
+
+            file.message_id = messageId;
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task UpdateFilesMessageIdAsync(List<Guid> fileIds, Guid messageId)
+        {
+            var files = await _db.Files
+                .Where(f => fileIds.Contains(f.id))
+                .ToListAsync();
+
+            foreach (var file in files)
+            {
+                file.message_id = messageId;
+            }
+
+            await _db.SaveChangesAsync();
+        }
     }
 }

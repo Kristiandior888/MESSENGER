@@ -26,7 +26,8 @@ namespace gov_messenger.Services
                 content_type = contentType,
                 path = path,
                 size = size,
-                created_at = DateTime.UtcNow
+                created_at = DateTime.UtcNow,
+                message_id = Guid.Empty  // Will be set when message is sent
             };
 
             return await _fileRepository.AddAsync(entity);
@@ -38,6 +39,19 @@ namespace gov_messenger.Services
                 return null;
 
             return await _fileRepository.GetFileByIdAsync(guid);
+        }
+
+        public async Task<List<FileEntity>> GetFilesByMessageIdAsync(Guid messageId)
+        {
+            return await _fileRepository.GetFilesByMessageIdAsync(messageId);
+        }
+
+        public async Task LinkFilesToMessageAsync(List<Guid> fileIds, Guid messageId)
+        {
+            if (fileIds == null || fileIds.Count == 0)
+                return;
+
+            await _fileRepository.UpdateFilesMessageIdAsync(fileIds, messageId);
         }
     }
 }

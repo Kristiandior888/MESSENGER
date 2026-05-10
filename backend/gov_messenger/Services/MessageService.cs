@@ -8,25 +8,23 @@ namespace gov_messenger.Services
     public class MessageService
     {
         private readonly MessageRepository _messageRepository;
-        private readonly MessageFileRepository _messageFileRepository;
-        private readonly FileRepository _fileRepository;
+        private readonly FileService _fileService;
         private static readonly ConcurrentDictionary<string, List<IServerStreamWriter<Message>>> _subscribers = new();
 
         public MessageService(
             MessageRepository messageRepository,
-            MessageFileRepository messageFileRepository,
-            FileRepository fileRepository)
+            FileService fileService)
         {
             _messageRepository = messageRepository;
-            _messageFileRepository = messageFileRepository;
-            _fileRepository = fileRepository;
+            _fileService = fileService;
         }
 
         public async Task<MessageEntity> SendMessageAsync(
             string chatId,
             string senderId,
             string text,
-            List<string> fileIds)
+            List<string> fileIds,
+            short messageType = 0)
         {
             var message = new MessageEntity
             {
@@ -34,17 +32,17 @@ namespace gov_messenger.Services
                 chat_id = Guid.Parse(chatId),
                 sender_id = Guid.Parse(senderId),
                 text = text,
+                type = messageType,
                 timestamp = DateTime.UtcNow
             };
 
             await _messageRepository.AddAsync(message);
 
-            foreach (var fileId in fileIds)
+            // Link files to message if any were provided
+            if (fileIds != null && fileIds.Count > 0)
             {
-                await _messageFileRepository.AddAsync(
-                    message.id,
-                    Guid.Parse(fileId)
-                );
+                var fileGuids = fileIds.Select(fid => Guid.Parse(fid)).ToList();
+                await _fileService.LinkFilesToMessageAsync(fileGuids, message.id);
             }
 
             return message;
@@ -134,12 +132,7 @@ namespace gov_messenger.Services
 
             foreach (var message in messages)
             {
-                var fileIds = await _messageFileRepository
-                    .GetFileIdsByMessageId(message.id);
-
-                var files = await _fileRepository
-                    .GetFilesByIdsAsync(fileIds);
-
+                var files = await _fileService.GetFilesByMessageIdAsync(message.id);
                 result.Add((message, files));
             }
 
