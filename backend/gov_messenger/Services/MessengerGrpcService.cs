@@ -114,6 +114,36 @@ namespace gov_messenger.Services
             };
         }
 
+        public override async Task<GetUsersResponse> GetUsers(
+            GetUsersRequest request,
+            ServerCallContext context)
+        {
+            var users = await _userService.GetUsersAsync(
+                request.Search
+            );
+
+            var response = new GetUsersResponse();
+
+            foreach (var user in users)
+            {
+                response.Users.Add(new User
+                {
+                    Id = user.id.ToString(),
+                    Email = user.email,
+                    Name = user.name ?? "",
+                    AvatarUrl = user.avatar_url ?? "",
+                    Status = user.status ?? "",
+                    LastSeen = user.last_seen != null
+                        ? new DateTimeOffset(
+                            user.last_seen.Value)
+                        .ToUnixTimeSeconds()
+                        : 0
+                });
+            }
+
+            return response;
+        }
+
         public override async Task<GetChatsResponse> GetChats(
             GetChatsRequest request,
             ServerCallContext context)
@@ -145,6 +175,53 @@ namespace gov_messenger.Services
             }
 
             return response;
+        }
+
+        public override async Task<CreateChatResponse> CreateChat(
+            CreateChatRequest request,
+            ServerCallContext context)
+        {
+            var userId =
+                context.UserState["userId"] as string;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new RpcException(
+                    new Status(
+                        StatusCode.Unauthenticated,
+                        "Unauthorized"));
+            }
+
+            try
+            {
+                var chat = await _chatService
+                    .CreateChatAsync(
+                        userId,
+                        request.Type,
+                        request.Name,
+                        request.ParticipantIds.ToList());
+
+                return new CreateChatResponse
+                {
+                    Chat = new Chat
+                    {
+                        Id = chat.id.ToString(),
+                        Name = chat.name ?? "",
+                        Type = (ChatType)chat.type,
+                        CreatedAt =
+                            new DateTimeOffset(
+                                chat.created_at)
+                            .ToUnixTimeSeconds()
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CreateChatResponse
+                {
+                    Error = ex.Message
+                };
+            }
         }
 
         public override async Task<SendMessageResponse> SendMessage(

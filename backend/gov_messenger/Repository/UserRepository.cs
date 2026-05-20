@@ -22,5 +22,22 @@ namespace gov_messenger.Repository
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.id == id);
         }
+
+        public async Task<List<UserEntity>> GetUsersAsync(string? search)
+        {
+            var query = _db.Users
+                .Where(u => !u.is_deleted);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(u =>
+                    u.name.Contains(search) ||
+                    u.email.Contains(search));
+            }
+
+            return await query
+                .OrderBy(u => u.name)
+                .ToListAsync();
+        }
     }
 }

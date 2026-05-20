@@ -28,5 +28,28 @@ namespace gov_messenger.Repository
             return await _db.ChatParticipants
                 .AnyAsync(cp => cp.user_id == userId && cp.chat_id == chatId);
         }
+
+        public async Task<ChatEntity?> FindPrivateChatAsync(Guid user1, Guid user2)
+        {
+            return await _db.Chats
+                .Include(c => c.participants)
+                .Where(c => c.type == (short)ChatType.Private)
+                .FirstOrDefaultAsync(c =>
+                    c.participants.Count == 2 &&
+                    c.participants.Any(
+                        p => p.user_id == user1) &&
+                    c.participants.Any(
+                        p => p.user_id == user2));
+        }
+
+        public async Task<ChatEntity> CreateAsync(
+            ChatEntity chat)
+        {
+            _db.Chats.Add(chat);
+
+            await _db.SaveChangesAsync();
+
+            return chat;
+        }
     }
 }

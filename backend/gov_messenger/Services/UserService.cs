@@ -22,5 +22,10 @@ namespace gov_messenger.Services
 
             return await _repository.GetByIdAsync(guid);
         }
+
+        public async Task<List<UserEntity>> GetUsersAsync(string? search)
+        {
+            return await _repository.GetUsersAsync(search);
+        }
     }
 }

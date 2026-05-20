@@ -9,5 +9,6 @@
         public string? avatar_url { get; set; }
         public string? status { get; set; }
         public DateTime? last_seen { get; set; }
+        public bool is_deleted { get; set; } = false;
     }
 }

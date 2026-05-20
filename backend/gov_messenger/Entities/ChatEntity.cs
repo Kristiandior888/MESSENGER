@@ -7,5 +7,6 @@
         public short type { get; set; }
         public string? avatar_url { get; set; }
         public DateTime created_at { get; set; }
+        public List<ChatParticipantEntity> participants { get; set; } = new();
     }
 }
