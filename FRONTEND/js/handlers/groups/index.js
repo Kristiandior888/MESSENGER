@@ -27,6 +27,7 @@ export async function updateChatsList() {
     const chatsList = document.getElementById('chats-list');
     if (!chatsList) return;
     
+    // ОЧИЩАЕМ список перед добавлением
     chatsList.innerHTML = '';
     
     if (!state.chats || state.chats.length === 0) {
@@ -41,10 +42,24 @@ export async function updateChatsList() {
         return (a.name || '').localeCompare(b.name || '');
     });
     
+    // Импортируем функцию создания элемента чата
+    const { createChatItemElement } = await import('../chat/chat-ui.js');
+    
+    // Добавляем чаты заново
     for (const chat of sortedChats) {
-        const chatItem = createChatListItem(chat);
+        const chatItem = createChatItemElement(chat);
         chatsList.appendChild(chatItem);
     }
+    
+    // Подсвечиваем активный чат
+    if (state.currentChat) {
+        const activeChat = chatsList.querySelector(`.chat-item[data-chat-id="${state.currentChat}"]`);
+        if (activeChat) {
+            activeChat.classList.add('active');
+        }
+    }
+    
+    console.log('✅ Список чатов обновлен через updateChatsList');
 }
 
 /**

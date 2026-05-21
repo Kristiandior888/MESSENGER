@@ -145,6 +145,20 @@ style.textContent = `
         left: 0;
         background: var(--bg-color, #1e242b);
         overflow: hidden;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Дополнительно обнуляем все отступы для страниц */
+    .chat-container,
+    .profile-container,
+    .settings-container,
+    .login-container {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
     }
 `;
 document.head.appendChild(style);

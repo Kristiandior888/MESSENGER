@@ -352,19 +352,66 @@ body {
     background: rgba(212, 175, 55, 0.1);
 }
 
-/* ----- ПАНЕЛЬ ВВОДА СООБЩЕНИЯ ----- */
+/* =======================================
+   ПАНЕЛЬ ВВОДА СООБЩЕНИЯ
+   ======================================= */
+
 .message-input {
     display: flex;
-    padding: 20px;
+    padding: 30px;  /* Убираем нижний отступ */
     background-color: #252b33;
     border-top: 1px solid #3a424c;
-    gap: 10px;
-    align-items: center;
+    gap: 12px;
+    align-items: flex-end;
+    min-height: 68px;
+    margin: 0;  /* Убираем margin */
+    position: relative;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+/* Убедимся, что контейнер приложения не имеет отступов */
+#app {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+#content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* Контейнер чата */
+.chat-container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    background-color: #1e242b;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* Убираем отступы у body и html */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
 }
 
 .attach-btn {
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: transparent;
     border: 1px solid #3a424c;
@@ -375,6 +422,8 @@ body {
     align-items: center;
     justify-content: center;
     transition: all 0.2s;
+    flex-shrink: 0;
+    margin-bottom: 4px;
 }
 
 .attach-btn:hover {
@@ -388,43 +437,96 @@ body {
     border-color: #d4af37;
 }
 
+/* Стили для textarea - увеличили максимальную высоту */
 #message-field {
     flex: 1;
-    padding: 12px 20px;
-    background-color: #1a1e24;
+    padding: 12px 18px;
+    background-color: #2a2f38;  /* Серый фон */
     border: 1px solid #3a424c;
-    border-radius: 25px;
+    border-radius: 24px;
     color: #ffffff;
-    font-size: 1rem;
+    font-size: 0.95rem;
     outline: none;
+    resize: none;
+    overflow-y: auto;
+    max-height: 200px;  /* Увеличили с 120 до 200px */
+    min-height: 46px;   /* Увеличили минимальную высоту */
+    line-height: 1.5;
+    font-family: inherit;
+    scrollbar-width: thin;
 }
 
 #message-field:focus {
     border-color: #d4af37;
+    background-color: #323841;  /* Чуть светлее при фокусе */
 }
 
 #message-field::placeholder {
-    color: #6f7a88;
+    color: #7a8795;
     font-style: italic;
 }
 
+/* Кастомный скролл для textarea */
+#message-field::-webkit-scrollbar {
+    width: 5px;
+}
+
+#message-field::-webkit-scrollbar-track {
+    background: #3a424c;
+    border-radius: 5px;
+}
+
+#message-field::-webkit-scrollbar-thumb {
+    background: #5a6570;
+    border-radius: 5px;
+}
+
+#message-field::-webkit-scrollbar-thumb:hover {
+    background: #d4af37;
+}
+
+/* Кнопка эмодзи */
+.emoji-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1px solid #3a424c;
+    color: #a0a8b4;
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    margin-bottom: 4px;
+}
+
+.emoji-btn:hover {
+    border-color: #d4af37;
+    color: #d4af37;
+    transform: scale(1.05);
+}
+
 #send-btn {
-    padding: 0 25px;
-    height: 40px;
+    padding: 0 24px;
+    height: 42px;
     background: transparent;
     color: #d4af37;
     border: 2px solid #d4af37;
-    border-radius: 25px;
+    border-radius: 24px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+    flex-shrink: 0;
+    margin-bottom: 4px;
 }
 
 #send-btn:hover {
     background: #d4af37;
     color: #1a1e24;
 }
-
 /* ----- ОТОБРАЖЕНИЕ ФАЙЛОВ В СООБЩЕНИЯХ ----- */
 .message-files {
     margin-top: 8px;
@@ -2446,4 +2548,11 @@ body.light-theme .settings-btn:hover {
     font-size: 14px;
     text-align: center;
     border: 1px solid rgba(224, 90, 90, 0.3);
+}
+.chat-item[data-is-virtual="true"] {
+    opacity: 0.85;
+}
+
+.chat-item[data-is-virtual="true"]:hover {
+    opacity: 1;
 }

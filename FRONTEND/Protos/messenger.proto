@@ -19,6 +19,8 @@ service Messenger {
 
   rpc RequestEmailCode (RequestEmailCodeRequest) returns (RequestEmailCodeResponse);
   rpc VerifyEmailCode (VerifyEmailCodeRequest) returns (LoginResponse);
+
+  rpc GetUsers (GetUsersRequest) returns (GetUsersResponse);
 }
 
 // Authentication
@@ -55,6 +57,16 @@ message GetUserRequest {}
 message GetUserResponse {
   User user = 1;
   string error = 2;
+}
+
+// Getting users
+message GetUsersRequest {
+    string search = 1;
+}
+
+message GetUsersResponse {
+    repeated User users = 1;
+    string error = 2;
 }
 
 // Chats

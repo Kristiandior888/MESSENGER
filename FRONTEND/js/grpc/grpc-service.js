@@ -2,14 +2,13 @@
 import client from './grpc-client.js';
 import { state } from '../app.js';
 
-
 const Metadata = window.grpc?.Metadata || (client && client.Metadata);
 
 class GrpcService {
     constructor() {
         this.client = client;
-        this.stream = null; // Один стрим для всех чатов
-        this.onMessageCallback = null; // Храним колбэк
+        this.stream = null;
+        this.onMessageCallback = null;
     }
 
     #call(method, request, skipAuth = false) {
@@ -17,6 +16,12 @@ class GrpcService {
             const metadata = new Metadata();
             if (!skipAuth && state.token) {
                 metadata.add('authorization', `Bearer ${state.token}`);
+            }
+
+            if (typeof this.client[method] !== 'function') {
+                console.error(`❌ Метод ${method} не существует в клиенте`);
+                reject(new Error(`Метод ${method} не реализован на сервере`));
+                return;
             }
 
             this.client[method](request, metadata, (error, response) => {
@@ -27,6 +32,7 @@ class GrpcService {
                     if (error.code === 14) errorMessage = 'Сервер недоступен';
                     else if (error.code === 5) errorMessage = 'Не найден';
                     else if (error.code === 16) errorMessage = 'Не авторизован';
+                    else if (error.message) errorMessage = error.message;
                     
                     reject(new Error(errorMessage));
                 } else {
@@ -36,10 +42,7 @@ class GrpcService {
         });
     }
 
-    // async login(email, password) {
-    //     return this.#call('Login', { email, password }, true);
-    // }
-
+    // Email authentication
     async requestEmailCode(email) {
         return this.#call('RequestEmailCode', { email }, true);
     }
@@ -48,10 +51,22 @@ class GrpcService {
         return this.#call('VerifyEmailCode', { email, code }, true);
     }
 
+    // Chats
     async getChats() {
         return this.#call('GetChats', {});
     }
 
+    async createChat(type, name, participantIds) {
+        const request = {
+            type: type,
+            name: name || '',
+            participant_ids: participantIds || []
+        };
+        console.log('📤 CreateChat запрос:', request);
+        return this.#call('CreateChat', request);
+    }
+
+    // Messages
     async getMessages(chatId, limit = 50, cursor = '') {
         return this.#call('GetMessages', {
             chat_id: chatId,
@@ -60,11 +75,13 @@ class GrpcService {
         });
     }
 
-    async sendMessage(chatId, text, type = 0, fileId = '') {
+    async sendMessage(chatId, text, type = 0, fileIds = []) {
         if (!state.currentUser) {
             throw new Error('Пользователь не авторизован');
         }
 
+        const fileId = fileIds.length > 0 ? fileIds[0] : '';
+        
         return this.#call('SendMessage', {
             chat_id: chatId,
             type: type,
@@ -73,87 +90,167 @@ class GrpcService {
         });
     }
 
-    // Запускаем ОДИН стрим для всех чатов
-    // js/grpc/grpc-service.js
-
-startGlobalStream(onMessage) {
-    this.onMessageCallback = onMessage;
-    
-    if (this.stream) {
-        console.log('⚠️ Глобальный стрим уже существует');
-        return this.stream;
+    // Users
+    async getUser(userId) {
+        return this.#call('GetUser', { id: userId });
     }
 
-    const metadata = new Metadata();
-    if (state.token) {
-        metadata.add('authorization', `Bearer ${state.token}`);
+    async getUsers(search = '') {
+        return this.#call('GetUsers', { search: search });
     }
 
-    // Получаем список ID чатов из state
-    const chatIds = state.chats?.map(chat => chat.id) || [];
-    
-    if (chatIds.length === 0) {
-        console.log(' Нет чатов для стрима, откладываем запуск');
-        // Подождём, пока загрузятся чаты
-        setTimeout(() => {
-            if (state.chats?.length > 0) {
-                this.startGlobalStream(onMessage);
+    /**
+     * Загрузка файла на сервер
+     */
+    uploadFile(file) {
+        return new Promise((resolve, reject) => {
+            const metadata = new Metadata();
+            if (state.token) {
+                metadata.add('authorization', `Bearer ${state.token}`);
             }
-        }, 2000);
-        return null;
-    }
-    
-    console.log(`Запуск глобального стрима для чатов:`, chatIds);
-    
-    try {
-        this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);
-        
-        this.stream.on('data', (message) => {
-            console.log(`Новое сообщение в чате ${message.chat_id}:`, message);
-            if (this.onMessageCallback) {
-                this.onMessageCallback(message);
-            }
-        });
-        
-        this.stream.on('error', (error) => {
-            if (error.code === 1) {
-                console.log(`Глобальный стрим был остановлен`);
-                this.stream = null;
+
+            if (typeof this.client.UploadFile !== 'function') {
+                const fakeId = `local_${Date.now()}_${file.name}`;
+                resolve(fakeId);
                 return;
             }
-            console.error(`Ошибка глобального стрима:`, error);
-            // Переподключаемся через 5 секунд
-            setTimeout(() => {
-                console.log(`Переподключение глобального стрима...`);
-                this.startGlobalStream(this.onMessageCallback);
-            }, 5000);
+
+            const call = this.client.UploadFile(metadata, (error, response) => {
+                if (error) {
+                    console.error('❌ Ошибка загрузки файла:', error);
+                    reject(new Error('Не удалось загрузить файл на сервер'));
+                } else {
+                    console.log('✅ Файл загружен, file_id:', response.file_id);
+                    resolve(response.file_id);
+                }
+            });
+
+            call.write({
+                metadata: {
+                    file_name: file.name,
+                    content_type: file.type || 'application/octet-stream',
+                }
+            });
+
+            const CHUNK_SIZE = 64 * 1024;
+            const reader = new FileReader();
+            let offset = 0;
+
+            const readNextChunk = () => {
+                if (offset >= file.size) {
+                    call.end();
+                    return;
+                }
+
+                const slice = file.slice(offset, offset + CHUNK_SIZE);
+                reader.readAsArrayBuffer(slice);
+            };
+
+            reader.onload = (e) => {
+                const chunk = new Uint8Array(e.target.result);
+                call.write({ chunk });
+                offset += chunk.byteLength;
+                readNextChunk();
+            };
+
+            reader.onerror = (e) => {
+                console.error('❌ Ошибка чтения файла:', e);
+                call.cancel();
+                reject(new Error('Ошибка чтения файла'));
+            };
+
+            readNextChunk();
         });
+    }
+
+    async uploadFiles(files) {
+        const fileIds = [];
+        for (const file of files) {
+            const fileId = await this.uploadFile(file);
+            fileIds.push(fileId);
+        }
+        return fileIds;
+    }
+
+    // Stream
+    startGlobalStream(onMessage) {
+        this.onMessageCallback = onMessage;
         
-        this.stream.on('end', () => {
-            console.log(`Глобальный стрим завершен сервером`);
-            this.stream = null;
-            // Не переподключаемся сразу, дадим время
+        if (this.stream) {
+            console.log('⚠️ Глобальный стрим уже существует');
+            return this.stream;
+        }
+
+        const metadata = new Metadata();
+        if (state.token) {
+            metadata.add('authorization', `Bearer ${state.token}`);
+        }
+
+        const chatIds = state.chats?.map(chat => chat.id).filter(id => !id.startsWith('temp_')) || [];
+        
+        if (chatIds.length === 0) {
+            console.log('Нет чатов для стрима, откладываем запуск');
             setTimeout(() => {
                 if (state.chats?.length > 0) {
+                    this.startGlobalStream(onMessage);
+                }
+            }, 2000);
+            return null;
+        }
+        
+        console.log(`Запуск глобального стрима для чатов:`, chatIds);
+        
+        try {
+            if (typeof this.client.StreamMessages !== 'function') {
+                console.warn('⚠️ Метод StreamMessages не реализован на сервере');
+                return null;
+            }
+            
+            this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);
+            
+            this.stream.on('data', (message) => {
+                console.log(`📨 Новое сообщение в чате ${message.chat_id}:`, message);
+                if (this.onMessageCallback) {
+                    this.onMessageCallback(message);
+                }
+            });
+            
+            this.stream.on('error', (error) => {
+                if (error.code === 1) {
+                    console.log(`Глобальный стрим был остановлен`);
+                    this.stream = null;
+                    return;
+                }
+                console.error(`Ошибка глобального стрима:`, error);
+                setTimeout(() => {
                     console.log(`Переподключение глобального стрима...`);
                     this.startGlobalStream(this.onMessageCallback);
-                }
-            }, 3000);
-        });
-        
-        return this.stream;
-        
-    } catch (error) {
-        console.error(`Ошибка создания глобального стрима:`, error);
-        this.stream = null;
-        throw error;
+                }, 5000);
+            });
+            
+            this.stream.on('end', () => {
+                console.log(`Глобальный стрим завершен сервером`);
+                this.stream = null;
+                setTimeout(() => {
+                    if (state.chats?.length > 0) {
+                        console.log(`Переподключение глобального стрима...`);
+                        this.startGlobalStream(this.onMessageCallback);
+                    }
+                }, 3000);
+            });
+            
+            return this.stream;
+            
+        } catch (error) {
+            console.error(`Ошибка создания глобального стрима:`, error);
+            this.stream = null;
+            throw error;
+        }
     }
-}
 
-    // Остановка глобального стрима (только при выходе)
     stopGlobalStream() {
         if (this.stream) {
-            console.log(` Остановка глобального стрима`);
+            console.log(`Остановка глобального стрима`);
             this.stream.removeAllListeners();
             this.stream.cancel();
             this.stream = null;
@@ -161,15 +258,12 @@ startGlobalStream(onMessage) {
         }
     }
 
-    // Старые методы для обратной совместимости
     startMessageStream(chatId, onMessage, onError, onEnd) {
-        // Просто вызываем глобальный стрим
         return this.startGlobalStream(onMessage);
     }
 
     stopMessageStream(chatId) {
-        // Не останавливаем стрим при переключении чата
-        console.log(`stopMessageStream вызван для ${chatId}, но стрим не останавливается`);
+        console.log(`stopMessageStream вызван для ${chatId}`);
     }
 
     stopAllStreams() {
@@ -178,4 +272,10 @@ startGlobalStream(onMessage) {
 }
 
 const grpcService = new GrpcService();
+
+console.log('🔍 Доступные методы gRPC клиента:', 
+    Object.keys(grpcService.client || {})
+        .filter(key => typeof grpcService.client[key] === 'function')
+);
+
 export default grpcService;

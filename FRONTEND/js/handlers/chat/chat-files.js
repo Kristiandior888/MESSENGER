@@ -1,21 +1,23 @@
 // js/handlers/chat/chat-files.js
-import { saveFileToStorage, getFileFromStorage, downloadFile, getFileIcon, formatFileSize } from '../../utils/fileUtils.js';
+import { getFileIcon, formatFileSize, getFileFromStorage, downloadFile } from '../../utils/fileUtils.js';
 
-// Состояние прикрепленных файлов
+// Состояние прикреплённых файлов.
+// Каждый элемент: { id, name, size, type, file }
+// Поле `file` — оригинальный браузерный File-объект, нужен для загрузки на сервер.
 export let attachedFiles = [];
 
 /**
- * Обновление индикатора прикрепленных файлов
+ * Обновление индикатора прикреплённых файлов
  */
 export function updateAttachedFilesIndicator(files) {
     const btn = document.getElementById('attach-btn');
     if (!btn) return;
-    
+
     if (files.length > 0) {
         btn.style.backgroundColor = 'rgba(212, 175, 55, 0.2)';
         btn.style.borderColor = '#d4af37';
         btn.title = `${files.length} файл(ов) прикреплено`;
-        
+
         let counter = btn.querySelector('.file-counter');
         if (!counter) {
             counter = document.createElement('span');
@@ -27,14 +29,14 @@ export function updateAttachedFilesIndicator(files) {
         btn.style.backgroundColor = 'transparent';
         btn.style.borderColor = '#3a424c';
         btn.title = 'Прикрепить файл';
-        
+
         const counter = btn.querySelector('.file-counter');
         if (counter) counter.remove();
     }
 }
 
 /**
- * Очистка прикрепленных файлов
+ * Очистка прикреплённых файлов
  */
 export function clearAttachedFiles() {
     attachedFiles = [];
@@ -42,30 +44,31 @@ export function clearAttachedFiles() {
 }
 
 /**
- * Добавление файлов в список прикрепленных
+ * Добавление файлов в список прикреплённых.
+ * Сохраняем оригинальный File-объект (.file) — он нужен для загрузки на сервер.
+ * localStorage используем только как кеш для предпросмотра / скачивания до получения server file_id.
  */
 export async function addAttachedFiles(files) {
     for (const file of files) {
         if (file.size > 10 * 1024 * 1024) {
-            alert(`Файл ${file.name} слишком большой. Максимальный размер - 10MB`);
+            alert(`Файл ${file.name} слишком большой. Максимальный размер — 10 MB`);
             continue;
         }
 
-        try {
-            const fileId = await saveFileToStorage(file);
-            attachedFiles.push({
-                id: fileId,
-                name: file.name,
-                size: file.size,
-                type: file.type
-            });
-            console.log(`✅ Файл прикреплен: ${file.name}`);
-        } catch (error) {
-            console.error('❌ Ошибка при загрузке файла:', error);
-            alert(`Не удалось загрузить файл ${file.name}`);
-        }
+        // Генерируем временный локальный ID (используется только в DOM до ответа сервера)
+        const localId = `local_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+        attachedFiles.push({
+            id: localId,       // временный ID для DOM
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            file,              // ← оригинальный File-объект для UploadFile RPC
+        });
+
+        console.log(`✅ Файл прикреплён (локально): ${file.name}`);
     }
-    
+
     updateAttachedFilesIndicator(attachedFiles);
 }
 
@@ -93,7 +96,7 @@ export function createFileElement(fileData) {
         if (savedFile) {
             downloadFile(savedFile, fileData.name);
         } else {
-            alert('Файл не найден в хранилище');
+            alert('Файл не найден в локальном хранилище');
         }
     });
 
