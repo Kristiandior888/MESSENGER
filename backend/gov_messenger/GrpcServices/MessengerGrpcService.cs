@@ -1,7 +1,8 @@
-using gov_messenger;
+using gov_messenger.Services;
+using gov_messenger.Repository;
 using Grpc.Core;
 
-namespace gov_messenger.Services
+namespace gov_messenger.GrpcServices
 {
     public class MessengerGrpcService : Messenger.MessengerBase
     {
@@ -10,19 +11,25 @@ namespace gov_messenger.Services
         private readonly UserService _userService;
         private readonly ChatService _chatService;
         private readonly JwtService _jwtService;
+        private readonly ChatParticipantRepository _chatParticipantRepository;
+        private readonly UserRepository _userRepository;
 
         public MessengerGrpcService(
             MessageService messageService,
             AuthService authService,
             ChatService chatService,
             UserService userService,
-            JwtService jwtService)
+            JwtService jwtService,
+            ChatParticipantRepository chatParticipantRepository,
+            UserRepository userRepository)
         {
             _messageService = messageService;
             _authService = authService;
             _userService = userService;
             _chatService = chatService;
             _jwtService = jwtService;
+            _chatParticipantRepository = chatParticipantRepository;
+            _userRepository = userRepository;
         }
 
         public override async Task<RequestEmailCodeResponse> RequestEmailCode(
@@ -66,7 +73,8 @@ namespace gov_messenger.Services
 
             var token = _jwtService.GenerateToken(
                 user.id.ToString(),
-                user.email
+                user.email,
+                user.role
             );
 
             return new LoginResponse
@@ -82,7 +90,10 @@ namespace gov_messenger.Services
                     Status = user.status ?? "",
                     LastSeen = user.last_seen != null
                         ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                        : 0
+                        : 0,
+                    Role = user.role,
+                    IsBlocked = user.is_blocked,
+                    IsDeleted = user.is_deleted,
                 }
             };
         }
@@ -93,7 +104,7 @@ namespace gov_messenger.Services
         {
             var userId = context.UserState["userId"] as string;
 
-            var user = await _userService.GetUserAsync(userId);
+            var user = await _userService.GetUserByIdAsync(userId);
 
             if (user == null)
                 return new GetUserResponse { Error = "User not found" };
@@ -109,7 +120,10 @@ namespace gov_messenger.Services
                     Status = user.status ?? "",
                     LastSeen = user.last_seen != null
                         ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
-                        : 0
+                        : 0,
+                    Role = user.role,
+                    IsBlocked = user.is_blocked,
+                    IsDeleted = user.is_deleted,
                 }
             };
         }
@@ -134,10 +148,11 @@ namespace gov_messenger.Services
                     AvatarUrl = user.avatar_url ?? "",
                     Status = user.status ?? "",
                     LastSeen = user.last_seen != null
-                        ? new DateTimeOffset(
-                            user.last_seen.Value)
-                        .ToUnixTimeSeconds()
-                        : 0
+                        ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                        : 0,
+                    Role = user.role,
+                    IsBlocked = user.is_blocked,
+                    IsDeleted = user.is_deleted,
                 });
             }
 
@@ -159,18 +174,65 @@ namespace gov_messenger.Services
             }
 
             var chats = await _chatService.GetChatsAsync(userId);
-
+            var currentUserGuid = Guid.Parse(userId);
+            
             var response = new GetChatsResponse();
 
             foreach (var chat in chats)
             {
+                // Получаем участников чата
+                var participants = await _chatParticipantRepository.GetParticipantsByChatIdAsync(chat.id);
+                var grpcParticipants = new List<User>();
+                
+                foreach (var participant in participants)
+                {
+                    var user = await _userRepository.GetUserByIdAsync(participant.user_id);
+                    if (user != null)
+                    {
+                        var isCurrentUser = user.id == currentUserGuid;
+                        grpcParticipants.Add(new User
+                        {
+                            Id = user.id.ToString(),
+                            Email = user.email ?? "",
+                            Name = user.name ?? (isCurrentUser ? "Вы" : user.email?.Split('@')[0] ?? "Пользователь"),
+                            AvatarUrl = user.avatar_url ?? "",
+                            Status = user.status ?? "",
+                            LastSeen = user.last_seen != null
+                                ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                                : 0,
+                            Role = user.role,
+                            IsBlocked = user.is_blocked,
+                            IsDeleted = user.is_deleted,
+                        });
+                    }
+                }
+
+                // Получаем последнее сообщение
+                Message? lastMessage = null;
+                var messages = await _messageService.GetMessagesAsync(chat.id.ToString(), 1, "");
+                if (messages.Any())
+                {
+                    var lastMsg = messages.First();
+                    lastMessage = new Message
+                    {
+                        Id = lastMsg.id.ToString(),
+                        Chatid = lastMsg.chatid.ToString(),
+                        SenderId = lastMsg.sender_id.ToString(),
+                        Text = lastMsg.text ?? "",
+                        Timestamp = new DateTimeOffset(lastMsg.timestamp).ToUnixTimeSeconds()
+                    };
+                }
+
                 response.Chats.Add(new Chat
                 {
                     Id = chat.id.ToString(),
                     Name = chat.name ?? "",
                     Type = (ChatType)chat.type,
                     AvatarUrl = chat.avatar_url ?? "",
-                    CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds()
+                    CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds(),
+                    Participants = { grpcParticipants },
+                    LastMessage = lastMessage,
+                    UnreadCount = 0 // Можно посчитать позже
                 });
             }
 
@@ -201,6 +263,33 @@ namespace gov_messenger.Services
                         request.Name,
                         request.ParticipantIds.ToList());
 
+                // Получаем участников для ответа
+                var participants = await _chatParticipantRepository.GetParticipantsByChatIdAsync(chat.id);
+                var grpcParticipants = new List<User>();
+                var currentUserGuid = Guid.Parse(userId);
+                
+                foreach (var participant in participants)
+                {
+                    var user = await _userRepository.GetUserByIdAsync(participant.user_id);
+                    if (user != null)
+                    {
+                        grpcParticipants.Add(new User
+                        {
+                            Id = user.id.ToString(),
+                            Email = user.email ?? "",
+                            Name = user.name ?? (user.id == currentUserGuid ? "Вы" : user.email?.Split('@')[0] ?? "Пользователь"),
+                            AvatarUrl = user.avatar_url ?? "",
+                            Status = user.status ?? "",
+                            LastSeen = user.last_seen != null
+                                ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                                : 0,
+                            Role = user.role,
+                            IsBlocked = user.is_blocked,
+                            IsDeleted = user.is_deleted,
+                        });
+                    }
+                }
+
                 return new CreateChatResponse
                 {
                     Chat = new Chat
@@ -208,10 +297,8 @@ namespace gov_messenger.Services
                         Id = chat.id.ToString(),
                         Name = chat.name ?? "",
                         Type = (ChatType)chat.type,
-                        CreatedAt =
-                            new DateTimeOffset(
-                                chat.created_at)
-                            .ToUnixTimeSeconds()
+                        CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds(),
+                        Participants = { grpcParticipants }
                     }
                 };
             }
@@ -235,7 +322,7 @@ namespace gov_messenger.Services
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "No user"));
             }
 
-            var isMember = await _chatService.IsUserInChat(senderId, request.ChatId);
+            var isMember = await _chatService.IsUserInChat(senderId, request.Chatid);
 
             if (!isMember)
             {
@@ -243,7 +330,7 @@ namespace gov_messenger.Services
             }
 
             var entity = await _messageService.SendMessageAsync(
-                request.ChatId,
+                request.Chatid,
                 senderId,
                 request.Text);
 
@@ -253,7 +340,7 @@ namespace gov_messenger.Services
                 Message = new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chatid.ToString(),
+                    Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -267,7 +354,7 @@ namespace gov_messenger.Services
         {
             var userId = context.UserState["userId"] as string;
 
-            var isMember = await _chatService.IsUserInChat(userId, request.ChatId);
+            var isMember = await _chatService.IsUserInChat(userId, request.Chatid);
 
             if (!isMember)
             {
@@ -275,7 +362,7 @@ namespace gov_messenger.Services
             }
 
             var messages = await _messageService.GetMessagesAsync(
-                request.ChatId,
+                request.Chatid,
                 request.Limit,
                 request.Cursor
             );
@@ -287,7 +374,7 @@ namespace gov_messenger.Services
                 response.Messages.Add(new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chatid.ToString(),
+                    Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -305,7 +392,7 @@ namespace gov_messenger.Services
             var tasks = new List<Task>();
             var cancellationToken = context.CancellationToken;
 
-            foreach (var chatId in request.ChatIds)
+            foreach (var chatId in request.Chatids)
             {
                 var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
                 tasks.Add(task);

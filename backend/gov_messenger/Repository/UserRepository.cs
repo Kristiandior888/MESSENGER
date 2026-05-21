@@ -13,14 +13,44 @@ namespace gov_messenger.Repository
             _db = db;
         }
 
-        public async Task<UserEntity?> GetByEmailAsync(string email)
+        public async Task<UserEntity> AddUserAsync(UserEntity user)
+        {
+            _db.Users.Add(user);
+            await _db.SaveChangesAsync();
+            return user;
+        }
+
+        public async Task<UserEntity?> GetUserByEmailAsync(string email)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.email == email);
         }
 
-        public async Task<UserEntity?> GetByIdAsync(Guid id)
+        public async Task<UserEntity?> GetUserByIdAsync(Guid id)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.id == id);
+        }
+
+        public async Task<List<UserEntity>> GetAllUsersAsync()
+        {
+            var query = _db.Users;
+
+            return await query
+                .OrderBy(u => u.email ?? "")
+                .ToListAsync();
+        }
+
+        public async Task<UserEntity?> EditUserAsync(UserEntity user)
+        {
+            _db.Users.Update(user);
+            await _db.SaveChangesAsync();
+            return user;
+        }
+
+        public async Task<UserEntity?> DeleteUserAsync(UserEntity user)
+        {
+            user.is_deleted = true;
+            await _db.SaveChangesAsync();
+            return user;
         }
 
         public async Task<List<UserEntity>> GetUsersAsync(string? search)

@@ -23,6 +23,11 @@ namespace gov_messenger.Repository
             return await _db.Chats.Where(c => chatIds.Contains(c.id)).ToListAsync();
         }
 
+        public async Task<ChatEntity?> GetChatByIdAsync(Guid chatId)
+        {
+            return await _db.Chats.FirstOrDefaultAsync(c => c.id == chatId);
+        }
+
         public async Task<bool> IsUserInChatAsync(Guid userId, Guid chatId)
         {
             return await _db.ChatParticipants
@@ -51,9 +56,7 @@ namespace gov_messenger.Repository
             ChatEntity chat)
         {
             _db.Chats.Add(chat);
-
             await _db.SaveChangesAsync();
-
             return chat;
         }
     }
