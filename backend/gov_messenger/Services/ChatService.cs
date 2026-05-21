@@ -6,10 +6,12 @@ namespace gov_messenger.Services
     public class ChatService
     {
         private readonly ChatRepository _chatRepository;
+        private readonly ChatParticipantRepository _chatParticipantRepository;
 
-        public ChatService(ChatRepository repository)
+        public ChatService(ChatRepository repository, ChatParticipantRepository chatParticipantRepository)
         {
             _chatRepository = repository;
+            _chatParticipantRepository = chatParticipantRepository;
         }
 
         public async Task<List<ChatEntity>> GetChatsAsync(string userId)
@@ -38,6 +40,7 @@ namespace gov_messenger.Services
 
             var participants = participantIds
                 .Select(Guid.Parse)
+                .Distinct()
                 .ToList();
 
             if (!participants.Contains(creatorGuid))
@@ -67,6 +70,7 @@ namespace gov_messenger.Services
             var chat = new ChatEntity
             {
                 id = Guid.NewGuid(),
+
                 name = type == ChatType.Private
                     ? null
                     : name,
@@ -76,9 +80,11 @@ namespace gov_messenger.Services
                 created_at = DateTime.UtcNow
             };
 
+            await _chatRepository.CreateAsync(chat);
+
             foreach (var userId in participants)
             {
-                chat.participants.Add(
+                await _chatParticipantRepository.AddAsync(
                     new ChatParticipantEntity
                     {
                         chat_id = chat.id,
@@ -92,7 +98,7 @@ namespace gov_messenger.Services
                     });
             }
 
-            return await _chatRepository.CreateAsync(chat);
+            return chat;
         }
     }
 }

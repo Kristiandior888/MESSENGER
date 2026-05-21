@@ -32,14 +32,19 @@ namespace gov_messenger.Repository
         public async Task<ChatEntity?> FindPrivateChatAsync(Guid user1, Guid user2)
         {
             return await _db.Chats
-                .Include(c => c.participants)
-                .Where(c => c.type == (short)ChatType.Private)
-                .FirstOrDefaultAsync(c =>
-                    c.participants.Count == 2 &&
-                    c.participants.Any(
-                        p => p.user_id == user1) &&
-                    c.participants.Any(
-                        p => p.user_id == user2));
+                .Where(c => c.type == 0)
+                .Where(c =>
+                    _db.ChatParticipants.Count(
+                        p => p.chat_id == c.id) == 2)
+                .Where(c =>
+                    _db.ChatParticipants.Any(
+                        p => p.chat_id == c.id &&
+                             p.user_id == user1))
+                .Where(c =>
+                    _db.ChatParticipants.Any(
+                        p => p.chat_id == c.id &&
+                             p.user_id == user2))
+                .FirstOrDefaultAsync();
         }
 
         public async Task<ChatEntity> CreateAsync(
