@@ -16,10 +16,31 @@ namespace gov_messenger.Data
         {
         }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(
+            ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<ChatParticipantEntity>()
-                .HasKey(cp => new { cp.chat_id, cp.user_id });
+            base.OnModelCreating(modelBuilder);
+
+            // ChatParticipants
+            modelBuilder.Entity<ChatParticipantEntity>(entity =>
+            {
+                entity.ToTable("ChatParticipants");
+
+                entity.HasKey(e =>
+                    new { e.chat_id, e.user_id });
+
+                entity.Property(e => e.chat_id)
+                    .HasColumnName("chat_id");
+
+                entity.Property(e => e.user_id)
+                    .HasColumnName("user_id");
+
+                entity.Property(e => e.role)
+                    .HasColumnName("role");
+
+                entity.Property(e => e.joined_at)
+                    .HasColumnName("joined_at");
+            });
         }
     }
 }
