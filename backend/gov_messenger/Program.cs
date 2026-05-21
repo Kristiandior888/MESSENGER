@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using DotNetEnv;
 using System.Text;
-using gov_messenger.GrpcServices;
 
 Env.Load();
 
@@ -45,6 +44,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<ChatRepository>();
+builder.Services.AddScoped<ChatParticipantRepository>();
 builder.Services.AddScoped<EmailCodeRepository>();
 
 builder.Services.AddScoped<MessageService>();
@@ -57,7 +57,6 @@ var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 app.MapGrpcService<MessengerGrpcService>();
-app.MapGrpcService<AdminGrpcService>();
 app.MapGet("/", () => "Backend is running on ports 7212 (HTTPS) and 5077 (HTTP)");
 
 app.Run();

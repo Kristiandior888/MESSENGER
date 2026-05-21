@@ -1,7 +1,6 @@
 ﻿using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.IdentityModel.Tokens;
-using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -62,13 +61,10 @@ namespace gov_messenger.Interceptors
             var userId = principal.Claims.FirstOrDefault(
                 c => c.Type == ClaimTypes.NameIdentifier)?.Value;
 
-            var role = principal.Claims.FirstOrDefault(c => c.Type == "role")?.Value;
-
             if (userId == null)
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "Invalid token"));
 
             context.UserState["userId"] = userId;
-            context.UserState["role"] = role;
 
             return await continuation(request, context);
         }

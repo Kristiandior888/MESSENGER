@@ -52,6 +52,7 @@ window.debugLastMessage = () => {
 
 
 
+// renderer.js
 console.log('renderer.js загрузился!');
 
 import { state } from './js/app.js';
@@ -59,34 +60,13 @@ import { showScreen, initScreens } from './js/ui.js';
 import { initTheme } from './js/utils/themeUtils.js';
 import { applyAllSettings } from './js/utils/settingsUtils.js';
 
-/// renderer.js - заменить существующий код восстановления
-
-
-/*
-// Проверяем сохраненного пользователя
-const token = localStorage.getItem('token');
-const userData = localStorage.getItem('userData');
-
-if (token && userData) {
-    try {
-        state.token = token;
-        state.currentUser = JSON.parse(userData);
-        state.isAuthenticated = true;
-        console.log('👋 Добро пожаловать обратно,', state.currentUser.email);
-    } catch (e) {
-        console.error('Ошибка восстановления:', e);
-        clearAuthData();
-        state.isAuthenticated = false;
-    }
-} else {
-    state.isAuthenticated = false;
-}
-    */
-
+// Очищаем старые данные при каждом запуске для тестирования
 state.isAuthenticated = false;
-localStorage.clear(); // Очищаем сразу
+localStorage.removeItem('token');
+localStorage.removeItem('userData');
+localStorage.removeItem('userAvatar');
+localStorage.removeItem('pendingEmail');
 
-// Функция очистки данных авторизации
 function clearAuthData() {
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
@@ -97,27 +77,21 @@ function clearAuthData() {
     state.userAvatar = null;
 }
 
-// Инициализируем тему и настройки
 initTheme();
 applyAllSettings();
 
-
-// ЗАПУСК ПРИ ЗАГРУЗКЕ
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Страница загружена, isAuthenticated =', state.isAuthenticated);
     
-    // Инициализируем все экраны один раз
     await initScreens();
     
     if (state.isAuthenticated) {
         await showScreen('chat');
     } else {
-        // Показываем экран запроса email (первый шаг)
         await showScreen('loginRequest');
     }
 });
 
-// При закрытии сохраняем данные
 window.addEventListener('beforeunload', () => {
     if (state.isAuthenticated && state.currentUser && state.token) {
         localStorage.setItem('token', state.token);

@@ -8,8 +8,9 @@ import {
     loadChatsFromServer, 
     setCurrentChat,
     getCurrentChat,
-    createNewChat,
-    cleanupChatResources
+    createRealChatWithUser,
+    cleanupChatResources,
+    refreshChatsList
 } from './chat-core.js';
 
 import { 
@@ -23,7 +24,7 @@ import {
     appendNewMessage,
     stopMessageStreamForChat,
     stopAllMessageStreams,
-    resetMessagesState  // Добавляем импорт
+    resetMessagesState
 } from './chat-messages.js';
 
 import { 
@@ -46,13 +47,12 @@ import {
 
 let isChatInitialized = false;
 
-// Экспортируем все функции
 export {
     initGrpc,
     loadChatsFromServer,
     setCurrentChat,
     getCurrentChat,
-    createNewChat,
+    createRealChatWithUser,
     cleanupChatResources,
     updateChatAreaUI,
     setupAvatar,
@@ -107,13 +107,10 @@ export function resetChatInitialization() {
     console.log('🔄 Флаг инициализации чата сброшен');
 }
 
-
 export async function setupChatHandlers() {
     updateUserInfo();
     
-    // При загрузке чата сбрасываем текущий выбранный чат
     if (state.currentChat) {
-        // Проверяем, существует ли ещё этот чат у нового пользователя
         const chatExists = state.chats?.some(c => c.id === state.currentChat);
         if (!chatExists) {
             state.currentChat = null;
@@ -122,10 +119,9 @@ export async function setupChatHandlers() {
     
     if (isChatInitialized) {
         console.log('Чат уже был инициализирован, но перезагружаем');
-        // Сбрасываем состояние сообщений
         resetMessagesState();
         await stopAllMessageStreams();
-        isChatInitialized = false; // Сбрасываем флаг для полной перезагрузки
+        isChatInitialized = false;
     }
     
     console.log('Чат загружается!');

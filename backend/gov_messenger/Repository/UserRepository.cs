@@ -13,44 +13,31 @@ namespace gov_messenger.Repository
             _db = db;
         }
 
-        public async Task<UserEntity> AddUserAsync(UserEntity user)
-        {
-            _db.Users.Add(user);
-            await _db.SaveChangesAsync();
-            return user;
-        }
-
-        public async Task<UserEntity?> GetUserByEmailAsync(string email)
+        public async Task<UserEntity?> GetByEmailAsync(string email)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.email == email);
         }
 
-        public async Task<UserEntity?> GetUserByIdAsync(Guid id)
+        public async Task<UserEntity?> GetByIdAsync(Guid id)
         {
             return await _db.Users.FirstOrDefaultAsync(u => u.id == id);
         }
 
-        public async Task<List<UserEntity>> GetAllUsersAsync()
+        public async Task<List<UserEntity>> GetUsersAsync(string? search)
         {
-            var query = _db.Users;
+            var query = _db.Users
+                .Where(u => !u.is_deleted);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(u =>
+                    u.name.Contains(search) ||
+                    u.email.Contains(search));
+            }
 
             return await query
-                .OrderBy(u => u.email ?? "")
+                .OrderBy(u => u.name)
                 .ToListAsync();
-        }
-
-        public async Task<UserEntity?> EditUserAsync(UserEntity user)
-        {
-            _db.Users.Update(user);
-            await _db.SaveChangesAsync();
-            return user;
-        }
-
-        public async Task<UserEntity?> DeleteUserAsync(UserEntity user)
-        {
-            user.is_deleted = true;
-            await _db.SaveChangesAsync();
-            return user;
         }
     }
 }
