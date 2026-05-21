@@ -1,5 +1,5 @@
-CREATE INDEX idx_messages_chat_id
-ON messages(chat_id);
+CREATE INDEX idx_messages_chatid
+ON messages(chatid);
 
 CREATE INDEX idx_messages_timestamp
 ON messages(timestamp);

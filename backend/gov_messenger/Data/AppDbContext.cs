@@ -27,10 +27,10 @@ namespace gov_messenger.Data
                 entity.ToTable("ChatParticipants");
 
                 entity.HasKey(e =>
-                    new { e.chat_id, e.user_id });
+                    new { e.chatid, e.user_id });
 
-                entity.Property(e => e.chat_id)
-                    .HasColumnName("chat_id");
+                entity.Property(e => e.chatid)
+                    .HasColumnName("chatid");
 
                 entity.Property(e => e.user_id)
                     .HasColumnName("user_id");

@@ -17,7 +17,7 @@ namespace gov_messenger.Repository
         {
             var chatIds = await _db.ChatParticipants
                 .Where(cp => cp.user_id == userId)
-                .Select(cp => cp.chat_id)
+                .Select(cp => cp.chatid)
                 .ToListAsync();
 
             return await _db.Chats.Where(c => chatIds.Contains(c.id)).ToListAsync();
@@ -26,7 +26,7 @@ namespace gov_messenger.Repository
         public async Task<bool> IsUserInChatAsync(Guid userId, Guid chatId)
         {
             return await _db.ChatParticipants
-                .AnyAsync(cp => cp.user_id == userId && cp.chat_id == chatId);
+                .AnyAsync(cp => cp.user_id == userId && cp.chatid == chatId);
         }
 
         public async Task<ChatEntity?> FindPrivateChatAsync(Guid user1, Guid user2)
@@ -35,14 +35,14 @@ namespace gov_messenger.Repository
                 .Where(c => c.type == 0)
                 .Where(c =>
                     _db.ChatParticipants.Count(
-                        p => p.chat_id == c.id) == 2)
+                        p => p.chatid == c.id) == 2)
                 .Where(c =>
                     _db.ChatParticipants.Any(
-                        p => p.chat_id == c.id &&
+                        p => p.chatid == c.id &&
                              p.user_id == user1))
                 .Where(c =>
                     _db.ChatParticipants.Any(
-                        p => p.chat_id == c.id &&
+                        p => p.chatid == c.id &&
                              p.user_id == user2))
                 .FirstOrDefaultAsync();
         }

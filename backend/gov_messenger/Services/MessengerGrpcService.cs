@@ -253,7 +253,7 @@ namespace gov_messenger.Services
                 Message = new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
+                    ChatId = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -287,7 +287,7 @@ namespace gov_messenger.Services
                 response.Messages.Add(new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
+                    ChatId = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()

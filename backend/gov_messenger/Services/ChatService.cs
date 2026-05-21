@@ -87,7 +87,7 @@ namespace gov_messenger.Services
                 await _chatParticipantRepository.AddAsync(
                     new ChatParticipantEntity
                     {
-                        chat_id = chat.id,
+                        chatid = chat.id,
                         user_id = userId,
 
                         role = userId == creatorGuid

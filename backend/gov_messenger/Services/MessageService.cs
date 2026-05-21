@@ -20,7 +20,7 @@ namespace gov_messenger.Services
             var message = new MessageEntity
             {
                 id = Guid.NewGuid(),
-                chat_id = Guid.Parse(chatId),
+                chatid = Guid.Parse(chatId),
                 sender_id = Guid.Parse(senderId),
                 text = text,
                 timestamp = DateTime.UtcNow
@@ -75,7 +75,7 @@ namespace gov_messenger.Services
                 var grpcMessage = new Message
                 {
                     Id = message.id.ToString(),
-                    ChatId = message.chat_id.ToString(),
+                    ChatId = message.chatid.ToString(),
                     SenderId = message.sender_id.ToString(),
                     Text = message.text,
                     Timestamp = new DateTimeOffset(message.timestamp).ToUnixTimeSeconds()
