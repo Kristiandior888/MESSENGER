@@ -6,8 +6,8 @@ const dns = require('dns');
 const net = require('net');
 
 const PROTO_PATH = path.join(__dirname, 'messenger.proto');
-const SERVER_ADDRESS = '192.168.0.21:7212';
-const HOST = '192.168.0.21';
+const SERVER_ADDRESS = '192.168.0.106:7212';
+const HOST = '192.168.0.106';
 const PORT = 7212;
 
 console.log('🔧 РАСШИРЕННОЕ ТЕСТИРОВАНИЕ ПОДКЛЮЧЕНИЯ\n');

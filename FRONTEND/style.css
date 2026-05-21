@@ -2549,3 +2549,10 @@ body.light-theme .settings-btn:hover {
     text-align: center;
     border: 1px solid rgba(224, 90, 90, 0.3);
 }
+.chat-item[data-is-virtual="true"] {
+    opacity: 0.85;
+}
+
+.chat-item[data-is-virtual="true"]:hover {
+    opacity: 1;
+}

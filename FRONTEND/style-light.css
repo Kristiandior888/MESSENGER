@@ -2096,3 +2096,10 @@ input:checked + .slider:before {
     border-color: var(--danger, #d87a5c);
     background: rgba(216, 122, 92, 0.05);
 }
+.chat-item[data-is-virtual="true"] {
+    opacity: 0.85;
+}
+
+.chat-item[data-is-virtual="true"]:hover {
+    opacity: 1;
+}

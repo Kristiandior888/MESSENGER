@@ -88,5 +88,10 @@ namespace gov_messenger.Services
 
             return user;
         }
+
+        public async Task<List<UserEntity>> GetUsersAsync(string? search)
+        {
+            return await _userRepository.GetUsersAsync(search);
+        }
     }
 }

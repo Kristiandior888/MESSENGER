@@ -7,135 +7,143 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!-- Модальное окно входа (шаг 1 - ввод email) -->
-<div id="auth-email-modal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 380px;">
-        <div class="modal-header">
-            <h2>🔐 Вход в админ-панель</h2>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label for="login-email">Корпоративная почта</label>
-                <input type="email" id="login-email" class="form-input" placeholder="admin@example.com">
-                <div class="form-hint">На указанную почту будет отправлен код подтверждения</div>
-            </div>
-            <div id="login-error" style="color: #e05a5a; font-size: 13px; margin-top: 10px; display: none;"></div>
-        </div>
-        <div class="modal-footer">
-            <button id="request-code-btn" class="btn-primary">Получить код</button>
-        </div>
-    </div>
-</div>
-
-<!-- Модальное окно ввода кода (шаг 2) -->
-<div id="auth-code-modal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 380px;">
-        <div class="modal-header">
-            <h2>🔐 Подтверждение</h2>
-            <button class="modal-close" id="code-modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div class="form-group">
-                <label>Код отправлен на</label>
-                <div id="confirm-email" style="color: #d4af37; font-weight: 500; margin-bottom: 15px;"></div>
-            </div>
-            <div class="form-group">
-                <label for="verify-code">Код подтверждения</label>
-                <input type="text" id="verify-code" class="form-input" placeholder="Введите код из письма" maxlength="6">
-            </div>
-            <div id="code-error" style="color: #e05a5a; font-size: 13px; margin-top: 10px; display: none;"></div>
-        </div>
-        <div class="modal-footer">
-            <button id="back-to-email" class="btn-secondary">Назад</button>
-            <button id="verify-code-btn" class="btn-primary">Войти</button>
-        </div>
-    </div>
-</div>
     <div id="app">
-        <div class="admin-container">
-            <!-- Шапка -->
-            <div class="admin-header">
-                <div class="logo">
-                    <span class="logo-icon">🔧</span>
-                    <h1>Собор <span class="accent">Admin</span></h1>
+        <!-- Основной контент админ-панели -->
+        <div id="admin-content" style="display: none;">
+            <div class="admin-container">
+                <!-- Шапка -->
+                <div class="admin-header">
+                    <div class="logo">
+                        <span class="logo-icon">🔧</span>
+                        <h1>Собор <span class="accent">Admin</span></h1>
+                    </div>
+                    <div class="header-actions">
+                        <button id="refresh-btn" class="btn-secondary" title="Обновить список">
+                            🔄 Обновить
+                        </button>
+                        <button id="logout-btn" class="btn-secondary" title="Выйти">
+                            🚪 Выйти
+                        </button>
+                        <div class="server-status" id="server-status">
+                            <span class="status-dot offline"></span>
+                            <span>Сервер: проверка...</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="header-actions">
-                    <button id="refresh-btn" class="btn-secondary" title="Обновить список">
-                        🔄 Обновить
-                    </button>
-                    <div class="server-status" id="server-status">
-                        <span class="status-dot offline"></span>
-                        <span>Сервер: проверка...</span>
+
+                <!-- Основной контент -->
+                <div class="admin-main">
+                    <!-- Левая панель -->
+                    <div class="admin-sidebar">
+                        <div class="stats-card">
+                            <h3>Статистика</h3>
+                            <div class="stat-item">
+                                <span class="stat-label">Активных пользователей:</span>
+                                <span class="stat-value" id="active-users">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Администраторов:</span>
+                                <span class="stat-value" id="admin-count">0</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Удаленных:</span>
+                                <span class="stat-value" id="deleted-count">0</span>
+                            </div>
+                        </div>
+
+                        <div class="actions-card">
+                            <h3>Действия</h3>
+                            <button id="create-user-btn" class="btn-primary full-width">
+                                👤 + Создать пользователя
+                            </button>
+                            <button id="export-users-btn" class="btn-secondary full-width">
+                                📥 Экспорт списка
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Правая панель - таблица пользователей -->
+                    <div class="users-panel">
+                        <!-- Вкладки -->
+                        <div class="tabs">
+                            <button class="tab-btn active" data-tab="active">📋 Активные</button>
+                            <button class="tab-btn" data-tab="deleted">🗑️ Удаленные</button>
+                        </div>
+
+                        <div class="search-bar">
+                            <input type="text" id="search-input" placeholder="Поиск по имени или email..." class="search-input">
+                            <div class="filter-buttons">
+                                <button class="filter-btn active" data-filter="all">Все</button>
+                                <button class="filter-btn" data-filter="admin">Админы</button>
+                                <button class="filter-btn" data-filter="user">Пользователи</button>
+                            </div>
+                        </div>
+
+                        <div class="table-container">
+                            <table class="users-table">
+                                <thead>
+                                    <tr>
+                                        <th>Аватар</th>
+                                        <th>Имя</th>
+                                        <th>Email</th>
+                                        <th>Роль</th>
+                                        <th>Статус</th>
+                                        <th>Последний визит</th>
+                                        <th>Действия</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-table-body">
+                                    <tr class="loading-row">
+                                        <td colspan="7">
+                                            <div class="loader"></div>
+                                            <span>Загрузка пользователей...</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Основной контент -->
-            <div class="admin-main">
-                <!-- Левая панель -->
-                <div class="admin-sidebar">
-                    <div class="stats-card">
-                        <h3>Статистика</h3>
-                        <div class="stat-item">
-                            <span class="stat-label">Всего пользователей:</span>
-                            <span class="stat-value" id="total-users">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Администраторов:</span>
-                            <span class="stat-value" id="admin-count">0</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">Активных:</span>
-                            <span class="stat-value" id="active-count">0</span>
-                        </div>
+        <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
+        <div id="auth-fullscreen" class="auth-fullscreen">
+            <div class="auth-container">
+                <div class="auth-box">
+                    <div class="auth-logo">
+                        <span class="auth-logo-icon">🔧</span>
+                        <h2>Собор <span class="accent">Admin</span></h2>
                     </div>
-
-                    <div class="actions-card">
-                        <h3>Действия</h3>
-                        <button id="create-user-btn" class="btn-primary full-width">
-                            👤 + Создать пользователя
-                        </button>
-                        <button id="export-users-btn" class="btn-secondary full-width">
-                            📥 Экспорт списка
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Правая панель - таблица пользователей -->
-                <div class="users-panel">
-                    <div class="search-bar">
-                        <input type="text" id="search-input" placeholder="Поиск по имени или email..." class="search-input">
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="all">Все</button>
-                            <button class="filter-btn" data-filter="admin">Админы</button>
-                            <button class="filter-btn" data-filter="user">Пользователи</button>
-                            <button class="filter-btn" data-filter="active">Активные</button>
-                            <button class="filter-btn" data-filter="blocked">Заблокированные</button>
+                    
+                    <!-- Шаг 1: Ввод email -->
+                    <div id="auth-step-email" class="auth-step">
+                        <h3>Вход в админ-панель</h3>
+                        <p class="auth-desc">Введите корпоративную почту</p>
+                        
+                        <div class="form-group">
+                            <input type="email" id="auth-email" class="auth-input" placeholder="Email" autocomplete="off">
                         </div>
+                        
+                        <div id="auth-error" class="auth-error" style="display: none;"></div>
+                        
+                        <button id="auth-request-code" class="auth-btn-primary">Получить код</button>
                     </div>
-
-                    <div class="table-container">
-                        <table class="users-table">
-                            <thead>
-                                <tr>
-                                    <th>Аватар</th>
-                                    <th>Имя</th>
-                                    <th>Email</th>
-                                    <th>Роль</th>
-                                    <th>Статус</th>
-                                    <th>Последний визит</th>
-                                    <th>Действия</th>
-                                </tr>
-                            </thead>
-                            <tbody id="users-table-body">
-                                <tr class="loading-row">
-                                    <td colspan="7">
-                                        <div class="loader"></div>
-                                        <span>Загрузка пользователей...</span>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    
+                    <!-- Шаг 2: Ввод кода -->
+                    <div id="auth-step-code" class="auth-step" style="display: none;">
+                        <h3>Подтверждение</h3>
+                        <p class="auth-desc">Код отправлен на <strong id="auth-email-display"></strong></p>
+                        <p class="auth-desc">Введите код из письма</p>
+                        
+                        <div class="form-group">
+                            <input type="text" id="auth-code" class="auth-input" placeholder="Код подтверждения" maxlength="6" autocomplete="off">
+                        </div>
+                        
+                        <div id="auth-code-error" class="auth-error" style="display: none;"></div>
+                        
+                        <button id="auth-verify-code" class="auth-btn-primary">Войти</button>
+                        <button id="auth-back-email" class="auth-btn-secondary">Назад</button>
                     </div>
                 </div>
             </div>
@@ -157,13 +165,6 @@
                         <label for="user-name">Имя *</label>
                         <input type="text" id="user-name" class="form-input" placeholder="Имя пользователя">
                     </div>
-                    <div class="form-group">
-                        <label for="user-role">Роль</label>
-                        <select id="user-role" class="form-select">
-                            <option value="user">Пользователь</option>
-                            <option value="admin">Администратор</option>
-                        </select>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-secondary cancel-btn">Отмена</button>
@@ -172,7 +173,7 @@
             </div>
         </div>
 
-        <!-- Модальное окно редактирования -->
+        <!-- Модальное окно редактирования пользователя -->
         <div id="edit-modal" class="modal" style="display: none;">
             <div class="modal-content">
                 <div class="modal-header">
@@ -187,13 +188,6 @@
                     <div class="form-group">
                         <label for="edit-name">Имя *</label>
                         <input type="text" id="edit-name" class="form-input">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit-role">Роль</label>
-                        <select id="edit-role" class="form-select">
-                            <option value="user">Пользователь</option>
-                            <option value="admin">Администратор</option>
-                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -212,11 +206,29 @@
                 </div>
                 <div class="modal-body">
                     <p>Вы действительно хотите удалить пользователя <strong id="delete-user-name"></strong>?</p>
-                    <p class="warning-text">Это действие необратимо! Все данные пользователя будут удалены.</p>
+                    <p class="warning-text">Пользователь будет перемещен в корзину. Вы сможете восстановить его позже.</p>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-secondary cancel-btn">Отмена</button>
                     <button class="btn-danger delete-confirm">Удалить</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно восстановления -->
+        <div id="restore-modal" class="modal" style="display: none;">
+            <div class="modal-content small">
+                <div class="modal-header">
+                    <h2>🔄 Восстановление пользователя</h2>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Вы действительно хотите восстановить пользователя <strong id="restore-user-name"></strong>?</p>
+                    <p>После восстановления пользователь сможет снова входить в систему.</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary cancel-btn">Отмена</button>
+                    <button class="btn-primary restore-confirm">Восстановить</button>
                 </div>
             </div>
         </div>

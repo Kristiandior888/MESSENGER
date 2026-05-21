@@ -121,6 +121,36 @@ namespace gov_messenger.GrpcServices
             };
         }
 
+        public override async Task<GetUsersResponse> GetUsers(
+            GetUsersRequest request,
+            ServerCallContext context)
+        {
+            var users = await _userService.GetUsersAsync(
+                request.Search
+            );
+
+            var response = new GetUsersResponse();
+
+            foreach (var user in users)
+            {
+                response.Users.Add(new User
+                {
+                    Id = user.id.ToString(),
+                    Email = user.email,
+                    Name = user.name ?? "",
+                    AvatarUrl = user.avatar_url ?? "",
+                    Status = user.status ?? "",
+                    LastSeen = user.last_seen != null
+                        ? new DateTimeOffset(
+                            user.last_seen.Value)
+                        .ToUnixTimeSeconds()
+                        : 0
+                });
+            }
+
+            return response;
+        }
+
         public override async Task<GetChatsResponse> GetChats(
             GetChatsRequest request,
             ServerCallContext context)
@@ -154,6 +184,53 @@ namespace gov_messenger.GrpcServices
             return response;
         }
 
+        public override async Task<CreateChatResponse> CreateChat(
+            CreateChatRequest request,
+            ServerCallContext context)
+        {
+            var userId =
+                context.UserState["userId"] as string;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new RpcException(
+                    new Status(
+                        StatusCode.Unauthenticated,
+                        "Unauthorized"));
+            }
+
+            try
+            {
+                var chat = await _chatService
+                    .CreateChatAsync(
+                        userId,
+                        request.Type,
+                        request.Name,
+                        request.ParticipantIds.ToList());
+
+                return new CreateChatResponse
+                {
+                    Chat = new Chat
+                    {
+                        Id = chat.id.ToString(),
+                        Name = chat.name ?? "",
+                        Type = (ChatType)chat.type,
+                        CreatedAt =
+                            new DateTimeOffset(
+                                chat.created_at)
+                            .ToUnixTimeSeconds()
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new CreateChatResponse
+                {
+                    Error = ex.Message
+                };
+            }
+        }
+
         public override async Task<SendMessageResponse> SendMessage(
             SendMessageRequest request,
             ServerCallContext context)
@@ -165,7 +242,7 @@ namespace gov_messenger.GrpcServices
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "No user"));
             }
 
-            var isMember = await _chatService.IsUserInChat(senderId, request.ChatId);
+            var isMember = await _chatService.IsUserInChat(senderId, request.Chatid);
 
             if (!isMember)
             {
@@ -173,7 +250,7 @@ namespace gov_messenger.GrpcServices
             }
 
             var entity = await _messageService.SendMessageAsync(
-                request.ChatId,
+                request.Chatid,
                 senderId,
                 request.Text);
 
@@ -183,7 +260,7 @@ namespace gov_messenger.GrpcServices
                 Message = new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
+                    Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -197,7 +274,7 @@ namespace gov_messenger.GrpcServices
         {
             var userId = context.UserState["userId"] as string;
 
-            var isMember = await _chatService.IsUserInChat(userId, request.ChatId);
+            var isMember = await _chatService.IsUserInChat(userId, request.Chatid);
 
             if (!isMember)
             {
@@ -205,7 +282,7 @@ namespace gov_messenger.GrpcServices
             }
 
             var messages = await _messageService.GetMessagesAsync(
-                request.ChatId,
+                request.Chatid,
                 request.Limit,
                 request.Cursor
             );
@@ -217,7 +294,7 @@ namespace gov_messenger.GrpcServices
                 response.Messages.Add(new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chat_id.ToString(),
+                    Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -235,7 +312,7 @@ namespace gov_messenger.GrpcServices
             var tasks = new List<Task>();
             var cancellationToken = context.CancellationToken;
 
-            foreach (var chatId in request.ChatIds)
+            foreach (var chatId in request.Chatids)
             {
                 var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
                 tasks.Add(task);

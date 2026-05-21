@@ -19,6 +19,8 @@ service Messenger {
 
   rpc RequestEmailCode (RequestEmailCodeRequest) returns (RequestEmailCodeResponse);
   rpc VerifyEmailCode (VerifyEmailCodeRequest) returns (LoginResponse);
+
+  rpc GetUsers (GetUsersRequest) returns (GetUsersResponse);
 }
 
 service Admin {  
@@ -67,6 +69,16 @@ message GetUserRequest {}
 message GetUserResponse {
   User user = 1;
   string error = 2;
+}
+
+// Getting users
+message GetUsersRequest {
+    string search = 1;
+}
+
+message GetUsersResponse {
+    repeated User users = 1;
+    string error = 2;
 }
 
 // Chats
@@ -122,7 +134,7 @@ enum MessageStatus {
 
 message Message {
   string id = 1;
-  string chat_id = 2;
+  string chatid = 2;
   string sender_id = 3;
   int64 timestamp = 4;
   MessageType type = 5;
@@ -141,7 +153,7 @@ message Message {
 // Message requests
 
 message GetMessagesRequest {
-  string chat_id = 1;
+  string chatid = 1;
   int32 limit = 2;
   string cursor = 3;
 }
@@ -153,7 +165,7 @@ message GetMessagesResponse {
 }
 
 message SendMessageRequest {
-  string chat_id = 1;
+  string chatid = 1;
   MessageType type = 2;
   string text = 3;
   string file_id = 4;
@@ -173,7 +185,7 @@ message SendMessageResponse {
 // Stream
 
 message StreamMessagesRequest {
-  repeated string chat_ids = 1;
+  repeated string chatids = 1;
 }
 
 // Email
