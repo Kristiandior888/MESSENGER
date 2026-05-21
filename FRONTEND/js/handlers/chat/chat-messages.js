@@ -8,6 +8,8 @@ let isLoadingMessages = false;
 let lastProcessedMessageIds = new Set();
 let isStreamStarted = false;
 
+// Только обновленная функция createMessageElement в chat-messages.js
+
 export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;
     const type = isSent ? 'sent' : 'received';
