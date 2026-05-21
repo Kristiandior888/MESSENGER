@@ -75,7 +75,7 @@ namespace gov_messenger.Services
                 var grpcMessage = new Message
                 {
                     Id = message.id.ToString(),
-                    ChatId = message.chatid.ToString(),
+                    Chatid = message.chatid.ToString(),
                     SenderId = message.sender_id.ToString(),
                     Text = message.text,
                     Timestamp = new DateTimeOffset(message.timestamp).ToUnixTimeSeconds()

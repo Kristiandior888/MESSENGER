@@ -235,7 +235,7 @@ namespace gov_messenger.Services
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "No user"));
             }
 
-            var isMember = await _chatService.IsUserInChat(senderId, request.ChatId);
+            var isMember = await _chatService.IsUserInChat(senderId, request.Chatid);
 
             if (!isMember)
             {
@@ -243,7 +243,7 @@ namespace gov_messenger.Services
             }
 
             var entity = await _messageService.SendMessageAsync(
-                request.ChatId,
+                request.Chatid,
                 senderId,
                 request.Text);
 
@@ -253,7 +253,7 @@ namespace gov_messenger.Services
                 Message = new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chatid.ToString(),
+                    Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -267,7 +267,7 @@ namespace gov_messenger.Services
         {
             var userId = context.UserState["userId"] as string;
 
-            var isMember = await _chatService.IsUserInChat(userId, request.ChatId);
+            var isMember = await _chatService.IsUserInChat(userId, request.Chatid);
 
             if (!isMember)
             {
@@ -275,7 +275,7 @@ namespace gov_messenger.Services
             }
 
             var messages = await _messageService.GetMessagesAsync(
-                request.ChatId,
+                request.Chatid,
                 request.Limit,
                 request.Cursor
             );
@@ -287,7 +287,7 @@ namespace gov_messenger.Services
                 response.Messages.Add(new Message
                 {
                     Id = entity.id.ToString(),
-                    ChatId = entity.chatid.ToString(),
+                    Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
                     Text = entity.text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
@@ -305,7 +305,7 @@ namespace gov_messenger.Services
             var tasks = new List<Task>();
             var cancellationToken = context.CancellationToken;
 
-            foreach (var chatId in request.ChatIds)
+            foreach (var chatId in request.Chatids)
             {
                 var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
                 tasks.Add(task);
