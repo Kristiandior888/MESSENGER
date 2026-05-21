@@ -3,7 +3,11 @@
     <h1>Добро пожаловать</h1>
     <p>Введите корпоративную почту</p>
     
-    <input type="email" id="email" placeholder="Email" class="login-input">
+    <input type="email" id="email" placeholder="Email" class="login-input" autocomplete="email">
+    
+    <!-- НОВОЕ ПОЛЕ ДЛЯ IP АДРЕСА СЕРВЕРА -->
+    <input type="text" id="server-ip" placeholder="IP адрес сервера (например: 192.168.0.104)" class="login-input server-ip-input" autocomplete="off">
+    
     <button id="request-code-btn" class="login-btn">Получить код</button>
     
     <div id="login-error" class="login-error-message" style="display: none;"></div>
@@ -67,5 +71,10 @@
 
 .login-input.error {
     border-color: #e05a5a !important;
+}
+
+/* Стиль для поля IP */
+.server-ip-input {
+    margin-bottom: 5px;
 }
 </style>
