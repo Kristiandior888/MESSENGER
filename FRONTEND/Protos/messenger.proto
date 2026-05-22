@@ -23,14 +23,6 @@ service Messenger {
   rpc GetUsers (GetUsersRequest) returns (GetUsersResponse);
 }
 
-service Admin {  
-  rpc CreateUser (CreateUserRequest) returns (UserResponse);
-  rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
-  rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersResponse);
-  rpc EditUser (EditUserRequest) returns (UserResponse);
-  rpc DeleteUser (DeleteUserRequest) returns (UserResponse);
-}
-
 // Authentication
 
 message LoginRequest {
@@ -58,10 +50,6 @@ message User {
 
   // E2EE
   bytes public_key = 7;
-
-  string role = 8;
-  bool is_blocked = 9;
-  bool is_deleted = 10;
 }
 
 message GetUserRequest {}
@@ -134,7 +122,7 @@ enum MessageStatus {
 
 message Message {
   string id = 1;
-  string chatid = 2;
+  string chat_id = 2;
   string sender_id = 3;
   int64 timestamp = 4;
   MessageType type = 5;
@@ -153,7 +141,7 @@ message Message {
 // Message requests
 
 message GetMessagesRequest {
-  string chatid = 1;
+  string chat_id = 1;
   int32 limit = 2;
   string cursor = 3;
 }
@@ -165,7 +153,7 @@ message GetMessagesResponse {
 }
 
 message SendMessageRequest {
-  string chatid = 1;
+  string chat_id = 1;
   MessageType type = 2;
   string text = 3;
   string file_id = 4;
@@ -185,7 +173,7 @@ message SendMessageResponse {
 // Stream
 
 message StreamMessagesRequest {
-  repeated string chatids = 1;
+  repeated string chat_ids = 1;
 }
 
 // Email
@@ -202,46 +190,4 @@ message RequestEmailCodeResponse {
 message VerifyEmailCodeRequest {
   string email = 1;
   string code = 2;
-}
-
-// ADMIN
-
-// Users
-
-message CreateUserRequest  {
-	string email = 1;
-	string name = 2;
-}
-
-message UserResponse  {
-	bool success = 1;
-	User user = 2;
-	string error = 3;
-}
-
-message GetUserByEmailRequest  {
-	string email = 1;
-}
-
-message GetUserByEmailResponse  {
-	bool success = 1;
-	User user = 2;
-	string error = 3;
-}
-
-message GetAllUsersRequest {}
-
-message GetAllUsersResponse {
-  repeated User users = 1;
-  string error = 2;
-}
-
-message EditUserRequest  {
-	string user_id = 1;
-	optional string email = 2;
-	optional string name = 3;
-}
-
-message DeleteUserRequest  {
-	string user_id = 1;
 }
