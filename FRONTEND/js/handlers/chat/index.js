@@ -10,7 +10,9 @@ import {
     getCurrentChat,
     createRealChatWithUser,
     cleanupChatResources,
-    refreshChatsList
+    refreshChatsList,
+    refreshAllChatNames,
+    loadAllUsersFromServer
 } from './chat-core.js';
 
 import { 
@@ -110,6 +112,10 @@ export function resetChatInitialization() {
 export async function setupChatHandlers() {
     updateUserInfo();
     
+    // Сначала загружаем всех пользователей (нужно для имен)
+    console.log('📥 Загрузка списка всех пользователей...');
+    await loadAllUsersFromServer();
+    
     if (state.currentChat) {
         const chatExists = state.chats?.some(c => c.id === state.currentChat);
         if (!chatExists) {
@@ -127,6 +133,10 @@ export async function setupChatHandlers() {
     console.log('Чат загружается!');
     
     await loadChatsFromServer();
+    
+    // Обновляем имена чатов после загрузки
+    await refreshAllChatNames();
+    
     updateUserInfo();
     
     setupAvatar();

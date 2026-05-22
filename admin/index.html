@@ -8,10 +8,9 @@
 </head>
 <body>
     <div id="app">
-        <!-- Основной контент админ-панели -->
+        <!-- Основной контент админ-панели (скрыт до авторизации) -->
         <div id="admin-content" style="display: none;">
             <div class="admin-container">
-                <!-- Шапка -->
                 <div class="admin-header">
                     <div class="logo">
                         <span class="logo-icon">🔧</span>
@@ -31,9 +30,7 @@
                     </div>
                 </div>
 
-                <!-- Основной контент -->
                 <div class="admin-main">
-                    <!-- Левая панель -->
                     <div class="admin-sidebar">
                         <div class="stats-card">
                             <h3>Статистика</h3>
@@ -62,9 +59,7 @@
                         </div>
                     </div>
 
-                    <!-- Правая панель - таблица пользователей -->
                     <div class="users-panel">
-                        <!-- Вкладки -->
                         <div class="tabs">
                             <button class="tab-btn active" data-tab="active">📋 Активные</button>
                             <button class="tab-btn" data-tab="deleted">🗑️ Удаленные</button>
@@ -107,22 +102,28 @@
             </div>
         </div>
 
-        <!-- ПОЛНОЭКРАННОЕ МОДАЛЬНОЕ ОКНО АВТОРИЗАЦИИ -->
-        <div id="auth-fullscreen" class="auth-fullscreen">
+        <!-- ЭКРАН АВТОРИЗАЦИИ (объединенный) -->
+        <div id="auth-screen" class="auth-screen">
             <div class="auth-container">
                 <div class="auth-box">
                     <div class="auth-logo">
                         <span class="auth-logo-icon">🔧</span>
                         <h2>Собор <span class="accent">Admin</span></h2>
+                        <p class="auth-subtitle">Административная панель</p>
                     </div>
                     
-                    <!-- Шаг 1: Ввод email -->
-                    <div id="auth-step-email" class="auth-step">
-                        <h3>Вход в админ-панель</h3>
-                        <p class="auth-desc">Введите корпоративную почту</p>
+                    <!-- Шаг 1: Ввод IP и email (объединен) -->
+                    <div id="auth-step-login" class="auth-step">
+                        <div id="auth-error" class="auth-error" style="display: none;"></div>
+                        <div class="form-group">
+                            <label for="server-address">Адрес сервера</label>
+                            <input type="text" id="server-address" class="auth-input" placeholder="192.168.0.106:7212" value="localhost:7212">
+                            <small class="form-hint">Пример: localhost:7212 или 192.168.0.106:7212</small>
+                        </div>
                         
                         <div class="form-group">
-                            <input type="email" id="auth-email" class="auth-input" placeholder="Email" autocomplete="off">
+                            <label for="auth-email">Email</label>
+                            <input type="email" id="auth-email" class="auth-input" placeholder="your-email@example.com" autocomplete="off">
                         </div>
                         
                         <div id="auth-error" class="auth-error" style="display: none;"></div>
@@ -143,7 +144,7 @@
                         <div id="auth-code-error" class="auth-error" style="display: none;"></div>
                         
                         <button id="auth-verify-code" class="auth-btn-primary">Войти</button>
-                        <button id="auth-back-email" class="auth-btn-secondary">Назад</button>
+                        <button id="back-to-login" class="auth-btn-secondary">Назад</button>
                     </div>
                 </div>
             </div>
@@ -206,29 +207,11 @@
                 </div>
                 <div class="modal-body">
                     <p>Вы действительно хотите удалить пользователя <strong id="delete-user-name"></strong>?</p>
-                    <p class="warning-text">Пользователь будет перемещен в корзину. Вы сможете восстановить его позже.</p>
+                    <p class="warning-text">Пользователь будет перемещен в корзину.</p>
                 </div>
                 <div class="modal-footer">
                     <button class="btn-secondary cancel-btn">Отмена</button>
                     <button class="btn-danger delete-confirm">Удалить</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Модальное окно восстановления -->
-        <div id="restore-modal" class="modal" style="display: none;">
-            <div class="modal-content small">
-                <div class="modal-header">
-                    <h2>🔄 Восстановление пользователя</h2>
-                    <button class="modal-close">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <p>Вы действительно хотите восстановить пользователя <strong id="restore-user-name"></strong>?</p>
-                    <p>После восстановления пользователь сможет снова входить в систему.</p>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary cancel-btn">Отмена</button>
-                    <button class="btn-primary restore-confirm">Восстановить</button>
                 </div>
             </div>
         </div>

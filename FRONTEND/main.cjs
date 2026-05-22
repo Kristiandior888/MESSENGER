@@ -1,5 +1,5 @@
 // main.cjs
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow,  Menu, shell} = require('electron');
 const path = require('path');
 
 
@@ -22,9 +22,11 @@ function createWindow() {
     win.loadFile('index.html');
     
     // Открываем DevTools для отладки
-    win.webContents.openDevTools();
+    //win.webContents.openDevTools();
 }
 
+// Убираем меню полностью
+    Menu.setApplicationMenu(null);  // ← ЭТО ГЛАВНОЕ
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {

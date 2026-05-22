@@ -11,6 +11,31 @@ class GrpcService {
         this.onMessageCallback = null;
     }
 
+    // Метод для обновления адреса сервера
+    async updateServerAddress(ipAddress) {
+        if (this.client.updateAddress) {
+            this.client.updateAddress(ipAddress);
+            console.log('✅ Адрес сервера обновлен в сервисе:', ipAddress);
+            
+            // Сохраняем в localStorage
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('serverIp', ipAddress);
+            }
+            
+            // Перезапускаем стрим если он был активен
+            if (this.stream) {
+                this.stopGlobalStream();
+                if (this.onMessageCallback) {
+                    setTimeout(() => {
+                        this.startGlobalStream(this.onMessageCallback);
+                    }, 1000);
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
     #call(method, request, skipAuth = false) {
         return new Promise((resolve, reject) => {
             const metadata = new Metadata();
@@ -29,8 +54,8 @@ class GrpcService {
                     console.error(`❌ Ошибка ${method}:`, error);
                     
                     let errorMessage = 'Ошибка соединения с сервером';
-                    if (error.code === 14) errorMessage = 'Сервер недоступен';
-                    else if (error.code === 5) errorMessage = 'Не найден';
+                    if (error.code === 14) errorMessage = 'Сервер недоступен. Проверьте IP адрес';
+                    else if (error.code === 5) errorMessage = 'Пользователь не найден';
                     else if (error.code === 16) errorMessage = 'Не авторизован';
                     else if (error.message) errorMessage = error.message;
                     
@@ -69,7 +94,7 @@ class GrpcService {
     // Messages
     async getMessages(chatId, limit = 50, cursor = '') {
         return this.#call('GetMessages', {
-            chat_id: chatId,
+            chatid: chatId,
             limit: limit,
             cursor: cursor
         });
@@ -83,7 +108,7 @@ class GrpcService {
         const fileId = fileIds.length > 0 ? fileIds[0] : '';
         
         return this.#call('SendMessage', {
-            chat_id: chatId,
+            chatid: chatId,
             type: type,
             text: text,
             file_id: fileId,
@@ -206,10 +231,10 @@ class GrpcService {
                 return null;
             }
             
-            this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);
+            this.stream = this.client.StreamMessages({ chatids: chatIds }, metadata);
             
             this.stream.on('data', (message) => {
-                console.log(`📨 Новое сообщение в чате ${message.chat_id}:`, message);
+                console.log(`📨 Новое сообщение в чате ${message.chatid}:`, message);
                 if (this.onMessageCallback) {
                     this.onMessageCallback(message);
                 }

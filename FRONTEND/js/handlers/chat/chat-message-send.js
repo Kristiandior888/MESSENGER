@@ -17,20 +17,12 @@ function autoResizeTextarea(textarea) {
     textarea.style.overflowY = textarea.scrollHeight > 200 ? 'auto' : 'hidden';
 }
 
-/**
- * Загружает прикреплённые файлы на сервер через UploadFile RPC.
- * attachedFiles содержит { id (localStorage), name, size, type }.
- * Нам нужен оригинальный File-объект — поэтому храним его тоже (см. chat-files.js).
- *
- * Возвращает массив server file_id строк.
- */
 async function uploadAttachedFilesToServer(service, filesToSend) {
     if (!filesToSend || filesToSend.length === 0) return [];
 
     const serverFileIds = [];
 
     for (const fileEntry of filesToSend) {
-        // fileEntry.file — оригинальный File-объект (добавляется в chat-files.js)
         if (!fileEntry.file) {
             console.warn('⚠️ Нет оригинального File-объекта для', fileEntry.name, '— пропускаем');
             continue;
@@ -50,24 +42,17 @@ async function uploadAttachedFilesToServer(service, filesToSend) {
     return serverFileIds;
 }
 
-/**
- * Определяем тип сообщения по прикреплённым файлам.
- * Если есть файлы — тип FILE (1) или IMAGE (2), иначе TEXT (0).
- */
 function resolveMessageType(text, files) {
-    if (!files || files.length === 0) return 0; // TEXT
+    if (!files || files.length === 0) return 0;
 
     const hasImage = files.some(f =>
         f.type?.startsWith('image/') ||
         /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)
     );
 
-    return hasImage ? 2 : 1; // IMAGE : FILE
+    return hasImage ? 2 : 1;
 }
 
-/**
- * Отправка сообщения
- */
 export async function sendMessage() {
     if (isSending) {
         console.log('Сообщение уже отправляется...');
@@ -102,14 +87,12 @@ export async function sendMessage() {
 
     isSending = true;
 
-    // Снимаем копию прикреплённых файлов и сразу очищаем UI
     const filesToSend = [...attachedFiles];
     clearAttachedFiles();
 
     const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     pendingMessages.set(tempId, { text, files: filesToSend, chatId });
 
-    // Показываем оптимистичное сообщение
     addMessage(text, 'sent', true, 'sending', filesToSend, tempId);
 
     messageField.value = '';
@@ -118,7 +101,6 @@ export async function sendMessage() {
     try {
         const { service } = await initGrpc();
 
-        // 1. Сначала загружаем файлы на сервер
         let serverFileIds = [];
         if (hasFiles) {
             console.log(`📦 Загрузка ${filesToSend.length} файл(а/ов) на сервер...`);
@@ -126,10 +108,8 @@ export async function sendMessage() {
             console.log('📦 Server file IDs:', serverFileIds);
         }
 
-        // 2. Определяем тип сообщения
         const msgType = resolveMessageType(text, filesToSend);
 
-        // 3. Отправляем сообщение с полученными file_ids
         console.log('Отправка сообщения на сервер:', text, 'fileIds:', serverFileIds);
         const response = await service.sendMessage(chatId, text, msgType, serverFileIds);
         console.log('Ответ сервера:', response);
@@ -137,11 +117,9 @@ export async function sendMessage() {
         if (response.success && response.message) {
             const realMessageId = response.message.id;
 
-            // Удаляем оптимистичное сообщение
             const tempMessage = document.querySelector(`.message[data-message-id="${tempId}"]`);
             if (tempMessage) tempMessage.remove();
 
-            // Добавляем настоящее, если стрим ещё не успел его доставить
             const existingMessage = document.querySelector(`.message[data-message-id="${realMessageId}"]`);
             if (!existingMessage) {
                 addMessage(text, 'sent', true, 'sent', filesToSend, realMessageId);
@@ -174,7 +152,6 @@ export async function sendMessage() {
     } finally {
         isSending = false;
 
-        // Чистим зависшие pending-сообщения через 5 сек
         setTimeout(() => {
             pendingMessages.forEach((_, id) => {
                 const el = document.querySelector(`.message[data-message-id="${id}"]`);
@@ -195,9 +172,6 @@ function updateTempMessageStatus(tempId, newStatus) {
     }
 }
 
-/**
- * Настройка отправки сообщений
- */
 export function setupMessageSending() {
     if (isInitialized) {
         console.log('setupMessageSending уже был вызван, пропускаем');

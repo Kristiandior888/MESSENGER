@@ -2103,3 +2103,24 @@ input:checked + .slider:before {
 .chat-item[data-is-virtual="true"]:hover {
     opacity: 1;
 }
+.form-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: #f0ece4;
+    border: 1px solid var(--border-medium, #e3d4c2);
+    border-radius: 12px;
+    color: var(--text-primary, #3a2c21);
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    border-color: var(--primary, #c17b3a);
+    box-shadow: 0 0 0 2px rgba(193, 123, 58, 0.1);
+    background: #faf7f2;
+}
+
+.form-input::placeholder {
+    color: var(--text-muted, #b4a082);
+}
