@@ -1,3 +1,4 @@
+using gov_messenger.Repository;
 using gov_messenger.Services;
 using Grpc.Core;
 
@@ -140,11 +141,11 @@ namespace gov_messenger.GrpcServices
                     Name = user.name ?? "",
                     AvatarUrl = user.avatar_url ?? "",
                     Status = user.status ?? "",
-                    LastSeen = user.last_seen != null
-                        ? new DateTimeOffset(
-                            user.last_seen.Value)
-                        .ToUnixTimeSeconds()
-                        : 0
+                    LastSeen = user.last_seen != null ? new DateTimeOffset(user.last_seen.Value)
+                        .ToUnixTimeSeconds() : 0,
+                    Role = user.role,
+                    IsBlocked = user.is_blocked,
+                    IsDeleted = user.is_deleted,
                 });
             }
 
@@ -166,18 +167,63 @@ namespace gov_messenger.GrpcServices
             }
 
             var chats = await _chatService.GetChatsAsync(userId);
+            var currentUserGuid = Guid.Parse(userId);
 
             var response = new GetChatsResponse();
 
             foreach (var chat in chats)
             {
+                var participants = await _chatService.GetParticipantsByChatId(chat.id);
+                var grpcParticipants = new List<User>();
+
+                foreach (var participant in participants)
+                {
+                    var user = await _userService.GetUserByIdAsync(participant.user_id.ToString());
+                    if (user != null)
+                    {
+                        var isCurrentUser = user.id == currentUserGuid;
+                        grpcParticipants.Add(new User
+                        {
+                            Id = user.id.ToString(),
+                            Email = user.email ?? "",
+                            Name = user.name ?? (isCurrentUser ? "Вы" : user.email?.Split('@')[0] ?? "Пользователь"),
+                            AvatarUrl = user.avatar_url ?? "",
+                            Status = user.status ?? "",
+                            LastSeen = user.last_seen != null
+                                ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                                : 0,
+                            Role = user.role,
+                            IsBlocked = user.is_blocked,
+                            IsDeleted = user.is_deleted,
+                        });
+                    }
+                }
+
+                Message? lastMessage = null;
+                var messages = await _messageService.GetMessagesAsync(chat.id.ToString(), 1, "");
+                if (messages.Any())
+                {
+                    var lastMsg = messages.First();
+                    lastMessage = new Message
+                    {
+                        Id = lastMsg.id.ToString(),
+                        Chatid = lastMsg.chatid.ToString(),
+                        SenderId = lastMsg.sender_id.ToString(),
+                        Text = lastMsg.text ?? "",
+                        Timestamp = new DateTimeOffset(lastMsg.timestamp).ToUnixTimeSeconds()
+                    };
+                }
+
                 response.Chats.Add(new Chat
                 {
                     Id = chat.id.ToString(),
                     Name = chat.name ?? "",
                     Type = (ChatType)chat.type,
                     AvatarUrl = chat.avatar_url ?? "",
-                    CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds()
+                    CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds(),
+                    Participants = { grpcParticipants },
+                    LastMessage = lastMessage,
+                    UnreadCount = 0
                 });
             }
 
@@ -208,6 +254,32 @@ namespace gov_messenger.GrpcServices
                         request.Name,
                         request.ParticipantIds.ToList());
 
+                var participants = await _chatService.GetParticipantsByChatId(chat.id);
+                var grpcParticipants = new List<User>();
+                var currentUserGuid = Guid.Parse(userId);
+
+                foreach (var participant in participants)
+                {
+                    var user = await _userService.GetUserByIdAsync(participant.user_id.ToString());
+                    if (user != null)
+                    {
+                        grpcParticipants.Add(new User
+                        {
+                            Id = user.id.ToString(),
+                            Email = user.email ?? "",
+                            Name = user.name ?? (user.id == currentUserGuid ? "Вы" : user.email?.Split('@')[0] ?? "Пользователь"),
+                            AvatarUrl = user.avatar_url ?? "",
+                            Status = user.status ?? "",
+                            LastSeen = user.last_seen != null
+                                ? new DateTimeOffset(user.last_seen.Value).ToUnixTimeSeconds()
+                                : 0,
+                            Role = user.role,
+                            IsBlocked = user.is_blocked,
+                            IsDeleted = user.is_deleted,
+                        });
+                    }
+                }
+
                 return new CreateChatResponse
                 {
                     Chat = new Chat
@@ -215,10 +287,8 @@ namespace gov_messenger.GrpcServices
                         Id = chat.id.ToString(),
                         Name = chat.name ?? "",
                         Type = (ChatType)chat.type,
-                        CreatedAt =
-                            new DateTimeOffset(
-                                chat.created_at)
-                            .ToUnixTimeSeconds()
+                        CreatedAt = new DateTimeOffset(chat.created_at).ToUnixTimeSeconds(),
+                        Participants = { grpcParticipants }
                     }
                 };
             }

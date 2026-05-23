@@ -48,43 +48,23 @@ namespace gov_messenger.Services
                 participants.Add(creatorGuid);
             }
 
-            switch (type)
+            if (type == ChatType.Private)
             {
-                case ChatType.Private:
+                if (participants.Count != 2)
+                {
+                    throw new Exception(
+                        "Private chat must contain exactly 2 users");
+                }
 
-                    if (participants.Count != 2)
-                    {
-                        throw new Exception(
-                            "Private chat must contain exactly 2 users");
-                    }
+                var existingChat =
+                    await _chatRepository.FindPrivateChatAsync(
+                        participants[0],
+                        participants[1]);
 
-                    var existingChat =
-                        await _chatRepository.FindPrivateChatAsync(
-                            participants[0],
-                            participants[1]);
-
-                    if (existingChat != null)
-                    {
-                        return existingChat;
-                    }
-
-                    break;
-
-                case ChatType.Group:
-
-                    if (string.IsNullOrWhiteSpace(name))
-                    {
-                        throw new Exception(
-                            "Group name is required");
-                    }
-
-                    if (participants.Count < 2)
-                    {
-                        throw new Exception(
-                            "Group must contain at least 2 users");
-                    }
-
-                    break;
+                if (existingChat != null)
+                {
+                    return existingChat;
+                }
             }
 
             var chat = new ChatEntity
@@ -99,6 +79,8 @@ namespace gov_messenger.Services
 
                 created_at = DateTime.UtcNow
             };
+
+            await _chatRepository.CreateAsync(chat);
 
             foreach (var userId in participants)
             {
@@ -116,7 +98,12 @@ namespace gov_messenger.Services
                     });
             }
 
-            return await _chatRepository.CreateAsync(chat);
+            return chat;
+        }
+
+        public async Task<List<ChatParticipantEntity>> GetParticipantsByChatId(Guid chatId)
+        {
+            return await _chatParticipantRepository.GetParticipantsByChatIdAsync(chatId);
         }
     }
 }
