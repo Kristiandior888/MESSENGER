@@ -53,6 +53,7 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UserService>();
 builder.Services.AddScoped<ChatService>();
 builder.Services.AddScoped<EmailService>();
+builder.Services.AddSingleton<EncryptionService>();
 
 var app = builder.Build();
 

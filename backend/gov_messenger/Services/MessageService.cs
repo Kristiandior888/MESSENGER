@@ -2,27 +2,34 @@
 using gov_messenger.Repository;
 using Grpc.Core;
 using System.Collections.Concurrent;
+using static Grpc.Core.Metadata;
 
 namespace gov_messenger.Services
 {
     public class MessageService
     {
         private readonly MessageRepository _repository;
+        private readonly EncryptionService _encryptionService;
         private static readonly ConcurrentDictionary<string, List<IServerStreamWriter<Message>>> _subscribers = new();
 
-        public MessageService(MessageRepository repository)
+        public MessageService(MessageRepository repository, EncryptionService encryptionService)
         {
             _repository = repository;
+            _encryptionService = encryptionService;
         }
 
         public async Task<MessageEntity> SendMessageAsync(string chatId, string senderId, string text)
         {
+            var encrypted = _encryptionService.Encrypt(text);
+
             var message = new MessageEntity
             {
                 id = Guid.NewGuid(),
                 chatid = Guid.Parse(chatId),
                 sender_id = Guid.Parse(senderId),
-                text = text,
+                ciphertext = encrypted.ciphertext,
+                nonce = encrypted.nonce,
+                tag = encrypted.tag,
                 timestamp = DateTime.UtcNow
             };
 
@@ -72,12 +79,14 @@ namespace gov_messenger.Services
         {
             if (_subscribers.TryGetValue(chatId, out var streams))
             {
+                var text = _encryptionService.Decrypt(message.ciphertext, message.nonce, message.tag);
+
                 var grpcMessage = new Message
                 {
                     Id = message.id.ToString(),
                     Chatid = message.chatid.ToString(),
                     SenderId = message.sender_id.ToString(),
-                    Text = message.text,
+                    Text = text,
                     Timestamp = new DateTimeOffset(message.timestamp).ToUnixTimeSeconds()
                 };
 

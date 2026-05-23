@@ -1,6 +1,7 @@
 using gov_messenger.Repository;
 using gov_messenger.Services;
 using Grpc.Core;
+using static Grpc.Core.Metadata;
 
 namespace gov_messenger.GrpcServices
 {
@@ -11,19 +12,22 @@ namespace gov_messenger.GrpcServices
         private readonly UserService _userService;
         private readonly ChatService _chatService;
         private readonly JwtService _jwtService;
+        private readonly EncryptionService _encryptionService;
 
         public MessengerGrpcService(
             MessageService messageService,
             AuthService authService,
             ChatService chatService,
             UserService userService,
-            JwtService jwtService)
+            JwtService jwtService,
+            EncryptionService encryptionService)
         {
             _messageService = messageService;
             _authService = authService;
             _userService = userService;
             _chatService = chatService;
             _jwtService = jwtService;
+            _encryptionService = encryptionService;
         }
 
         public override async Task<RequestEmailCodeResponse> RequestEmailCode(
@@ -204,12 +208,14 @@ namespace gov_messenger.GrpcServices
                 if (messages.Any())
                 {
                     var lastMsg = messages.First();
+                    var text = _encryptionService.Decrypt(lastMsg.ciphertext, lastMsg.nonce, lastMsg.tag);
+
                     lastMessage = new Message
                     {
                         Id = lastMsg.id.ToString(),
                         Chatid = lastMsg.chatid.ToString(),
                         SenderId = lastMsg.sender_id.ToString(),
-                        Text = lastMsg.text ?? "",
+                        Text = text ?? "",
                         Timestamp = new DateTimeOffset(lastMsg.timestamp).ToUnixTimeSeconds()
                     };
                 }
@@ -324,6 +330,17 @@ namespace gov_messenger.GrpcServices
                 senderId,
                 request.Text);
 
+            string text;
+
+            if (entity.ciphertext != null)
+            {
+                text = _encryptionService.Decrypt(entity.ciphertext, entity.nonce, entity.tag);
+            }
+            else
+            {
+                text = entity.text ?? "";
+            }
+
             return new SendMessageResponse
             {
                 Success = true,
@@ -332,7 +349,7 @@ namespace gov_messenger.GrpcServices
                     Id = entity.id.ToString(),
                     Chatid = entity.chatid.ToString(),
                     SenderId = entity.sender_id.ToString(),
-                    Text = entity.text,
+                    Text = text,
                     Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
                 }
             };
@@ -361,14 +378,20 @@ namespace gov_messenger.GrpcServices
 
             foreach (var entity in messages)
             {
-                response.Messages.Add(new Message
-                {
-                    Id = entity.id.ToString(),
-                    Chatid = entity.chatid.ToString(),
-                    SenderId = entity.sender_id.ToString(),
-                    Text = entity.text,
-                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds()
-                });
+                var text =
+                    _encryptionService.Decrypt(
+                        entity.ciphertext,
+                        entity.nonce,
+                        entity.tag);
+
+                response.Messages.Add(
+                    new Message
+                    {
+                        Id = entity.id.ToString(),
+                        Text = text,
+                        SenderId =
+                            entity.sender_id.ToString()
+                    });
             }
 
             return response;
