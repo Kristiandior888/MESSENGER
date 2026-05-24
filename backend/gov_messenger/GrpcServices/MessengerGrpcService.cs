@@ -190,7 +190,7 @@ namespace gov_messenger.GrpcServices
                         {
                             Id = user.id.ToString(),
                             Email = user.email ?? "",
-                            Name = user.name ?? (isCurrentUser ? "��" : user.email?.Split('@')[0] ?? "������������"),
+                            Name = user.name ?? (isCurrentUser ? "��" : user.email?.Split('@')[0] ?? "������������"),
                             AvatarUrl = user.avatar_url ?? "",
                             Status = user.status ?? "",
                             LastSeen = user.last_seen != null
@@ -273,7 +273,7 @@ namespace gov_messenger.GrpcServices
                         {
                             Id = user.id.ToString(),
                             Email = user.email ?? "",
-                            Name = user.name ?? (user.id == currentUserGuid ? "��" : user.email?.Split('@')[0] ?? "������������"),
+                            Name = user.name ?? (user.id == currentUserGuid ? "��" : user.email?.Split('@')[0] ?? "������������"),
                             AvatarUrl = user.avatar_url ?? "",
                             Status = user.status ?? "",
                             LastSeen = user.last_seen != null
@@ -361,11 +361,17 @@ namespace gov_messenger.GrpcServices
         {
             var userId = context.UserState["userId"] as string;
 
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthorized"));
+            }
+
             var isMember = await _chatService.IsUserInChat(userId, request.Chatid);
 
+            // Если пользователь не участник, возвращаем пустой список (или ошибку, как вам нужно)
             if (!isMember)
             {
-                throw new RpcException(new Status(StatusCode.PermissionDenied, "Access denied"));
+                return new GetMessagesResponse(); 
             }
 
             var messages = await _messageService.GetMessagesAsync(
@@ -378,25 +384,22 @@ namespace gov_messenger.GrpcServices
 
             foreach (var entity in messages)
             {
-                var text =
-                    _encryptionService.Decrypt(
-                        entity.ciphertext,
-                        entity.nonce,
-                        entity.tag);
+                var text = _encryptionService.Decrypt(entity.ciphertext, entity.nonce, entity.tag);
 
-                response.Messages.Add(
-                    new Message
-                    {
-                        Id = entity.id.ToString(),
-                        Text = text,
-                        SenderId =
-                            entity.sender_id.ToString()
-                    });
+                response.Messages.Add(new Message
+                {
+                    Id = entity.id.ToString(),
+                    Chatid = entity.chatid.ToString(),
+                    SenderId = entity.sender_id.ToString(),
+                    Text = text ?? "",
+                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds(), 
+                    Type = (MessageType)entity.type,
+                    Status = MessageStatus.Delivered
+                });
             }
 
             return response;
         }
-
         public override async Task StreamMessages(
             StreamMessagesRequest request,
             IServerStreamWriter<Message> responseStream,

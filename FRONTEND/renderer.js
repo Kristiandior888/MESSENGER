@@ -97,4 +97,8 @@ window.addEventListener('beforeunload', () => {
         localStorage.setItem('token', state.token);
         localStorage.setItem('userData', JSON.stringify(state.currentUser));
     }
+    // Останавливаем стрим при закрытии
+    import('./js/handlers/chat/chat-messages.js').then(module => {
+        module.stopGlobalMessageStream();
+    });
 });

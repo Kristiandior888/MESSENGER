@@ -5,10 +5,7 @@
   "main": "main.cjs",
   "scripts": {
     "start": "electron .",
-    "build": "electron-packager . SoborMessenger --platform=win32 --arch=x64 --out=release --overwrite --icon=icon/icon.ico",
-    "build:linux": "electron-packager . SoborMessenger --platform=linux --arch=x64 --out=release --overwrite --icon=icon/icon.png",
-    "build:linux:arm64": "electron-packager . SoborMessenger --platform=linux --arch=arm64 --out=release --overwrite --icon=icon/icon.png",
-    "build:all": "npm run build && npm run build:linux"
+    "build": "electron-packager . SoborMessenger --platform=win32 --arch=x64 --out=release --overwrite --icon=icon/icon.ico"
   },
   "devDependencies": {
     "electron": "^40.4.1",
@@ -19,4 +16,7 @@
     "@grpc/proto-loader": "^0.8.0",
     "google-protobuf": "^4.0.2"
   }
-}
+} 
+
+
+

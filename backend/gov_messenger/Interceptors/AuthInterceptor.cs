@@ -18,25 +18,29 @@ namespace gov_messenger.Interceptors
         }
 
         public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
-        TRequest request,
-        ServerCallContext context,
-        UnaryServerMethod<TRequest, TResponse> continuation)
+            TRequest request,
+            ServerCallContext context,
+            UnaryServerMethod<TRequest, TResponse> continuation)
         {
             var method = context.Method;
+            
+            Console.WriteLine($"🔐 Вызов метода: {method}");
 
-            if (method.Contains("RequestEmailCode") || 
-                method.Contains("VerifyEmailCode"))
+            if (method.Contains("RequestEmailCode") || method.Contains("VerifyEmailCode"))
             {
                 return await continuation(request, context);
             }
 
             var authHeader = context.RequestHeaders
-                .FirstOrDefault(h => h.Key == "authorization")?.Value;
+                .FirstOrDefault(h => h.Key.Equals("authorization", StringComparison.OrdinalIgnoreCase))?.Value;
+
+            Console.WriteLine($"📋 Заголовок authorization: {(string.IsNullOrEmpty(authHeader) ? "не найден" : "найден")}");
 
             if (string.IsNullOrEmpty(authHeader))
                 throw new RpcException(new Status(StatusCode.Unauthenticated, "Missing token"));
 
             var token = authHeader.Replace("Bearer ", "");
+            Console.WriteLine($"🔑 Токен получен, длина: {token.Length}");
 
             var handler = new JwtSecurityTokenHandler();
 

@@ -26,7 +26,9 @@ import {
     appendNewMessage,
     stopMessageStreamForChat,
     stopAllMessageStreams,
-    resetMessagesState
+    resetMessagesState,
+    startGlobalMessageStream,
+    stopGlobalMessageStream
 } from './chat-messages.js';
 
 import { 
@@ -68,7 +70,9 @@ export {
     setupMessageSending,
     sendMessage,
     setupSearch,
-    setupEmojiPanel
+    setupEmojiPanel,
+    startGlobalMessageStream,
+    stopGlobalMessageStream
 };
 
 function setupCreateGroupButton() {
@@ -112,33 +116,17 @@ export function resetChatInitialization() {
 export async function setupChatHandlers() {
     updateUserInfo();
     
-    // Сначала загружаем всех пользователей (нужно для имен)
-    console.log('📥 Загрузка списка всех пользователей...');
-    await loadAllUsersFromServer();
+    // Останавливаем старый стрим если был (важно!)
+    await stopGlobalMessageStream();
     
-    if (state.currentChat) {
-        const chatExists = state.chats?.some(c => c.id === state.currentChat);
-        if (!chatExists) {
-            state.currentChat = null;
-        }
-    }
+    // Небольшая задержка для корректного завершения
+    await new Promise(resolve => setTimeout(resolve, 100));
     
-    if (isChatInitialized) {
-        console.log('Чат уже был инициализирован, но перезагружаем');
-        resetMessagesState();
-        await stopAllMessageStreams();
-        isChatInitialized = false;
-    }
-    
-    console.log('Чат загружается!');
-    
+    // Загружаем чаты (внутри загружаются и пользователи)
     await loadChatsFromServer();
     
-    // Обновляем имена чатов после загрузки
-    await refreshAllChatNames();
-    
+    // Настройка UI
     updateUserInfo();
-    
     setupAvatar();
     setupCreateGroupButton();
     setupFileAttachment();
@@ -146,8 +134,16 @@ export async function setupChatHandlers() {
     setupSearch();
     setupEmojiPanel();
     
+    // Обновляем область чата
     await updateChatAreaUI();
     
+    // Запускаем стрим если есть чаты и не в процессе завершения
+    if (state.chats && state.chats.length > 0) {
+        await startGlobalMessageStream();
+    } else {
+        console.log('Нет чатов, стрим не запущен');
+    }
+    
     isChatInitialized = true;
-    console.log('Чат полностью инициализирован');
+    console.log('✅ Чат полностью инициализирован');
 }
