@@ -45,20 +45,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    var certPath =
-        Environment.GetEnvironmentVariable(
-            "TLS_CERT_PATH");
+    var certPath = Environment.GetEnvironmentVariable("TLS_CERT_PATH");
+    var certPassword = Environment.GetEnvironmentVariable("TLS_CERT_PASSWORD");
+    var cert = new X509Certificate2(certPath, certPassword, X509KeyStorageFlags.MachineKeySet);
 
-    var certPassword =
-        Environment.GetEnvironmentVariable(
-            "TLS_CERT_PASSWORD");
-
-    var cert = new X509Certificate2(
-        certPath,
-        certPassword);
-
-    options.ListenAnyIP(443, listen =>
+    options.ListenAnyIP(7212, listen =>
     {
+        listen.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http2;
         listen.UseHttps(cert);
     });
 });

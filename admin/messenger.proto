@@ -52,16 +52,11 @@ message User {
   string email = 2;
   string name = 3;
   string avatar_url = 4;
-
   string status = 5;
   int64 last_seen = 6;
-
-  // E2EE
-  bytes public_key = 7;
-
-  string role = 8;
-  bool is_blocked = 9;
-  bool is_deleted = 10;
+  string role = 7;
+  bool is_blocked = 8;
+  bool is_deleted = 9;
 }
 
 message GetUserRequest {}
@@ -139,15 +134,8 @@ message Message {
   int64 timestamp = 4;
   MessageType type = 5;
   MessageStatus status = 6;
-
-  // field for testing purposes
   string text = 7;
-
   string file_id = 8;
-
-  // E2EE
-  bytes ciphertext = 9;
-  bytes nonce = 10;
 }
 
 // Message requests
@@ -168,12 +156,6 @@ message SendMessageRequest {
   string chatid = 1;
   MessageType type = 2;
   string text = 3;
-  string file_id = 4;
-
-  // E2EE
-  bytes ciphertext = 5;
-
-  bytes nonce = 6;
 }
 
 message SendMessageResponse {

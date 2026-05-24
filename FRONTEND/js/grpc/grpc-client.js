@@ -10,7 +10,7 @@ console.log('__dirname:', __dirname);
 let PROTO_PATH = path.join(__dirname, 'Protos/messenger.proto');
 
 // Адрес сервера по умолчанию
-const DEFAULT_SERVER_ADDRESS = '192.168.0.104:7212';
+const DEFAULT_SERVER_ADDRESS = '192.168.0.21:7212';
 
 let currentServerAddress = DEFAULT_SERVER_ADDRESS;
 let currentClient = null;
@@ -35,6 +35,13 @@ function createClient(address) {
     console.log('gRPC клиент создан для адреса:', address);
     return client;
 }
+
+// function createClient(address) {
+//     const sslCredentials = grpc.credentials.createSsl();
+//     const client = new messenger.Messenger(address, sslCredentials);
+//     console.log('gRPC клиент создан для адреса:', address);
+//     return client;
+// }
 
 // Загружаем сохраненный IP из localStorage (для Electron)
 if (typeof localStorage !== 'undefined') {

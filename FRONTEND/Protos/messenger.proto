@@ -23,6 +23,14 @@ service Messenger {
   rpc GetUsers (GetUsersRequest) returns (GetUsersResponse);
 }
 
+service Admin {  
+  rpc CreateUser (CreateUserRequest) returns (UserResponse);
+  rpc GetUserByEmail (GetUserByEmailRequest) returns (GetUserByEmailResponse);
+  rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersResponse);
+  rpc EditUser (EditUserRequest) returns (UserResponse);
+  rpc DeleteUser (DeleteUserRequest) returns (UserResponse);
+}
+
 // Authentication
 
 message LoginRequest {
@@ -44,12 +52,11 @@ message User {
   string email = 2;
   string name = 3;
   string avatar_url = 4;
-
   string status = 5;
   int64 last_seen = 6;
-
-  // E2EE
-  bytes public_key = 7;
+  string role = 7;
+  bool is_blocked = 8;
+  bool is_deleted = 9;
 }
 
 message GetUserRequest {}
@@ -122,26 +129,19 @@ enum MessageStatus {
 
 message Message {
   string id = 1;
-  string chat_id = 2;
+  string chatid = 2;
   string sender_id = 3;
   int64 timestamp = 4;
   MessageType type = 5;
   MessageStatus status = 6;
-
-  // field for testing purposes
   string text = 7;
-
   string file_id = 8;
-
-  // E2EE
-  bytes ciphertext = 9;
-  bytes nonce = 10;
 }
 
 // Message requests
 
 message GetMessagesRequest {
-  string chat_id = 1;
+  string chatid = 1;
   int32 limit = 2;
   string cursor = 3;
 }
@@ -153,15 +153,9 @@ message GetMessagesResponse {
 }
 
 message SendMessageRequest {
-  string chat_id = 1;
+  string chatid = 1;
   MessageType type = 2;
   string text = 3;
-  string file_id = 4;
-
-  // E2EE
-  bytes ciphertext = 5;
-
-  bytes nonce = 6;
 }
 
 message SendMessageResponse {
@@ -173,7 +167,7 @@ message SendMessageResponse {
 // Stream
 
 message StreamMessagesRequest {
-  repeated string chat_ids = 1;
+  repeated string chatids = 1;
 }
 
 // Email
@@ -190,4 +184,46 @@ message RequestEmailCodeResponse {
 message VerifyEmailCodeRequest {
   string email = 1;
   string code = 2;
+}
+
+// ADMIN
+
+// Users
+
+message CreateUserRequest  {
+	string email = 1;
+	string name = 2;
+}
+
+message UserResponse  {
+	bool success = 1;
+	User user = 2;
+	string error = 3;
+}
+
+message GetUserByEmailRequest  {
+	string email = 1;
+}
+
+message GetUserByEmailResponse  {
+	bool success = 1;
+	User user = 2;
+	string error = 3;
+}
+
+message GetAllUsersRequest {}
+
+message GetAllUsersResponse {
+  repeated User users = 1;
+  string error = 2;
+}
+
+message EditUserRequest  {
+	string user_id = 1;
+	optional string email = 2;
+	optional string name = 3;
+}
+
+message DeleteUserRequest  {
+	string user_id = 1;
 }
