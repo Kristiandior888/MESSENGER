@@ -22,11 +22,11 @@ function createWindow() {
     win.loadFile('index.html');
     
     // Открываем DevTools для отладки
-    win.webContents.openDevTools();
+    //win.webContents.openDevTools();
 }
 
 // Убираем меню полностью
-    Menu.setApplicationMenu(null);  // ← ЭТО ГЛАВНОЕ
+    Menu.setApplicationMenu(null);  
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
