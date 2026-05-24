@@ -57,16 +57,15 @@ namespace gov_messenger.Services
             
             try
             {
-                // Wait until the client disconnects
-                await Task.Delay(-1, cancellationToken);
-            }
-            catch (TaskCanceledException)
-            {
-                // The client disconnected, do nothing
+                // Ожидаем отмены (клиент отключился)
+                var tcs = new TaskCompletionSource<bool>();
+                using (cancellationToken.Register(() => tcs.TrySetResult(true)))
+                {
+                    await tcs.Task;
+                }
             }
             finally
             {
-                // Remove the stream of subs
                 _subscribers[chatId].Remove(stream);
                 if (_subscribers[chatId].Count == 0)
                 {
@@ -75,10 +74,21 @@ namespace gov_messenger.Services
             }
         }
 
+        private async Task WaitForDisconnect(CancellationToken cancellationToken)
+        {
+            var tcs = new TaskCompletionSource<bool>();
+            using (cancellationToken.Register(() => tcs.TrySetResult(true)))
+            {
+                await tcs.Task;
+            }
+        }
+
         private async Task NotifySubscribers(string chatId, MessageEntity message)
         {
             if (_subscribers.TryGetValue(chatId, out var streams))
             {
+                Console.WriteLine($"📨 Уведомление {streams.Count} подписчиков чата {chatId}");
+                
                 var text = _encryptionService.Decrypt(message.ciphertext, message.nonce, message.tag);
 
                 var grpcMessage = new Message
@@ -97,18 +107,23 @@ namespace gov_messenger.Services
                     try
                     {
                         await stream.WriteAsync(grpcMessage);
+                        Console.WriteLine($"✅ Сообщение отправлено подписчику чата {chatId}");
                     }
-                    catch
+                    catch (Exception ex)
                     {
+                        Console.WriteLine($"❌ Ошибка отправки подписчику: {ex.Message}");
                         deadStreams.Add(stream);
                     }
                 }
                 
-                // Remove dead streams
                 foreach (var dead in deadStreams)
                 {
                     streams.Remove(dead);
                 }
+            }
+            else
+            {
+                Console.WriteLine($"⚠️ Нет подписчиков для чата {chatId}");
             }
         }
     }

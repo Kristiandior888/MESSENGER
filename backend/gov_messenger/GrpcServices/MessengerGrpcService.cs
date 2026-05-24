@@ -405,16 +405,35 @@ namespace gov_messenger.GrpcServices
             IServerStreamWriter<Message> responseStream,
             ServerCallContext context)
         {
-            var tasks = new List<Task>();
             var cancellationToken = context.CancellationToken;
-
+            var tasks = new List<Task>();
+            
+            Console.WriteLine($"📡 StreamMessages вызван, Chatids count: {request.Chatids?.Count ?? 0}");
+            
+            // Проверяем, есть ли чаты для подписки
+            if (request.Chatids == null || request.Chatids.Count == 0)
+            {
+                Console.WriteLine("⚠️ Нет чатов для подписки, ожидаем отключения клиента...");
+                // Ждем отключения клиента
+                var tcs = new TaskCompletionSource<bool>();
+                using (cancellationToken.Register(() => tcs.TrySetResult(true)))
+                {
+                    await tcs.Task;
+                }
+                return;
+            }
+            
             foreach (var chatId in request.Chatids)
             {
+                Console.WriteLine($"📡 Подписка на чат: {chatId}");
                 var task = _messageService.SubscribeToChat(chatId, responseStream, cancellationToken);
                 tasks.Add(task);
             }
-
-            await Task.WhenAll(tasks);
+            
+            // Ждем, пока хотя бы одна задача завершится (клиент отключился)
+            await Task.WhenAny(tasks);
+            
+            Console.WriteLine($"📡 StreamMessages завершен для чатов");
         }
     }
 }

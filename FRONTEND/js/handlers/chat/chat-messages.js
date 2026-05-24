@@ -12,6 +12,8 @@ let isStreamStarted = false;
 let messageStream = null;
 let reconnectTimeout = null;
 let isShuttingDown = false; // Флаг для предотвращения повторных попыток при выходе
+let pollingInterval = null;
+let useStreaming = false; // Временно отключаем стриминг
 
 export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;
@@ -171,20 +173,27 @@ export async function startGlobalMessageStream() {
     // 1. Уже запущен
     // 2. Идет завершение работы
     // 3. Нет токена авторизации
+    
+    if (!useStreaming) {
+            startPollingForMessages();
+            return;
+        }
+
     if (isStreamStarted) {
         console.log('⚠️ Стрим уже запущен');
         return;
     }
     
     if (isShuttingDown) {
-        console.log('⚠️ Пропускаем запуск стрима - идет завершение работы');
-        return;
+        console.log('⚠️ Был флаг завершения, сбрасываю...');
+        isShuttingDown = false;
     }
     
     if (!state.token) {
         console.log('⚠️ Нет токена авторизации, стрим не запущен');
         return;
     }
+    
     
     try {
         const { service } = await initGrpc();
@@ -225,10 +234,10 @@ export async function startGlobalMessageStream() {
             return;
         }
         
-        messageStream = service.client.StreamMessages({ chat_ids: chatIds }, metadata);
+        messageStream = service.client.StreamMessages({ chatids: chatIds }, metadata);
         
         messageStream.on('data', (message) => {
-            console.log(`📨 Получено сообщение в реальном времени:`, message);
+         console.log(`📨 ПОЛУЧЕНО СООБЩЕНИЕ В СТРИМЕ:`, message);
             
             const chat = state.chats?.find(c => c.id === message.chat_id);
             if (!chat) {
@@ -294,12 +303,33 @@ export async function startGlobalMessageStream() {
     }
 }
 
-/**
- * Остановка глобального стрима
- */
+export function startPollingForMessages() {
+    if (pollingInterval) clearInterval(pollingInterval);
+    
+    console.log('🔄 Запуск polling (интервал 2 секунды)');
+    
+    pollingInterval = setInterval(async () => {
+        if (state.currentChat) {
+            await loadMessagesFromServer(state.currentChat);
+        }
+    }, 2000);
+}
+
+export function stopPollingForMessages() {
+    if (pollingInterval) {
+        clearInterval(pollingInterval);
+        pollingInterval = null;
+        console.log('🛑 Polling остановлен');
+    }
+}
 export async function stopGlobalMessageStream() {
     isShuttingDown = true;
     
+    if (!useStreaming) {
+            stopPollingForMessages();
+            return;
+        }
+
     if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
         reconnectTimeout = null;
@@ -321,12 +351,19 @@ export async function stopGlobalMessageStream() {
     isStreamStarted = false;
     console.log('🛑 Глобальный стрим остановлен');
     
-    // Сбрасываем флаг через небольшую задержку
-    setTimeout(() => {
-        isShuttingDown = false;
-    }, 500);
+  
 }
 
+
+export function resetStreamState() {
+    isShuttingDown = false;
+    isStreamStarted = false;
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    console.log('🔄 Состояние стрима сброшено');
+}
 /**
  * Обновление последнего сообщения в списке чатов
  */
