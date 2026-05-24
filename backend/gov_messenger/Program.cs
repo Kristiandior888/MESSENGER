@@ -1,13 +1,14 @@
+using DotNetEnv;
 using gov_messenger.Data;
+using gov_messenger.GrpcServices;
 using gov_messenger.Interceptors;
 using gov_messenger.Repository;
 using gov_messenger.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using DotNetEnv;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using gov_messenger.GrpcServices;
 
 Env.Load();
 
@@ -41,6 +42,26 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
             )
         };
     });
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    var certPath =
+        Environment.GetEnvironmentVariable(
+            "TLS_CERT_PATH");
+
+    var certPassword =
+        Environment.GetEnvironmentVariable(
+            "TLS_CERT_PASSWORD");
+
+    var cert = new X509Certificate2(
+        certPath,
+        certPassword);
+
+    options.ListenAnyIP(443, listen =>
+    {
+        listen.UseHttps(cert);
+    });
+});
 
 builder.Services.AddScoped<MessageRepository>();
 builder.Services.AddScoped<UserRepository>();
