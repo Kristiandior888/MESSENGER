@@ -1,7 +1,3 @@
-// js/grpc/grpc-client.js
-// Отключаем проверку сертификата для разработки
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
-
 const path = require('path');
 const fs = require('fs');
 const grpc = require('@grpc/grpc-js');

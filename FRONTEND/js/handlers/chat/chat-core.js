@@ -49,24 +49,31 @@ export async function loadAllUsersFromServer() {
             return [];
         }
         
-        allUsers = (response.users || []).filter(user => user.id !== state.currentUser?.id);
+        const allUsersFromServer = response.users || [];
         
-        // Заполняем кэш именами и email пользователей
-        allUsers.forEach(user => {
-            const userName = user.name || user.email?.split('@')[0] || null;
+        // Очищаем кэш
+        userNamesCache.clear();
+        userEmailsCache.clear();
+        
+        // Заполняем кэш именами и email всех пользователей
+        allUsersFromServer.forEach(user => {
+            const userName = user.name || user.email?.split('@')[0] || 
+                (user.id === state.currentUser?.id ? 'Вы' : 'Пользователь');
             userNamesCache.set(user.id, userName);
             userEmailsCache.set(user.id, user.email);
         });
         
-        // Также добавляем текущего пользователя в кэш
-        if (state.currentUser) {
-            userNamesCache.set(state.currentUser.id, state.currentUser.name || state.currentUser.email?.split('@')[0] || 'Вы');
+        // Добавляем текущего пользователя в кэш если его нет
+        if (state.currentUser && !userNamesCache.has(state.currentUser.id)) {
+            userNamesCache.set(state.currentUser.id, 'Вы');
             userEmailsCache.set(state.currentUser.id, state.currentUser.email);
         }
         
-        console.log(`📋 Загружено ${allUsers.length} пользователей в кэш`);
+        allUsers = allUsersFromServer;
         
-        return allUsers;
+        console.log(`📋 Загружено ${allUsersFromServer.length} пользователей в кэш`);
+        
+        return allUsersFromServer;
         
     } catch (error) {
         console.error('❌ Ошибка загрузки пользователей:', error);
@@ -113,6 +120,7 @@ export async function loadChatsFromServer() {
     console.log('👤 Текущий пользователь:', state.currentUser); 
     
     try {
+        // СНАЧАЛА загружаем всех пользователей (независимо от чатов)
         await loadAllUsersFromServer();
         
         const response = await service.getChats();
@@ -134,49 +142,42 @@ export async function loadChatsFromServer() {
                 let otherUserName = null;
                 let otherUserEmail = null;
                 
-                // 1. Пытаемся найти ID собеседника из last_message
-                if (chat.last_message && chat.last_message.sender_id) {
-                    const senderId = chat.last_message.sender_id;
-                    if (senderId !== state.currentUser?.id) {
-                        otherUserId = senderId;
+                // 1. Пытаемся найти ID собеседника из participants
+                if (chat.participants && Array.isArray(chat.participants)) {
+                    const otherParticipant = chat.participants.find(p => p.id !== state.currentUser?.id);
+                    if (otherParticipant) {
+                        otherUserId = otherParticipant.id;
+                        otherUserName = otherParticipant.name || otherParticipant.email?.split('@')[0];
+                        otherUserEmail = otherParticipant.email;
                     }
                 }
                 
-                // 2. Если не нашли, пытаемся извлечь из ID чата
-                if (!otherUserId && chat.id) {
-                    if (chat.id.includes(state.currentUser?.id)) {
-                        const parts = chat.id.split('_');
-                        for (const part of parts) {
-                            if (part !== state.currentUser?.id && part.length > 5) {
-                                otherUserId = part;
-                                break;
-                            }
+                // 2. Если не нашли, пробуем из last_message
+                if (!otherUserId && chat.last_message && chat.last_message.sender_id) {
+                    const senderId = chat.last_message.sender_id;
+                    if (senderId !== state.currentUser?.id) {
+                        otherUserId = senderId;
+                        const cachedName = userNamesCache.get(senderId);
+                        const cachedEmail = userEmailsCache.get(senderId);
+                        if (cachedName) otherUserName = cachedName;
+                        if (cachedEmail) otherUserEmail = cachedEmail;
+                    }
+                }
+                
+                // 3. Если все еще нет, пробуем из ID чата
+                if (!otherUserId && chat.id && state.currentUser) {
+                    const parts = chat.id.split('_');
+                    for (const part of parts) {
+                        if (part !== state.currentUser.id && part.length > 5 && userNamesCache.has(part)) {
+                            otherUserId = part;
+                            otherUserName = userNamesCache.get(part);
+                            otherUserEmail = userEmailsCache.get(part);
+                            break;
                         }
                     }
                 }
                 
-                // 3. Получаем данные из кэша если нашли ID
-                if (otherUserId) {
-                    otherUserName = userNamesCache.get(otherUserId) || null;
-                    otherUserEmail = userEmailsCache.get(otherUserId) || null;
-                }
-                
-                // 4. Если все еще нет данных, но есть last_message с информацией
-                if (!otherUserName && chat.last_message) {
-                    if (chat.last_message.sender_name) {
-                        otherUserName = chat.last_message.sender_name;
-                    }
-                    if (chat.last_message.sender_email) {
-                        otherUserEmail = chat.last_message.sender_email;
-                    }
-                }
-                
-                // 5. Если есть name в чате
-                if (!otherUserName && chat.name && chat.name !== '' && chat.name !== 'PRIVATE') {
-                    otherUserName = chat.name;
-                }
-                
-                // Сохраняем найденную информацию в чат
+                // Сохраняем информацию в чат
                 if (otherUserId) {
                     chat.other_user_id = otherUserId;
                 }
@@ -194,6 +195,8 @@ export async function loadChatsFromServer() {
         }
         
         state.chats = processedChats;
+        
+        // ВСЕГДА обновляем список чатов (показываем пользователей даже если нет чатов)
         await refreshChatsList();
         
         return state.chats;
@@ -201,6 +204,11 @@ export async function loadChatsFromServer() {
     } catch (error) {
         console.error('Ошибка загрузки чатов:', error);
         showErrorMessage('Не удалось загрузить список чатов');
+        
+        // ДАЖЕ ПРИ ОШИБКЕ пытаемся показать пользователей
+        await loadAllUsersFromServer();
+        await refreshChatsList();
+        
         return [];
     }
 }
@@ -211,9 +219,14 @@ export async function createRealChatWithUser(userId, userName, userEmail) {
         
         console.log('🔨 Создание чата с пользователем:', { userId, userName, userEmail });
         
+        // Проверяем, существует ли уже чат с этим пользователем
         const existingChat = state.chats.find(chat => {
             if (chat.type === 'GROUP' || chat.type === 1) return false;
-            return chat.other_user_id === userId;
+            if (chat.other_user_id === userId) return true;
+            if (chat.participants) {
+                return chat.participants.some(p => p.id === userId);
+            }
+            return false;
         });
         
         if (existingChat) {
@@ -251,28 +264,75 @@ export async function refreshChatsList() {
     
     chatsList.innerHTML = '';
     
-    if (!state.chats || state.chats.length === 0) {
-        chatsList.innerHTML = '<div class="no-chats">Нет чатов. Начните диалог с пользователем!</div>';
-        return;
-    }
+    // Получаем всех пользователей (кроме текущего)
+    const allUsersList = Array.from(userNamesCache.keys())
+        .filter(id => id !== state.currentUser?.id)
+        .map(id => ({
+            id: id,
+            name: userNamesCache.get(id),
+            email: userEmailsCache.get(id)
+        }));
     
-    const { createChatItemElement } = await import('./chat-ui.js');
+    console.log('📋 Все пользователи для отображения:', allUsersList);
     
-    const sortedChats = [...state.chats].sort((a, b) => {
-        const aTime = a.last_message?.timestamp || a.created_at || 0;
-        const bTime = b.last_message?.timestamp || b.created_at || 0;
-        return bTime - aTime;
+    // Создаем Set существующих чатов (по user_id)
+    const existingChatUserIds = new Set();
+    state.chats.forEach(chat => {
+        if (chat.type !== 'GROUP' && chat.type !== 1) {
+            if (chat.other_user_id) {
+                existingChatUserIds.add(chat.other_user_id);
+            }
+            if (chat.participants) {
+                chat.participants.forEach(p => {
+                    if (p.id !== state.currentUser?.id) {
+                        existingChatUserIds.add(p.id);
+                    }
+                });
+            }
+        }
     });
     
-    for (const chat of sortedChats) {
+    // ВСЕ чаты (даже пустые) показываем в секции чатов
+    // А пользователей без чатов - отдельно
+    const chatsWithHistory = state.chats.filter(chat => {
+        // Групповые чаты всегда показываем
+        if (chat.type === 'GROUP' || chat.type === 1) return true;
+        // Личные чаты показываем всегда, если они есть в state.chats
+        return true; // ← ИЗМЕНЕНО: показываем все чаты, даже пустые
+    });
+    
+    // Пользователи, с которыми еще нет чата
+    const usersWithoutChats = allUsersList.filter(user => !existingChatUserIds.has(user.id));
+    
+    console.log(`📊 Чатов: ${chatsWithHistory.length}, Пользователей без чатов: ${usersWithoutChats.length}`);
+    
+    // Импортируем функции
+    const { createChatItemElement } = await import('./chat-ui.js');
+    const { createUserListItem } = await import('./chat-users-list.js');
+    
+    // Добавляем ВСЕ чаты (даже пустые)
+    for (const chat of chatsWithHistory) {
         const chatItem = createChatItemElement(chat);
         chatsList.appendChild(chatItem);
     }
     
+    // Добавляем пользователей без чатов
+    for (const user of usersWithoutChats) {
+        const userItem = createUserListItem(user);
+        chatsList.appendChild(userItem);
+    }
+    
+    // Если нет ничего - показываем сообщение
+    if (chatsWithHistory.length === 0 && usersWithoutChats.length === 0) {
+        chatsList.innerHTML = '<div class="no-chats">Нет других пользователей в системе</div>';
+        return;
+    }
+    
+    // Подсвечиваем активный чат
     if (state.currentChat) {
-        const activeChat = chatsList.querySelector(`.chat-item[data-chat-id="${state.currentChat}"]`);
-        if (activeChat) {
-            activeChat.classList.add('active');
+        const activeItem = chatsList.querySelector(`.chat-item[data-chat-id="${state.currentChat}"], .chat-item[data-user-id="${state.currentChat}"]`);
+        if (activeItem) {
+            activeItem.classList.add('active');
         }
     }
 }
@@ -283,7 +343,7 @@ export async function cleanupChatResources() {
     state.currentChat = null;
 }
 
-// Функция для получения отображаемого имени (приоритет: имя > email > ID)
+// Функция для получения отображаемого имени
 export function getChatDisplayName(chat) {
     if (!chat) return 'Чат';
     
@@ -293,29 +353,17 @@ export function getChatDisplayName(chat) {
         return chat.name || 'Групповой чат';
     }
     
-    console.log('🔍 getChatDisplayName для личного чата:', chat.id);
-    
-    // 1. Проверяем other_user_name (имя)
+    // 1. Проверяем other_user_name
     if (chat.other_user_name && chat.other_user_name.trim() !== '') {
-        console.log('✅ Имя из other_user_name:', chat.other_user_name);
         return chat.other_user_name;
     }
     
-    // 2. Проверяем other_user_email (email)
+    // 2. Проверяем other_user_email
     if (chat.other_user_email && chat.other_user_email.trim() !== '') {
-        // Показываем email целиком или только часть до @
-        const displayEmail = chat.other_user_email;
-        console.log('✅ Email из other_user_email:', displayEmail);
-        return displayEmail;
+        return chat.other_user_email;
     }
     
-    // 3. Проверяем поле name
-    if (chat.name && chat.name.trim() !== '' && chat.name !== 'PRIVATE') {
-        console.log('✅ Имя из chat.name:', chat.name);
-        return chat.name;
-    }
-    
-    // 4. Проверяем participants
+    // 3. Проверяем participants
     if (chat.participants && Array.isArray(chat.participants) && chat.participants.length > 0) {
         const other = chat.participants.find(p => p.id !== state.currentUser?.id);
         if (other) {
@@ -324,100 +372,28 @@ export function getChatDisplayName(chat) {
         }
     }
     
-    // 5. Проверяем last_message для определения собеседника
-    if (chat.last_message && chat.last_message.sender_id) {
-        const senderId = chat.last_message.sender_id;
-        if (senderId !== state.currentUser?.id) {
-            // Это сообщение от собеседника
-            if (userNamesCache.has(senderId) && userNamesCache.get(senderId)) {
-                const name = userNamesCache.get(senderId);
-                console.log('✅ Имя из last_message.sender_id:', name);
-                chat.other_user_id = senderId;
-                chat.other_user_name = name;
-                return name;
-            }
-            if (userEmailsCache.has(senderId)) {
-                const email = userEmailsCache.get(senderId);
-                console.log('✅ Email из last_message.sender_id:', email);
-                chat.other_user_id = senderId;
-                chat.other_user_email = email;
-                return email;
-            }
-        }
-        if (chat.last_message.sender_name) {
-            console.log('✅ Имя из last_message.sender_name:', chat.last_message.sender_name);
-            return chat.last_message.sender_name;
-        }
-        if (chat.last_message.sender_email) {
-            console.log('✅ Email из last_message.sender_email:', chat.last_message.sender_email);
-            return chat.last_message.sender_email;
-        }
+    // 4. Проверяем other_user_id через кэш
+    if (chat.other_user_id && userNamesCache.has(chat.other_user_id)) {
+        return userNamesCache.get(chat.other_user_id);
     }
     
-    // 6. Проверяем other_user_id
-    if (chat.other_user_id) {
-        if (userNamesCache.has(chat.other_user_id) && userNamesCache.get(chat.other_user_id)) {
-            const name = userNamesCache.get(chat.other_user_id);
-            console.log('✅ Имя из other_user_id:', name);
-            chat.other_user_name = name;
-            return name;
-        }
-        if (userEmailsCache.has(chat.other_user_id)) {
-            const email = userEmailsCache.get(chat.other_user_id);
-            console.log('✅ Email из other_user_id:', email);
-            chat.other_user_email = email;
-            return email;
-        }
-    }
-    
-    // 7. Пробуем извлечь ID из ID чата
+    // 5. Пробуем извлечь ID из ID чата
     if (chat.id && state.currentUser) {
         const parts = chat.id.split('_');
         for (const part of parts) {
-            if (part !== state.currentUser.id && part.length > 5) {
-                if (userNamesCache.has(part) && userNamesCache.get(part)) {
-                    const name = userNamesCache.get(part);
-                    console.log('✅ Имя из ID чата:', name);
-                    chat.other_user_id = part;
-                    chat.other_user_name = name;
-                    return name;
-                }
-                if (userEmailsCache.has(part)) {
-                    const email = userEmailsCache.get(part);
-                    console.log('✅ Email из ID чата:', email);
-                    chat.other_user_id = part;
-                    chat.other_user_email = email;
-                    return email;
-                }
-            }
-        }
-        
-        if (chat.id !== state.currentUser.id && chat.id.length > 5) {
-            if (userNamesCache.has(chat.id) && userNamesCache.get(chat.id)) {
-                const name = userNamesCache.get(chat.id);
-                console.log('✅ Имя из ID чата (прямой):', name);
-                chat.other_user_id = chat.id;
-                chat.other_user_name = name;
-                return name;
-            }
-            if (userEmailsCache.has(chat.id)) {
-                const email = userEmailsCache.get(chat.id);
-                console.log('✅ Email из ID чата (прямой):', email);
-                chat.other_user_id = chat.id;
-                chat.other_user_email = email;
-                return email;
+            if (part !== state.currentUser.id && part.length > 5 && userNamesCache.has(part)) {
+                chat.other_user_id = part;
+                chat.other_user_name = userNamesCache.get(part);
+                return userNamesCache.get(part);
             }
         }
     }
     
-    // 8. Если ничего не нашли - показываем ID чата
-    console.warn('⚠️ Не удалось определить имя/email для чата:', chat.id);
-    
-    const shortId = chat.id.slice(-8);
+    // 6. Если ничего не нашли
+    const shortId = chat.id?.slice(-8) || 'unknown';
     return `Пользователь ${shortId}`;
 }
 
-// Функция для получения email собеседника (если нужно отдельно)
 export function getChatDisplayEmail(chat) {
     if (!chat) return null;
     
@@ -441,30 +417,17 @@ export function getOtherParticipantId(chat) {
     if (isGroupChat(chat)) return null;
     return chat.other_user_id || null;
 }
+
 export const fetchAndCacheUserName = fetchAndCacheUserData;
+
 export async function refreshAllChatNames() {
     await loadAllUsersFromServer();
     
     for (const chat of state.chats) {
         if (!isGroupChat(chat)) {
-            if (chat.other_user_id) {
-                if (userNamesCache.has(chat.other_user_id) && userNamesCache.get(chat.other_user_id)) {
-                    chat.other_user_name = userNamesCache.get(chat.other_user_id);
-                }
-                if (userEmailsCache.has(chat.other_user_id)) {
-                    chat.other_user_email = userEmailsCache.get(chat.other_user_id);
-                }
-            } else if (chat.last_message && chat.last_message.sender_id) {
-                const senderId = chat.last_message.sender_id;
-                if (senderId !== state.currentUser?.id) {
-                    chat.other_user_id = senderId;
-                    if (userNamesCache.has(senderId) && userNamesCache.get(senderId)) {
-                        chat.other_user_name = userNamesCache.get(senderId);
-                    }
-                    if (userEmailsCache.has(senderId)) {
-                        chat.other_user_email = userEmailsCache.get(senderId);
-                    }
-                }
+            if (chat.other_user_id && userNamesCache.has(chat.other_user_id)) {
+                chat.other_user_name = userNamesCache.get(chat.other_user_id);
+                chat.other_user_email = userEmailsCache.get(chat.other_user_id);
             }
         }
     }
