@@ -361,6 +361,11 @@ namespace gov_messenger.GrpcServices
         {
             var userId = context.UserState["userId"] as string;
 
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthorized"));
+            }
+
             var isMember = await _chatService.IsUserInChat(userId, request.Chatid);
 
             if (!isMember)
@@ -384,14 +389,16 @@ namespace gov_messenger.GrpcServices
                         entity.nonce,
                         entity.tag);
 
-                response.Messages.Add(
-                    new Message
-                    {
-                        Id = entity.id.ToString(),
-                        Text = text,
-                        SenderId =
-                            entity.sender_id.ToString()
-                    });
+                response.Messages.Add(new Message
+                {
+                    Id = entity.id.ToString(),
+                    Chatid = entity.chatid.ToString(),
+                    SenderId = entity.sender_id.ToString(),
+                    Text = text ?? "",
+                    Timestamp = new DateTimeOffset(entity.timestamp).ToUnixTimeSeconds(),
+                    Type = (MessageType)entity.type,
+                    Status = MessageStatus.Delivered
+                });
             }
 
             return response;

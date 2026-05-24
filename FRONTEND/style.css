@@ -2954,3 +2954,19 @@ body.light-theme .settings-btn:hover {
     border-color: var(--primary, #d4af37);
     color: var(--primary, #d4af37);
 }
+/* Стили для виртуальных чатов (пользователей без истории) */
+.chat-item[data-is-virtual="true"] {
+    opacity: 0.85;
+    border-left: 3px solid transparent;
+}
+
+.chat-item[data-is-virtual="true"]:hover {
+    opacity: 1;
+    border-left-color: #d4af37;
+}
+
+.chat-item[data-is-virtual="true"].active {
+    opacity: 1;
+    background: rgba(212, 175, 55, 0.15);
+    border-left-color: #d4af37;
+}

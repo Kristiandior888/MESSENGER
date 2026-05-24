@@ -1,14 +1,17 @@
 // js/handlers/chat/chat-messages.js
+
 import { state } from '../../app.js';
 import { initGrpc, getCurrentChat, isGroupChat } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
 import { formatMessageTime } from '../../utils/dateUtils.js';
+import { refreshChatsList } from './chat-core.js';
 
 let isLoadingMessages = false;
 let lastProcessedMessageIds = new Set();
 let isStreamStarted = false;
-
-// Только обновленная функция createMessageElement в chat-messages.js
+let messageStream = null;
+let reconnectTimeout = null;
+let isShuttingDown = false; // Флаг для предотвращения повторных попыток при выходе
 
 export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;
@@ -19,7 +22,6 @@ export function createMessageElement(msg, chat) {
     messageDiv.className = `message ${type}`;
     messageDiv.dataset.messageId = msg.id;
 
-    // Показываем имя отправителя только для полученных сообщений в групповых чатах
     const isGroup = isGroupChat(chat);
     
     if (isGroup && !isSent) {
@@ -134,7 +136,6 @@ export async function loadMessagesFromServer(chatId) {
             return;
         }
         
-        // Находим текущий чат для отображения имен в группе
         const currentChat = state.chats?.find(c => c.id === chatId);
         
         const sortedMessages = [...response.messages].sort((a, b) => {
@@ -162,21 +163,190 @@ export async function loadMessagesFromServer(chatId) {
     }
 }
 
+/**
+ * Запуск стрима для получения сообщений в реальном времени
+ */
+export async function startGlobalMessageStream() {
+    // Не запускаем стрим если:
+    // 1. Уже запущен
+    // 2. Идет завершение работы
+    // 3. Нет токена авторизации
+    if (isStreamStarted) {
+        console.log('⚠️ Стрим уже запущен');
+        return;
+    }
+    
+    if (isShuttingDown) {
+        console.log('⚠️ Пропускаем запуск стрима - идет завершение работы');
+        return;
+    }
+    
+    if (!state.token) {
+        console.log('⚠️ Нет токена авторизации, стрим не запущен');
+        return;
+    }
+    
+    try {
+        const { service } = await initGrpc();
+        
+        // Останавливаем старый стрим если есть
+        await stopGlobalMessageStream();
+        
+        // Получаем ID всех чатов пользователя
+        const chatIds = state.chats?.map(chat => chat.id).filter(id => id && !id.startsWith('temp_')) || [];
+        
+        if (chatIds.length === 0) {
+            console.log('Нет чатов для стрима, откладываем запуск');
+            setTimeout(() => {
+                if (!isShuttingDown && !isStreamStarted) {
+                    startGlobalMessageStream();
+                }
+            }, 2000);
+            return;
+        }
+        
+        console.log(`🚀 Запуск стрима для чатов:`, chatIds);
+        
+        // Создаем метаданные с токеном
+        const Metadata = window.grpc?.Metadata;
+        if (!Metadata) {
+            console.error('❌ Metadata не доступен');
+            return;
+        }
+        
+        const metadata = new Metadata();
+        if (state.token) {
+            metadata.add('authorization', `Bearer ${state.token}`);
+        }
+        
+        // Запускаем стрим
+        if (typeof service.client.StreamMessages !== 'function') {
+            console.warn('⚠️ Метод StreamMessages не реализован на сервере');
+            return;
+        }
+        
+        messageStream = service.client.StreamMessages({ chat_ids: chatIds }, metadata);
+        
+        messageStream.on('data', (message) => {
+            console.log(`📨 Получено сообщение в реальном времени:`, message);
+            
+            const chat = state.chats?.find(c => c.id === message.chat_id);
+            if (!chat) {
+                console.warn(`⚠️ Чат ${message.chat_id} не найден в state.chats`);
+                return;
+            }
+            
+            if (state.currentChat === message.chat_id) {
+                appendNewMessage(message.chat_id, message, chat);
+            }
+            
+            updateChatLastMessage(message.chat_id, message);
+        });
+        
+        messageStream.on('error', (error) => {
+            // Игнорируем ошибку CANCELLED при нормальном завершении
+            if (error.code === 1 && isShuttingDown) {
+                console.log('🔇 Стрим отменен при завершении работы');
+                return;
+            }
+            console.error('❌ Ошибка стрима:', error.code, error.message);
+            isStreamStarted = false;
+            messageStream = null;
+            
+            // Переподключаемся только если не в процессе завершения
+            if (!isShuttingDown && !isStreamStarted) {
+                if (reconnectTimeout) clearTimeout(reconnectTimeout);
+                reconnectTimeout = setTimeout(() => {
+                    console.log('🔄 Переподключение стрима...');
+                    startGlobalMessageStream();
+                }, 5000);
+            }
+        });
+        
+        messageStream.on('end', () => {
+            console.log('🔚 Стрим завершен сервером');
+            isStreamStarted = false;
+            messageStream = null;
+            
+            if (!isShuttingDown && !isStreamStarted) {
+                if (reconnectTimeout) clearTimeout(reconnectTimeout);
+                reconnectTimeout = setTimeout(() => {
+                    console.log('🔄 Переподключение стрима после завершения...');
+                    startGlobalMessageStream();
+                }, 3000);
+            }
+        });
+        
+        isStreamStarted = true;
+        console.log('✅ Глобальный стрим сообщений запущен');
+        
+    } catch (error) {
+        console.error('❌ Ошибка запуска стрима:', error);
+        isStreamStarted = false;
+        messageStream = null;
+        
+        if (!isShuttingDown) {
+            if (reconnectTimeout) clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(() => {
+                startGlobalMessageStream();
+            }, 5000);
+        }
+    }
+}
+
+/**
+ * Остановка глобального стрима
+ */
+export async function stopGlobalMessageStream() {
+    isShuttingDown = true;
+    
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
+    }
+    
+    if (messageStream) {
+        try {
+            // Удаляем все слушатели перед отменой
+            messageStream.removeAllListeners();
+            // Отменяем стрим
+            messageStream.cancel();
+            console.log('🛑 Стрим отменен');
+        } catch (e) {
+            console.warn('Ошибка при отмене стрима:', e.message);
+        }
+        messageStream = null;
+    }
+    
+    isStreamStarted = false;
+    console.log('🛑 Глобальный стрим остановлен');
+    
+    // Сбрасываем флаг через небольшую задержку
+    setTimeout(() => {
+        isShuttingDown = false;
+    }, 500);
+}
+
+/**
+ * Обновление последнего сообщения в списке чатов
+ */
+function updateChatLastMessage(chatId, message) {
+    const chat = state.chats?.find(c => c.id === chatId);
+    if (chat) {
+        chat.last_message = message;
+        refreshChatsList();
+    }
+}
+
 export async function stopMessageStreamForChat(chatId) {
     console.log(`⚠️ stopMessageStreamForChat вызван для ${chatId}`);
 }
 
 export async function stopAllMessageStreams() {
-    try {
-        const { service } = await initGrpc();
-        service.stopGlobalStream();
-        isStreamStarted = false;
-        lastProcessedMessageIds.clear();
-        isLoadingMessages = false;
-        console.log(`🛑 Глобальный стрим остановлен`);
-    } catch (error) {
-        console.error(`❌ Ошибка остановки стрима:`, error);
-    }
+    await stopGlobalMessageStream();
+    lastProcessedMessageIds.clear();
+    isLoadingMessages = false;
+    console.log(`🛑 Все стримы остановлены`);
 }
 
 export function resetMessagesState() {

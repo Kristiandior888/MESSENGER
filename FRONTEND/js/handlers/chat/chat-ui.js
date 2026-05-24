@@ -43,7 +43,6 @@ export async function updateChatAreaUI() {
         messagesDiv.style.display = 'flex';
         messageInput.style.display = 'flex';
         
-        // Обновляем имя чата в заголовке
         const currentChatObj = state.chats?.find(c => c.id === state.currentChat);
         if (currentChatObj) {
             const displayName = getChatDisplayName(currentChatObj);
@@ -148,18 +147,21 @@ export function createChatItemElement(chat) {
     chatItem.className = 'chat-item';
     chatItem.dataset.chatId = chat.id;
     
-    // Получаем отображаемое имя (теперь всегда будет имя собеседника)
     let displayName = getChatDisplayName(chat);
     const isGroup = isGroupChat(chat);
     const typeIcon = isGroup ? '👥 ' : '💬 ';
     const pinIcon = chat.pinned ? '📌 ' : '';
     const unreadBadge = chat.unread_count > 0 ? `<span class="unread-badge">${chat.unread_count}</span>` : '';
     
+    // Для пустых чатов показываем индикатор "Нет сообщений"
+    const hasMessages = chat.last_message !== null && chat.last_message !== undefined;
+    const emptyIndicator = !hasMessages && !isGroup ? '<span style="font-size: 0.7rem; opacity: 0.5; margin-left: 5px;"></span>' : '';
+    
     chatItem.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <span>${typeIcon}</span>
-                <span class="chat-name-span">${pinIcon}${escapeHtml(displayName)}</span>
+                <span class="chat-name-span">${pinIcon}${escapeHtml(displayName)}${emptyIndicator}</span>
             </div>
             ${unreadBadge}
         </div>
