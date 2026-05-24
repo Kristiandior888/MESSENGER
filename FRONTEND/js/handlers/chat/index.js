@@ -28,8 +28,7 @@ import {
     stopAllMessageStreams,
     resetMessagesState,
     startGlobalMessageStream,
-    stopGlobalMessageStream,
-    resetStreamState 
+    stopGlobalMessageStream
 } from './chat-messages.js';
 
 import { 
@@ -116,15 +115,14 @@ export function resetChatInitialization() {
 
 export async function setupChatHandlers() {
     updateUserInfo();
-
-    resetStreamState();
     
     // Останавливаем старый стрим если был
     await stopGlobalMessageStream();
     
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Ждем полного завершения остановки стрима
+    await new Promise(resolve => setTimeout(resolve, 300));
     
-    // Загружаем чаты
+    // Загружаем чаты (внутри загружаются и пользователи)
     await loadChatsFromServer();
     
     // Настройка UI
@@ -139,12 +137,13 @@ export async function setupChatHandlers() {
     // Обновляем область чата
     await updateChatAreaUI();
     
-    // ЗАПУСКАЕМ СТРИМ ПОСЛЕ ЗАГРУЗКИ ЧАТОВ
+    // Даем время на завершение всех операций
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Запускаем стрим если есть чаты
     if (state.chats && state.chats.length > 0) {
-        // Добавляем небольшую задержку перед запуском стрима
-        setTimeout(async () => {
-            await startGlobalMessageStream();
-        }, 500);
+        console.log('🚀 Запуск стрима сообщений после инициализации чата');
+        await startGlobalMessageStream();
     } else {
         console.log('Нет чатов, стрим не запущен');
     }

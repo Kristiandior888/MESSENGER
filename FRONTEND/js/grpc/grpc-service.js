@@ -94,7 +94,7 @@ class GrpcService {
     // Messages
     async getMessages(chatId, limit = 50, cursor = '') {
         return this.#call('GetMessages', {
-            chat_id: chatId,
+            chatid: chatId,
             limit: limit,
             cursor: cursor
         });
@@ -108,7 +108,7 @@ class GrpcService {
         const fileId = fileIds.length > 0 ? fileIds[0] : '';
         
         return this.#call('SendMessage', {
-            chat_id: chatId,
+            chatid: chatId,
             type: type,
             text: text,
             file_id: fileId,
@@ -231,10 +231,10 @@ class GrpcService {
                 return null;
             }
             
-            this.stream = this.client.StreamMessages({ chat_ids: chatIds }, metadata);
+            this.stream = this.client.StreamMessages({ chatids: chatIds }, metadata);
             
             this.stream.on('data', (message) => {
-                console.log(`📨 Новое сообщение в чате ${message.chat_id}:`, message);
+                console.log(`📨 Новое сообщение в чате ${message.chatid}:`, message);
                 if (this.onMessageCallback) {
                     this.onMessageCallback(message);
                 }

@@ -11,9 +11,8 @@ let lastProcessedMessageIds = new Set();
 let isStreamStarted = false;
 let messageStream = null;
 let reconnectTimeout = null;
-let isShuttingDown = false; // Флаг для предотвращения повторных попыток при выходе
-let pollingInterval = null;
-let useStreaming = false; // Временно отключаем стриминг
+let isShuttingDown = false;
+let shutdownTimeout = null;
 
 export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;
@@ -169,24 +168,21 @@ export async function loadMessagesFromServer(chatId) {
  * Запуск стрима для получения сообщений в реальном времени
  */
 export async function startGlobalMessageStream() {
-    // Не запускаем стрим если:
-    // 1. Уже запущен
-    // 2. Идет завершение работы
-    // 3. Нет токена авторизации
-    
-    if (!useStreaming) {
-            startPollingForMessages();
-            return;
-        }
-
+    // Не запускаем стрим если уже запущен
     if (isStreamStarted) {
         console.log('⚠️ Стрим уже запущен');
         return;
     }
     
+    // Если идет завершение работы, откладываем запуск
     if (isShuttingDown) {
-        console.log('⚠️ Был флаг завершения, сбрасываю...');
-        isShuttingDown = false;
+        console.log('⚠️ Идет завершение работы, откладываем запуск стрима на 1 секунду');
+        setTimeout(() => {
+            if (!isStreamStarted && !isShuttingDown && state.token && state.chats?.length > 0) {
+                startGlobalMessageStream();
+            }
+        }, 1000);
+        return;
     }
     
     if (!state.token) {
@@ -194,12 +190,8 @@ export async function startGlobalMessageStream() {
         return;
     }
     
-    
     try {
         const { service } = await initGrpc();
-        
-        // Останавливаем старый стрим если есть
-        await stopGlobalMessageStream();
         
         // Получаем ID всех чатов пользователя
         const chatIds = state.chats?.map(chat => chat.id).filter(id => id && !id.startsWith('temp_')) || [];
@@ -207,7 +199,7 @@ export async function startGlobalMessageStream() {
         if (chatIds.length === 0) {
             console.log('Нет чатов для стрима, откладываем запуск');
             setTimeout(() => {
-                if (!isShuttingDown && !isStreamStarted) {
+                if (!isShuttingDown && !isStreamStarted && state.chats?.length > 0) {
                     startGlobalMessageStream();
                 }
             }, 2000);
@@ -237,23 +229,22 @@ export async function startGlobalMessageStream() {
         messageStream = service.client.StreamMessages({ chatids: chatIds }, metadata);
         
         messageStream.on('data', (message) => {
-         console.log(`📨 ПОЛУЧЕНО СООБЩЕНИЕ В СТРИМЕ:`, message);
+            console.log(`📨 Получено сообщение в реальном времени:`, message);
             
-            const chat = state.chats?.find(c => c.id === message.chat_id);
+            const chat = state.chats?.find(c => c.id === message.chatid);
             if (!chat) {
-                console.warn(`⚠️ Чат ${message.chat_id} не найден в state.chats`);
+                console.warn(`⚠️ Чат ${message.chatid} не найден в state.chats`);
                 return;
             }
             
-            if (state.currentChat === message.chat_id) {
-                appendNewMessage(message.chat_id, message, chat);
+            if (state.currentChat === message.chatid) {
+                appendNewMessage(message.chatid, message, chat);
             }
             
-            updateChatLastMessage(message.chat_id, message);
+            updateChatLastMessage(message.chatid, message);
         });
         
         messageStream.on('error', (error) => {
-            // Игнорируем ошибку CANCELLED при нормальном завершении
             if (error.code === 1 && isShuttingDown) {
                 console.log('🔇 Стрим отменен при завершении работы');
                 return;
@@ -262,7 +253,6 @@ export async function startGlobalMessageStream() {
             isStreamStarted = false;
             messageStream = null;
             
-            // Переподключаемся только если не в процессе завершения
             if (!isShuttingDown && !isStreamStarted) {
                 if (reconnectTimeout) clearTimeout(reconnectTimeout);
                 reconnectTimeout = setTimeout(() => {
@@ -277,7 +267,7 @@ export async function startGlobalMessageStream() {
             isStreamStarted = false;
             messageStream = null;
             
-            if (!isShuttingDown && !isStreamStarted) {
+            if (!isShuttingDown && !isStreamStarted && state.chats?.length > 0) {
                 if (reconnectTimeout) clearTimeout(reconnectTimeout);
                 reconnectTimeout = setTimeout(() => {
                     console.log('🔄 Переподключение стрима после завершения...');
@@ -303,33 +293,18 @@ export async function startGlobalMessageStream() {
     }
 }
 
-export function startPollingForMessages() {
-    if (pollingInterval) clearInterval(pollingInterval);
-    
-    console.log('🔄 Запуск polling (интервал 2 секунды)');
-    
-    pollingInterval = setInterval(async () => {
-        if (state.currentChat) {
-            await loadMessagesFromServer(state.currentChat);
-        }
-    }, 2000);
-}
-
-export function stopPollingForMessages() {
-    if (pollingInterval) {
-        clearInterval(pollingInterval);
-        pollingInterval = null;
-        console.log('🛑 Polling остановлен');
-    }
-}
+/**
+ * Остановка глобального стрима
+ */
 export async function stopGlobalMessageStream() {
+    // Очищаем предыдущий таймаут если есть
+    if (shutdownTimeout) {
+        clearTimeout(shutdownTimeout);
+        shutdownTimeout = null;
+    }
+    
     isShuttingDown = true;
     
-    if (!useStreaming) {
-            stopPollingForMessages();
-            return;
-        }
-
     if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
         reconnectTimeout = null;
@@ -337,9 +312,7 @@ export async function stopGlobalMessageStream() {
     
     if (messageStream) {
         try {
-            // Удаляем все слушатели перед отменой
             messageStream.removeAllListeners();
-            // Отменяем стрим
             messageStream.cancel();
             console.log('🛑 Стрим отменен');
         } catch (e) {
@@ -351,19 +324,14 @@ export async function stopGlobalMessageStream() {
     isStreamStarted = false;
     console.log('🛑 Глобальный стрим остановлен');
     
-  
+    // Сбрасываем флаг через задержку
+    shutdownTimeout = setTimeout(() => {
+        isShuttingDown = false;
+        shutdownTimeout = null;
+        console.log('🔓 Флаг isShuttingDown сброшен, стрим можно перезапускать');
+    }, 1000);
 }
 
-
-export function resetStreamState() {
-    isShuttingDown = false;
-    isStreamStarted = false;
-    if (reconnectTimeout) {
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = null;
-    }
-    console.log('🔄 Состояние стрима сброшено');
-}
 /**
  * Обновление последнего сообщения в списке чатов
  */

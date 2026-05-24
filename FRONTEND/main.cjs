@@ -26,7 +26,7 @@ function createWindow() {
 }
 
 // Убираем меню полностью
-    Menu.setApplicationMenu(null);  // ← ЭТО ГЛАВНОЕ
+    Menu.setApplicationMenu(null);  
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
