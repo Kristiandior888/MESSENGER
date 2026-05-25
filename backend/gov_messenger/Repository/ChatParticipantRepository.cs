@@ -14,8 +14,7 @@ namespace gov_messenger.Repository
             _db = db;
         }
 
-        public async Task AddAsync(
-            ChatParticipantEntity participant)
+        public async Task AddAsync(ChatParticipantEntity participant)
         {
             _db.ChatParticipants.Add(participant);
 

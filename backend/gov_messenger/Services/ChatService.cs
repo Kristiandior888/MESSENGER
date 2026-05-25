@@ -70,13 +70,8 @@ namespace gov_messenger.Services
             var chat = new ChatEntity
             {
                 id = Guid.NewGuid(),
-
-                name = type == ChatType.Private
-                    ? null
-                    : name,
-
+                name = type == ChatType.Private ? null : name,
                 type = (short)type,
-
                 created_at = DateTime.UtcNow
             };
 
@@ -89,11 +84,7 @@ namespace gov_messenger.Services
                     {
                         chatid = chat.id,
                         user_id = userId,
-
-                        role = userId == creatorGuid
-                            ? "admin"
-                            : "member",
-
+                        role = userId == creatorGuid ? "admin" : "member",
                         joined_at = DateTime.UtcNow
                     });
             }

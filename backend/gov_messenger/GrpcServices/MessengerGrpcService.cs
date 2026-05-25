@@ -101,7 +101,6 @@ namespace gov_messenger.GrpcServices
             ServerCallContext context)
         {
             var userId = context.UserState["userId"] as string;
-
             var user = await _userService.GetUserByIdAsync(userId);
 
             if (user == null)
@@ -146,7 +145,8 @@ namespace gov_messenger.GrpcServices
                     AvatarUrl = user.avatar_url ?? "",
                     Status = user.status ?? "",
                     LastSeen = user.last_seen != null ? new DateTimeOffset(user.last_seen.Value)
-                        .ToUnixTimeSeconds() : 0,
+                        .ToUnixTimeSeconds()
+                        : 0,
                     Role = user.role,
                     IsBlocked = user.is_blocked,
                     IsDeleted = user.is_deleted,
@@ -240,15 +240,11 @@ namespace gov_messenger.GrpcServices
             CreateChatRequest request,
             ServerCallContext context)
         {
-            var userId =
-                context.UserState["userId"] as string;
+            var userId = context.UserState["userId"] as string;
 
             if (string.IsNullOrEmpty(userId))
             {
-                throw new RpcException(
-                    new Status(
-                        StatusCode.Unauthenticated,
-                        "Unauthorized"));
+                throw new RpcException(new Status(StatusCode.Unauthenticated, "Unauthorized"));
             }
 
             try
@@ -383,11 +379,10 @@ namespace gov_messenger.GrpcServices
 
             foreach (var entity in messages)
             {
-                var text =
-                    _encryptionService.Decrypt(
-                        entity.ciphertext,
-                        entity.nonce,
-                        entity.tag);
+                var text = _encryptionService.Decrypt(
+                                entity.ciphertext,
+                                entity.nonce,
+                                entity.tag);
 
                 response.Messages.Add(new Message
                 {

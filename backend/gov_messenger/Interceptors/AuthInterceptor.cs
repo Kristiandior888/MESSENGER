@@ -18,9 +18,9 @@ namespace gov_messenger.Interceptors
         }
 
         public override async Task<TResponse> UnaryServerHandler<TRequest, TResponse>(
-        TRequest request,
-        ServerCallContext context,
-        UnaryServerMethod<TRequest, TResponse> continuation)
+            TRequest request,
+            ServerCallContext context,
+            UnaryServerMethod<TRequest, TResponse> continuation)
         {
             var method = context.Method;
 

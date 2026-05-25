@@ -61,7 +61,5 @@ namespace gov_messenger.Repository
 
             return chat;
         }
-
-
     }
 }
