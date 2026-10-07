@@ -148,14 +148,22 @@ function setupProfileHandlers() {
         });
     }
     
-    // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ"
+        // НАСТРАИВАЕМ КНОПКУ "ВЫЙТИ"
     const logoutProfileBtn = document.getElementById('logout-profile-btn');
     if (logoutProfileBtn) {
         const newLogoutBtn = logoutProfileBtn.cloneNode(true);
         logoutProfileBtn.parentNode.replaceChild(newLogoutBtn, logoutProfileBtn);
         
-        newLogoutBtn.addEventListener('click', () => {
+        newLogoutBtn.addEventListener('click', async () => {
             console.log('🚪 Выход из системы через профиль');
+            
+            // Останавливаем стрим
+            const { stopGlobalMessageStream } = await import('./chat/chat-messages.js');
+            await stopGlobalMessageStream();
+            
+            // ЯВНЫЙ сброс инициализации: при следующем входе нужна полная пересборка
+            const { resetChatInitialization } = await import('./chat/index.js');
+            resetChatInitialization();
             
             localStorage.removeItem('token');
             localStorage.removeItem('userData');
@@ -172,7 +180,7 @@ function setupProfileHandlers() {
         });
     }
     
-    // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
+        // НАСТРАИВАЕМ КНОПКУ ЗАКРЫТИЯ
     const closeBtn = document.getElementById('close-profile-btn');
     if (closeBtn) {
         const newCloseBtn = closeBtn.cloneNode(true);
@@ -180,13 +188,9 @@ function setupProfileHandlers() {
         
         newCloseBtn.addEventListener('click', async () => {
             console.log('🔙 Возврат из профиля в чат');
-            
-            const { loadChatsFromServer } = await import('./chat/chat-core.js');
-            const { resetChatInitialization } = await import('./chat/index.js');
-            
-            resetChatInitialization();
-            await loadChatsFromServer();
-            showScreen('chat');
+            // Никаких resetChatInitialization / loadChatsFromServer.
+            // showScreen('chat') сам обновит только UI, если чат уже инициализирован.
+            await showScreen('chat');
         });
     }
 }

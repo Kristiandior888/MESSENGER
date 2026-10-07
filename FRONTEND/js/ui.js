@@ -31,7 +31,6 @@ export async function initScreens() {
     const content = document.getElementById('content');
     if (!content) return;
     
-    // Загружаем все страницы
     const [loginRequestHtml, loginVerifyHtml, chatHtml, profileHtml, settingsHtml] = await Promise.all([
         loadPage('pages/login-request.html'),
         loadPage('pages/login-verify.html'),
@@ -40,44 +39,37 @@ export async function initScreens() {
         loadPage('pages/settings.html')
     ]);
     
-    // Создаём экран запроса email
     screens.loginRequest = document.createElement('div');
     screens.loginRequest.id = 'screen-login-request';
     screens.loginRequest.className = 'screen';
     screens.loginRequest.innerHTML = loginRequestHtml;
     
-    // Создаём экран подтверждения кода
     screens.loginVerify = document.createElement('div');
     screens.loginVerify.id = 'screen-login-verify';
     screens.loginVerify.className = 'screen';
     screens.loginVerify.innerHTML = loginVerifyHtml;
     
-    // Создаём экран чата
     screens.chat = document.createElement('div');
     screens.chat.id = 'screen-chat';
     screens.chat.className = 'screen';
     screens.chat.innerHTML = chatHtml;
     
-    // Создаём экран профиля
     screens.profile = document.createElement('div');
     screens.profile.id = 'screen-profile';
     screens.profile.className = 'screen';
     screens.profile.innerHTML = profileHtml;
     
-    // Создаём экран настроек
     screens.settings = document.createElement('div');
     screens.settings.id = 'screen-settings';
     screens.settings.className = 'screen';
     screens.settings.innerHTML = settingsHtml;
     
-    // Добавляем все экраны в DOM
     content.appendChild(screens.loginRequest);
     content.appendChild(screens.loginVerify);
     content.appendChild(screens.chat);
     content.appendChild(screens.profile);
     content.appendChild(screens.settings);
     
-    // Скрываем все экраны
     hideAllScreens();
     
     isInitialized = true;
@@ -99,33 +91,32 @@ export async function showScreen(screenName) {
         await initScreens();
     }
     
-    // Скрываем все экраны
     hideAllScreens();
     
-    // Показываем нужный экран
     const targetScreen = screens[screenName];
-    if (targetScreen) {
-        targetScreen.style.display = 'block';
-        
-        // Вызываем соответствующие обработчики
-        if (screenName === 'chat') {
-            const chatModule = await import('./handlers/chat/index.js');
-            await chatModule.setupChatHandlers();
-        } else if (screenName === 'loginRequest') {
-            const { setupLoginRequestHandlers } = await import('./handlers/loginRequestHandlers.js');
-            setupLoginRequestHandlers();
-        } else if (screenName === 'loginVerify') {
-            const { setupLoginVerifyHandlers } = await import('./handlers/loginVerifyHandlers.js');
-            setupLoginVerifyHandlers();
-        } else if (screenName === 'profile') {
-            const { setupProfileHandlers } = await import('./handlers/profileHandlers.js');
-            setupProfileHandlers();
-        } else if (screenName === 'settings') {
-            const { setupSettingsHandlers } = await import('./handlers/settingsHandlers.js');
-            setupSettingsHandlers();
-        }
-    } else {
+    if (!targetScreen) {
         console.error('❌ Экран не найден:', screenName);
+        return;
+    }
+    
+    targetScreen.style.display = 'block';
+    
+    // setupChatHandlers сам решает: полная инициализация или только обновление UI
+    if (screenName === 'chat') {
+        const chatModule = await import('./handlers/chat/index.js');
+        await chatModule.setupChatHandlers();
+    } else if (screenName === 'loginRequest') {
+        const { setupLoginRequestHandlers } = await import('./handlers/loginRequestHandlers.js');
+        setupLoginRequestHandlers();
+    } else if (screenName === 'loginVerify') {
+        const { setupLoginVerifyHandlers } = await import('./handlers/loginVerifyHandlers.js');
+        setupLoginVerifyHandlers();
+    } else if (screenName === 'profile') {
+        const { setupProfileHandlers } = await import('./handlers/profileHandlers.js');
+        setupProfileHandlers();
+    } else if (screenName === 'settings') {
+        const { setupSettingsHandlers } = await import('./handlers/settingsHandlers.js');
+        setupSettingsHandlers();
     }
 }
 
@@ -149,7 +140,6 @@ style.textContent = `
         padding: 0;
     }
     
-    /* Дополнительно обнуляем все отступы для страниц */
     .chat-container,
     .profile-container,
     .settings-container,

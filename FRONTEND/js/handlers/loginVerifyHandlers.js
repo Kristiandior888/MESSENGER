@@ -82,18 +82,18 @@ export function setupLoginVerifyHandlers() {
                 // Сохраняем в localStorage
                 localStorage.setItem('token', response.token);
                 localStorage.setItem('userData', JSON.stringify(state.currentUser));
-                localStorage.removeItem('pendingEmail'); // Очищаем временные данные
+                localStorage.removeItem('pendingEmail');
 
                 console.log('Добро пожаловать,', state.currentUser.name);
-                
-                // Переходим в чат
+
+                // Сбрасываем инициализацию чата — при входе нового пользователя
+                // нужна полная пересборка состояния чата
+                const { resetChatInitialization } = await import('./chat/index.js');
+                resetChatInitialization();
+
+                // Переходим в чат. showScreen('chat') сам вызовет
+                // setupChatHandlers(), который выполнит полную инициализацию.
                 await showScreen('chat');
-                
-                // Обновляем UI чата
-                const chatModule = await import('../handlers/chat/index.js');
-                if (chatModule.updateChatAreaUI) {
-                    chatModule.updateChatAreaUI();
-                }
             } else {
                 showError(response.error || 'Неверный код подтверждения');
                 if (codeInput) {
@@ -115,6 +115,12 @@ export function setupLoginVerifyHandlers() {
         // Очищаем временные данные
         localStorage.removeItem('pendingEmail');
         if (codeInput) codeInput.value = '';
+
+        // Пользователь ушёл с экрана логина — при следующем входе
+        // нужна полная переинициализация чата
+        const { resetChatInitialization } = await import('./chat/index.js');
+        resetChatInitialization();
+
         await showScreen('loginRequest');
     };
 

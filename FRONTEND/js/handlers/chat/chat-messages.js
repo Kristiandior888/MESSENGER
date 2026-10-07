@@ -13,7 +13,11 @@ let messageStream = null;
 let reconnectTimeout = null;
 let isShuttingDown = false;
 let shutdownTimeout = null;
+let isStoppingStream = false;
 
+/**
+ * Создание DOM-элемента сообщения
+ */
 export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;
     const type = isSent ? 'sent' : 'received';
@@ -74,6 +78,9 @@ export function createMessageElement(msg, chat) {
     return messageDiv;
 }
 
+/**
+ * Создание элемента-разделителя даты
+ */
 export function createDateSeparatorElement(timestamp) {
     const separatorDiv = document.createElement('div');
     separatorDiv.className = 'date-separator';
@@ -86,6 +93,9 @@ export function createDateSeparatorElement(timestamp) {
     return separatorDiv;
 }
 
+/**
+ * Добавление нового сообщения в конец списка (из стрима)
+ */
 export function appendNewMessage(chatId, message, chat) {
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return false;
@@ -127,6 +137,9 @@ export function appendNewMessage(chatId, message, chat) {
     return true;
 }
 
+/**
+ * Загрузка истории сообщений с сервера
+ */
 export async function loadMessagesFromServer(chatId) {
     if (!chatId) return;
 
@@ -182,9 +195,13 @@ export async function loadMessagesFromServer(chatId) {
     }
 }
 
+/**
+ * Запуск глобального стрима сообщений.
+ */
 export async function startGlobalMessageStream() {
     if (isStreamStarted) return;
 
+    // Если идёт остановка — подождём и попробуем ещё раз
     if (isShuttingDown) {
         setTimeout(() => {
             if (!isStreamStarted && !isShuttingDown && state.token && state.chats?.length > 0) {
@@ -234,8 +251,13 @@ export async function startGlobalMessageStream() {
         });
 
         messageStream.on('error', (error) => {
-            if (error.code === 1 && isShuttingDown) return;
+            // Игнорируем отмену — мы сами остановили стрим
+            if (isStoppingStream || isShuttingDown || error.code === 1) {
+                console.log('Стрим отменён локально, игнорируем');
+                return;
+            }
 
+            console.error('Ошибка стрима:', error);
             isStreamStarted = false;
             messageStream = null;
 
@@ -275,6 +297,9 @@ export async function startGlobalMessageStream() {
     }
 }
 
+/**
+ * Остановка глобального стрима.
+ */
 export async function stopGlobalMessageStream() {
     if (shutdownTimeout) {
         clearTimeout(shutdownTimeout);
@@ -282,6 +307,7 @@ export async function stopGlobalMessageStream() {
     }
 
     isShuttingDown = true;
+    isStoppingStream = true;
 
     if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
@@ -302,10 +328,14 @@ export async function stopGlobalMessageStream() {
 
     shutdownTimeout = setTimeout(() => {
         isShuttingDown = false;
+        isStoppingStream = false;
         shutdownTimeout = null;
     }, 1000);
 }
 
+/**
+ * Обновление последнего сообщения в чате
+ */
 function updateChatLastMessage(chatId, message) {
     const chat = state.chats?.find(c => c.id === chatId);
     if (chat) {
@@ -314,10 +344,16 @@ function updateChatLastMessage(chatId, message) {
     }
 }
 
+/**
+ * Заглушка: в текущей архитектуре используется один глобальный стрим
+ */
 export async function stopMessageStreamForChat(chatId) {
-    // Заглушка: в текущей архитектуре используется один глобальный стрим
+    // no-op
 }
 
+/**
+ * Остановка всех стримов и очистка состояния
+ */
 export async function stopAllMessageStreams() {
     await stopGlobalMessageStream();
     lastProcessedMessageIds.clear();
@@ -325,6 +361,9 @@ export async function stopAllMessageStreams() {
     lastRenderedDateKey = null;
 }
 
+/**
+ * Сброс состояния сообщений (без остановки стрима)
+ */
 export function resetMessagesState() {
     isLoadingMessages = false;
     lastRenderedDateKey = null;
