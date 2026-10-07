@@ -2149,3 +2149,39 @@ input:checked + .slider:before {
     white-space: nowrap;
 }
 
+/* ========================================
+   СОСТОЯНИЕ ЗАГРУЗКИ ПОИСКА
+   ======================================== */
+
+.search-loading {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.search-loading-spinner {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 16px;
+    border: 3px solid rgba(134, 14, 6, 0.664);
+    border-top-color: #d4af37;
+    border-radius: 50%;
+    animation: searchSpin 0.8s linear infinite;
+}
+
+@keyframes searchSpin {
+    to { transform: rotate(360deg); }
+}
+
+.search-loading-spinner {
+    border-color: rgba(204, 123, 48, 0.575);
+    border-top-color: #c17b3a;
+}
+
+.search-loading-text {
+    color: var(--text-primary, #3a2c21);
+}
+
+.search-loading-hint,
+.search-no-results .no-results-hint {
+    color: var(--text-muted, #b4a082);
+}

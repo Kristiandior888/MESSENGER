@@ -2993,3 +2993,43 @@ body.light-theme .settings-btn:hover {
     user-select: none;
     white-space: nowrap;
 }
+
+/* ========================================
+   СОСТОЯНИЕ ЗАГРУЗКИ ПОИСКА
+   ======================================== */
+
+.search-loading {
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.search-loading-spinner {
+    width: 36px;
+    height: 36px;
+    margin: 0 auto 16px;
+    border: 3px solid rgba(212, 175, 55, 0.2);
+    border-top-color: #d4af37;
+    border-radius: 50%;
+    animation: searchSpin 0.8s linear infinite;
+}
+
+@keyframes searchSpin {
+    to { transform: rotate(360deg); }
+}
+
+.search-loading-text {
+    font-size: 0.95rem;
+    color: #e0e0e0;
+    margin-bottom: 6px;
+}
+
+.search-loading-hint {
+    font-size: 0.8rem;
+    color: #a0a8b4;
+}
+
+.search-no-results .no-results-hint {
+    font-size: 0.8rem;
+    color: #6f7a88;
+    margin-bottom: 20px;
+}
