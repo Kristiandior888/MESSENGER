@@ -2124,3 +2124,28 @@ input:checked + .slider:before {
 .form-input::placeholder {
     color: var(--text-muted, #b4a082);
 }
+
+
+/* Разделитель даты в переписке */
+.date-separator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 16px 0;
+    width: 100%;
+}
+
+.date-separator-label {
+    background: rgba(255, 255, 255, 0.85);
+    color: #7a684e;
+    padding: 5px 14px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(4px);
+    user-select: none;
+    white-space: nowrap;
+}
+

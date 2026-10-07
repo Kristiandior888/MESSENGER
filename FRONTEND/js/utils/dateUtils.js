@@ -122,3 +122,71 @@ function declension(number, words) {
     const index = (number % 100 > 4 && number % 100 < 20) ? 2 : cases[Math.min(number % 10, 5)];
     return words[index];
 }
+
+/**
+ * Форматирование даты для разделителя в переписке (как в Telegram)
+ * Пример: "Среда, 7 сентября 2026 г."
+ * Для сегодня/вчера — "Сегодня" / "Вчера"
+ */
+export function formatDateSeparator(timestamp) {
+    if (!timestamp) return '';
+
+    try {
+        const timestampNum = Number(timestamp);
+        let date;
+
+        if (timestampNum < 10000000000) {
+            date = new Date(timestampNum * 1000);
+        } else {
+            date = new Date(timestampNum);
+        }
+
+        if (isNaN(date.getTime())) return '';
+
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return 'Сегодня';
+        if (date.toDateString() === yesterday.toDateString()) return 'Вчера';
+
+        const dayOfWeek = date.toLocaleDateString('ru-RU', { weekday: 'long' });
+        const dayOfWeekCapitalized = dayOfWeek.charAt(0).toUpperCase() + dayOfWeek.slice(1);
+        const day = date.getDate();
+        const month = date.toLocaleDateString('ru-RU', { month: 'long' });
+        const year = date.getFullYear();
+
+        return `${dayOfWeekCapitalized}, ${day} ${month} ${year} г.`;
+    } catch (error) {
+        console.error('❌ Ошибка форматирования даты-разделителя:', error);
+        return '';
+    }
+}
+
+/**
+ * Ключ даты (без времени) для сравнения — "2026-09-07"
+ */
+export function getDateKey(timestamp) {
+    if (!timestamp) return '';
+
+    try {
+        const timestampNum = Number(timestamp);
+        let date;
+
+        if (timestampNum < 10000000000) {
+            date = new Date(timestampNum * 1000);
+        } else {
+            date = new Date(timestampNum);
+        }
+
+        if (isNaN(date.getTime())) return '';
+
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+
+        return `${year}-${month}-${day}`;
+    } catch (error) {
+        return '';
+    }
+}

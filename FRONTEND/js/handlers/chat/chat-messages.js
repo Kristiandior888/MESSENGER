@@ -1,11 +1,11 @@
 // js/handlers/chat/chat-messages.js
 
 import { state } from '../../app.js';
-import { initGrpc, getCurrentChat, isGroupChat } from './chat-core.js';
+import { initGrpc, getCurrentChat, isGroupChat, refreshChatsList } from './chat-core.js';
 import { showErrorMessage } from './chat-ui.js';
-import { formatMessageTime } from '../../utils/dateUtils.js';
-import { refreshChatsList } from './chat-core.js';
+import { formatMessageTime, formatDateSeparator, getDateKey } from '../../utils/dateUtils.js';
 
+let lastRenderedDateKey = null;
 let isLoadingMessages = false;
 let lastProcessedMessageIds = new Set();
 let isStreamStarted = false;
@@ -18,27 +18,27 @@ export function createMessageElement(msg, chat) {
     const isSent = msg.sender_id === state.currentUser?.id;
     const type = isSent ? 'sent' : 'received';
     const timeStr = formatMessageTime(msg.timestamp);
-    
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${type}`;
     messageDiv.dataset.messageId = msg.id;
 
     const isGroup = isGroupChat(chat);
-    
+
     if (isGroup && !isSent) {
         let senderName = 'Пользователь';
-        
+
         if (chat.participants && Array.isArray(chat.participants)) {
             const sender = chat.participants.find(p => p.id === msg.sender_id);
             if (sender) {
                 senderName = sender.name || sender.email?.split('@')[0] || 'Пользователь';
             }
         }
-        
+
         if (msg.sender_name) {
             senderName = msg.sender_name;
         }
-        
+
         const senderDiv = document.createElement('div');
         senderDiv.className = 'message-sender';
         senderDiv.textContent = senderName;
@@ -70,92 +70,110 @@ export function createMessageElement(msg, chat) {
     }
 
     messageDiv.appendChild(metaDiv);
-    
+
     return messageDiv;
+}
+
+export function createDateSeparatorElement(timestamp) {
+    const separatorDiv = document.createElement('div');
+    separatorDiv.className = 'date-separator';
+
+    const label = document.createElement('span');
+    label.className = 'date-separator-label';
+    label.textContent = formatDateSeparator(timestamp);
+
+    separatorDiv.appendChild(label);
+    return separatorDiv;
 }
 
 export function appendNewMessage(chatId, message, chat) {
     const messagesDiv = document.getElementById('messages');
     if (!messagesDiv) return false;
-    
+
     const currentChat = getCurrentChat();
     if (currentChat !== chatId) return false;
-    
+
     if (lastProcessedMessageIds.has(message.id)) {
-        console.log('⚠️ Сообщение уже было обработано, пропускаем:', message.id);
         return false;
     }
-    
+
     if (document.querySelector(`.message[data-message-id="${message.id}"]`)) {
-        console.log('⚠️ Сообщение уже есть в DOM, пропускаем:', message.id);
         return false;
     }
-    
-    console.log(`📥 Добавляем новое сообщение в чат ${chatId}:`, message);
-    
+
     lastProcessedMessageIds.add(message.id);
-    
+
     if (lastProcessedMessageIds.size > 100) {
         const toDelete = [...lastProcessedMessageIds][0];
         lastProcessedMessageIds.delete(toDelete);
     }
-    
-    const messageElement = createMessageElement(message, chat);
-    
+
     const noMessagesDiv = messagesDiv.querySelector('.no-messages');
     if (noMessagesDiv) {
         noMessagesDiv.remove();
     }
-    
+
+    // Вставляем разделитель даты, если сменился день
+    const dateKey = getDateKey(message.timestamp);
+    if (dateKey && dateKey !== lastRenderedDateKey) {
+        messagesDiv.appendChild(createDateSeparatorElement(message.timestamp));
+        lastRenderedDateKey = dateKey;
+    }
+
+    const messageElement = createMessageElement(message, chat);
     messagesDiv.appendChild(messageElement);
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    
+
     return true;
 }
 
 export async function loadMessagesFromServer(chatId) {
     if (!chatId) return;
-    
-    console.log(`🔄 Загрузка сообщений с сервера для чата ${chatId}...`);
+
     isLoadingMessages = true;
-    
+
     try {
         const { service } = await initGrpc();
         const response = await service.getMessages(chatId, 50);
-        
-        console.log('💬 Получены сообщения:', response.messages?.length || 0);
-        
+
         const messagesDiv = document.getElementById('messages');
         if (!messagesDiv) return;
-        
+
         messagesDiv.innerHTML = '';
         lastProcessedMessageIds.clear();
-        
+        lastRenderedDateKey = null;
+
         if (!response.messages || response.messages.length === 0) {
             messagesDiv.innerHTML = '<div class="no-messages">Нет сообщений. Напишите первое сообщение!</div>';
-            isLoadingMessages = false;
             return;
         }
-        
+
         const currentChat = state.chats?.find(c => c.id === chatId);
-        
+
         const sortedMessages = [...response.messages].sort((a, b) => {
             const timeA = Number(a.timestamp) || 0;
             const timeB = Number(b.timestamp) || 0;
             return timeA - timeB;
         });
-        
+
         sortedMessages.forEach(msg => {
             lastProcessedMessageIds.add(msg.id);
         });
-        
+
         sortedMessages.forEach(msg => {
+            const dateKey = getDateKey(msg.timestamp);
+
+            if (dateKey && dateKey !== lastRenderedDateKey) {
+                messagesDiv.appendChild(createDateSeparatorElement(msg.timestamp));
+                lastRenderedDateKey = dateKey;
+            }
+
             const messageElement = createMessageElement(msg, currentChat);
             messagesDiv.appendChild(messageElement);
         });
-        
+
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        
+
     } catch (error) {
         console.error('❌ Ошибка загрузки сообщений:', error);
         showErrorMessage('Не удалось загрузить сообщения');
@@ -164,19 +182,10 @@ export async function loadMessagesFromServer(chatId) {
     }
 }
 
-/**
- * Запуск стрима для получения сообщений в реальном времени
- */
 export async function startGlobalMessageStream() {
-    // Не запускаем стрим если уже запущен
-    if (isStreamStarted) {
-        console.log('⚠️ Стрим уже запущен');
-        return;
-    }
-    
-    // Если идет завершение работы, откладываем запуск
+    if (isStreamStarted) return;
+
     if (isShuttingDown) {
-        console.log('⚠️ Идет завершение работы, откладываем запуск стрима на 1 секунду');
         setTimeout(() => {
             if (!isStreamStarted && !isShuttingDown && state.token && state.chats?.length > 0) {
                 startGlobalMessageStream();
@@ -184,20 +193,15 @@ export async function startGlobalMessageStream() {
         }, 1000);
         return;
     }
-    
-    if (!state.token) {
-        console.log('⚠️ Нет токена авторизации, стрим не запущен');
-        return;
-    }
-    
+
+    if (!state.token) return;
+
     try {
         const { service } = await initGrpc();
-        
-        // Получаем ID всех чатов пользователя
+
         const chatIds = state.chats?.map(chat => chat.id).filter(id => id && !id.startsWith('temp_')) || [];
-        
+
         if (chatIds.length === 0) {
-            console.log('Нет чатов для стрима, откладываем запуск');
             setTimeout(() => {
                 if (!isShuttingDown && !isStreamStarted && state.chats?.length > 0) {
                     startGlobalMessageStream();
@@ -205,85 +209,63 @@ export async function startGlobalMessageStream() {
             }, 2000);
             return;
         }
-        
-        console.log(`🚀 Запуск стрима для чатов:`, chatIds);
-        
-        // Создаем метаданные с токеном
+
         const Metadata = window.grpc?.Metadata;
-        if (!Metadata) {
-            console.error('❌ Metadata не доступен');
-            return;
-        }
-        
+        if (!Metadata) return;
+
         const metadata = new Metadata();
         if (state.token) {
             metadata.add('authorization', `Bearer ${state.token}`);
         }
-        
-        // Запускаем стрим
-        if (typeof service.client.StreamMessages !== 'function') {
-            console.warn('⚠️ Метод StreamMessages не реализован на сервере');
-            return;
-        }
-        
+
+        if (typeof service.client.StreamMessages !== 'function') return;
+
         messageStream = service.client.StreamMessages({ chatids: chatIds }, metadata);
-        
+
         messageStream.on('data', (message) => {
-            console.log(`📨 Получено сообщение в реальном времени:`, message);
-            
             const chat = state.chats?.find(c => c.id === message.chatid);
-            if (!chat) {
-                console.warn(`⚠️ Чат ${message.chatid} не найден в state.chats`);
-                return;
-            }
-            
+            if (!chat) return;
+
             if (state.currentChat === message.chatid) {
                 appendNewMessage(message.chatid, message, chat);
             }
-            
+
             updateChatLastMessage(message.chatid, message);
         });
-        
+
         messageStream.on('error', (error) => {
-            if (error.code === 1 && isShuttingDown) {
-                console.log('🔇 Стрим отменен при завершении работы');
-                return;
-            }
-            console.error('❌ Ошибка стрима:', error.code, error.message);
+            if (error.code === 1 && isShuttingDown) return;
+
             isStreamStarted = false;
             messageStream = null;
-            
+
             if (!isShuttingDown && !isStreamStarted) {
                 if (reconnectTimeout) clearTimeout(reconnectTimeout);
                 reconnectTimeout = setTimeout(() => {
-                    console.log('🔄 Переподключение стрима...');
                     startGlobalMessageStream();
                 }, 5000);
             }
         });
-        
+
         messageStream.on('end', () => {
-            console.log('🔚 Стрим завершен сервером');
             isStreamStarted = false;
             messageStream = null;
-            
+
             if (!isShuttingDown && !isStreamStarted && state.chats?.length > 0) {
                 if (reconnectTimeout) clearTimeout(reconnectTimeout);
                 reconnectTimeout = setTimeout(() => {
-                    console.log('🔄 Переподключение стрима после завершения...');
                     startGlobalMessageStream();
                 }, 3000);
             }
         });
-        
+
         isStreamStarted = true;
-        console.log('✅ Глобальный стрим сообщений запущен');
-        
+
     } catch (error) {
         console.error('❌ Ошибка запуска стрима:', error);
         isStreamStarted = false;
         messageStream = null;
-        
+
         if (!isShuttingDown) {
             if (reconnectTimeout) clearTimeout(reconnectTimeout);
             reconnectTimeout = setTimeout(() => {
@@ -293,48 +275,37 @@ export async function startGlobalMessageStream() {
     }
 }
 
-/**
- * Остановка глобального стрима
- */
 export async function stopGlobalMessageStream() {
-    // Очищаем предыдущий таймаут если есть
     if (shutdownTimeout) {
         clearTimeout(shutdownTimeout);
         shutdownTimeout = null;
     }
-    
+
     isShuttingDown = true;
-    
+
     if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);
         reconnectTimeout = null;
     }
-    
+
     if (messageStream) {
         try {
             messageStream.removeAllListeners();
             messageStream.cancel();
-            console.log('🛑 Стрим отменен');
         } catch (e) {
             console.warn('Ошибка при отмене стрима:', e.message);
         }
         messageStream = null;
     }
-    
+
     isStreamStarted = false;
-    console.log('🛑 Глобальный стрим остановлен');
-    
-    // Сбрасываем флаг через задержку
+
     shutdownTimeout = setTimeout(() => {
         isShuttingDown = false;
         shutdownTimeout = null;
-        console.log('🔓 Флаг isShuttingDown сброшен, стрим можно перезапускать');
     }, 1000);
 }
 
-/**
- * Обновление последнего сообщения в списке чатов
- */
 function updateChatLastMessage(chatId, message) {
     const chat = state.chats?.find(c => c.id === chatId);
     if (chat) {
@@ -344,17 +315,18 @@ function updateChatLastMessage(chatId, message) {
 }
 
 export async function stopMessageStreamForChat(chatId) {
-    console.log(`⚠️ stopMessageStreamForChat вызван для ${chatId}`);
+    // Заглушка: в текущей архитектуре используется один глобальный стрим
 }
 
 export async function stopAllMessageStreams() {
     await stopGlobalMessageStream();
     lastProcessedMessageIds.clear();
     isLoadingMessages = false;
-    console.log(`🛑 Все стримы остановлены`);
+    lastRenderedDateKey = null;
 }
 
 export function resetMessagesState() {
     isLoadingMessages = false;
-    console.log('Состояние сообщений сброшено');
+    lastRenderedDateKey = null;
+    lastProcessedMessageIds.clear();
 }

@@ -21,8 +21,8 @@ function createWindow() {
 
     win.loadFile('index.html');
     
-    // Открываем DevTools для отладки
-    //win.webContents.openDevTools();
+    //Открываем DevTools для отладки
+    win.webContents.openDevTools();
 }
 
 // Убираем меню полностью
