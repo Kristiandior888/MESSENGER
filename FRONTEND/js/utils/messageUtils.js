@@ -1,7 +1,7 @@
 // js/utils/messageUtils.js
 import { state } from '../app.js';
 import { getFileIcon, formatFileSize, getFileFromStorage, downloadFile } from '../utils/fileUtils.js';
-
+import { escapeHtml } from '../utils/domUtils.js';
 /**
  * Проверка, существует ли уже сообщение с таким ID в DOM
  */
@@ -114,18 +114,7 @@ function addMessage(text, type, saveToStorage = false, status = 'sent', files = 
     return messageId;
 }
 
-/**
- * Экранирование HTML
- */
-function escapeHtml(str) {
-    if (!str) return str;
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
+
 
 /**
  * Обработка текста с эмодзи

@@ -93,9 +93,15 @@ function setupCreateGroupButton() {
 function updateUserInfo() {
     const userEmail = document.getElementById('user-email');
     if (userEmail && state.currentUser) {
-        userEmail.textContent = state.currentUser.email;
+        // Показываем имя, если есть, иначе — email без домена
+        const displayName =
+            state.currentUser.name ||
+            state.currentUser.email?.split('@')[0] ||
+            'Пользователь';
+        userEmail.textContent = displayName;
+        console.log('Имя пользователя обновлено:', displayName);
     }
-    
+
     const chatAvatar = document.getElementById('chat-avatar');
     if (chatAvatar && state.userAvatar) {
         chatAvatar.src = state.userAvatar;
