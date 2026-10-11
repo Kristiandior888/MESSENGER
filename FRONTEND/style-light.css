@@ -861,7 +861,7 @@ html, body {
     padding: 13px 20px;
     background: var(--gradient-input);
     border: 1px solid var(--border-light);
-    border-radius: var(--radius-pill);
+    border-radius: var(--radius-md);        /* ← было var(--radius-pill) */
     color: var(--text-primary);
     font-family: var(--font-family);
     font-size: var(--fs-base);
