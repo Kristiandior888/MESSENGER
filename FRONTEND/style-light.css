@@ -2,6 +2,7 @@
    SOFT AURORA — СВЕТЛАЯ ПАСТЕЛЬНАЯ ТЕМА
    Нежные градиенты: мятный, лавандовый,
    персиковый, розовый. Воздушно и мягко.
+   Типографика унифицирована с тёмной темой.
    ======================================= */
 
 /* СБРОС И БАЗОВЫЕ НАСТРОЙКИ */
@@ -23,17 +24,18 @@
 :root {
     /* ===== ТИПОГРАФИКА — ЕДИНАЯ КОНСТАНТА ===== */
     --font-family: 'Segoe UI', 'Inter', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-base-size: 15px;
+    --font-base-size: 16px;
     --font-scale: 1;
+    --font-size-root: calc(var(--font-base-size) * var(--font-scale));
 
-    --fs-xs:   calc(0.72rem * var(--font-scale));
-    --fs-sm:   calc(0.85rem * var(--font-scale));
-    --fs-base: calc(1rem    * var(--font-scale));
-    --fs-md:   calc(1.05rem * var(--font-scale));
-    --fs-lg:   calc(1.25rem * var(--font-scale));
-    --fs-xl:   calc(1.6rem  * var(--font-scale));
-    --fs-2xl:  calc(2.2rem  * var(--font-scale));
-    --fs-3xl:  calc(3rem    * var(--font-scale));
+    --fs-xs:   0.72rem;
+    --fs-sm:   0.85rem;
+    --fs-base: 1rem;
+    --fs-md:   1.05rem;
+    --fs-lg:   1.25rem;
+    --fs-xl:   1.6rem;
+    --fs-2xl:  2.2rem;
+    --fs-3xl:  3rem;
 
     /* ===== ПАЛИТРА SOFT AURORA ===== */
     --lavender:        #b8a9e0;
@@ -163,10 +165,14 @@
 }
 
 html {
-    font-size: var(--font-base-size);
+    font-size: var(--font-size-root);   /* ← вот ключевая строка */
 }
 
-body {
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
     font-family: var(--font-family);
     font-size: var(--fs-base);
     background: var(--gradient-main);
@@ -296,9 +302,6 @@ body {
 
 /* =======================================
    КНОПКИ ЭКРАНОВ ЛОГИНА
-   #login-btn    — кнопка в login.html
-   .login-btn    — кнопки в login-request.html и login-verify.html
-   .login-btn-secondary — вторичная («Назад»)
    ======================================= */
 #login-btn,
 .login-btn {
@@ -365,7 +368,6 @@ body {
     animation: none;
 }
 
-/* Вторичная кнопка («Назад») */
 .login-btn-secondary {
     padding: 16px 52px;
     font-family: var(--font-family);
@@ -795,7 +797,7 @@ body {
     right: -4px;
     background: var(--gradient-button);
     color: #ffffff;
-    font-size: 10px;
+    font-size: 0.625rem;
     font-weight: 700;
     min-width: 18px;
     height: 18px;
