@@ -1,7 +1,7 @@
 {
-  "name": "sobor-loc-messenger",
+  "name": "nexus-corp-messenger",
   "version": "1.0.0",
-  "description": "Визуальная оболочка для локального мессенджера Собор",
+  "description": "Визуальная оболочка для корпоративного мессенджера Nexus",
   "main": "main.cjs",
   "scripts": {
     "dev" : "electronmon .",
