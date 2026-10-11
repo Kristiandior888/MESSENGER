@@ -9,6 +9,9 @@ console.log('__dirname:', __dirname);
 // Пробуем относительный путь
 let PROTO_PATH = path.join(__dirname, 'Protos/messenger.proto');
 
+console.log('PROTO_PATH:', PROTO_PATH);
+console.log('Существует ли:', fs.existsSync(PROTO_PATH));
+
 // Адрес сервера по умолчанию
 const DEFAULT_SERVER_ADDRESS = '192.168.0.21:7212';
 

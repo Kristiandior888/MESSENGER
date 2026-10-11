@@ -17,6 +17,7 @@ import {
 
 import { 
     updateChatAreaUI, 
+    updateChatAreaUIOnly,
     setupAvatar,
     showErrorMessage 
 } from './chat-ui.js';
@@ -92,10 +93,15 @@ function setupCreateGroupButton() {
 function updateUserInfo() {
     const userEmail = document.getElementById('user-email');
     if (userEmail && state.currentUser) {
-        userEmail.textContent = state.currentUser.email;
-        console.log('Email пользователя обновлен:', state.currentUser.email);
+        // Показываем имя, если есть, иначе — email без домена
+        const displayName =
+            state.currentUser.name ||
+            state.currentUser.email?.split('@')[0] ||
+            'Пользователь';
+        userEmail.textContent = displayName;
+        console.log('Имя пользователя обновлено:', displayName);
     }
-    
+
     const chatAvatar = document.getElementById('chat-avatar');
     if (chatAvatar && state.userAvatar) {
         chatAvatar.src = state.userAvatar;
@@ -108,24 +114,44 @@ function updateUserInfo() {
     }
 }
 
+/**
+ * ЯВНЫЙ сброс инициализации.
+ * Вызывать ТОЛЬКО когда состояние чата реально изменилось:
+ *  - logout
+ *  - смена сервера
+ *  - смена аккаунта
+ *  - восстановление после критической ошибки
+ */
 export function resetChatInitialization() {
     isChatInitialized = false;
-    console.log('🔄 Флаг инициализации чата сброшен');
+    console.log('🔄 Флаг инициализации чата сброшен (нужна полная переинициализация)');
 }
 
+/**
+ * Полная инициализация чата. Выполняется один раз.
+ */
 export async function setupChatHandlers() {
+    // Если уже инициализировано — только обновляем UI, ничего не пересоздаём
+    if (isChatInitialized) {
+        console.log('✅ Чат уже инициализирован, обновляем только UI');
+        updateUserInfo();
+        setupAvatar();
+        await updateChatAreaUIOnly();
+        return;
+    }
+
+    console.log('🚀 Полная инициализация чата...');
+
     updateUserInfo();
     
-    // Останавливаем старый стрим если был
+    // Останавливаем старый стрим, если вдруг остался
     await stopGlobalMessageStream();
-    
-    // Ждем полного завершения остановки стрима
     await new Promise(resolve => setTimeout(resolve, 300));
     
     // Загружаем чаты (внутри загружаются и пользователи)
     await loadChatsFromServer();
     
-    // Настройка UI
+    // Настройка UI и обработчиков (один раз)
     updateUserInfo();
     setupAvatar();
     setupCreateGroupButton();
@@ -137,7 +163,6 @@ export async function setupChatHandlers() {
     // Обновляем область чата
     await updateChatAreaUI();
     
-    // Даем время на завершение всех операций
     await new Promise(resolve => setTimeout(resolve, 200));
     
     // Запускаем стрим если есть чаты

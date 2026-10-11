@@ -5,65 +5,69 @@
     </div>
     
     <div class="profile-content">
-        <div class="avatar-section">
-            <div class="current-avatar">
-                <img src="images/default-avatar.png" alt="avatar" id="profile-avatar" class="profile-avatar">
-                <div class="avatar-overlay" id="change-avatar-overlay">
-                    <span>Изменить</span>
+        <div class="profile-main">
+            <!-- ЛЕВАЯ КОЛОНКА: аватар + инфо -->
+            <div class="profile-left">
+                <div class="avatar-section">
+                    <div class="current-avatar">
+                        <img src="images/default-avatar.png" alt="avatar" id="profile-avatar" class="profile-avatar">
+                        <div class="avatar-overlay" id="change-avatar-overlay">
+                            <span>Изменить</span>
+                        </div>
+                    </div>
+                    
+                    <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+                    
+                    <div class="avatar-hint">
+                        Нажмите на аватар, чтобы загрузить новое изображение
+                    </div>
+                </div>
+                
+                <div class="info-section">
+                    <div class="info-row">
+                        <label>Имя:</label>
+                        <span id="profile-name"></span>
+                    </div>
+                    <div class="info-row">
+                        <label>Email:</label>
+                        <span id="profile-email"></span>
+                    </div>
                 </div>
             </div>
             
-            <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
-            
-            <div class="avatar-hint">
-                Нажмите на аватар, чтобы загрузить новое изображение
-            </div>
-        </div>
-        
-        <!-- ПЕРЕКЛЮЧАТЕЛЬ ТЕМЫ -->
-        <div class="theme-switcher">
-            <h3>Тема оформления</h3>
-            <div class="theme-options">
-                <div class="theme-option" id="theme-dark" data-theme="dark">
-                    <div class="theme-preview dark"></div>
-                    <div class="theme-name">Тёмная</div>
+            <!-- ПРАВАЯ КОЛОНКА: тема + действия -->
+            <div class="profile-right">
+                <div class="theme-switcher">
+                    <h3>Тема оформления</h3>
+                    <div class="theme-options">
+                        <div class="theme-option" id="theme-dark" data-theme="dark">
+                            <div class="theme-preview dark"></div>
+                            <div class="theme-name">Тёмная</div>
+                        </div>
+                        <div class="theme-option" id="theme-light" data-theme="light">
+                            <div class="theme-preview light"></div>
+                            <div class="theme-name">Светлая</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="theme-option" id="theme-light" data-theme="light">
-                    <div class="theme-preview light"></div>
-                    <div class="theme-name">Светлая</div>
+                
+                <div class="profile-actions">
+                    <button id="settings-btn" class="action-btn primary">
+                        <span class="action-icon"></span>
+                        Настройки
+                    </button>
+                    
+                    <button id="create-group-btn" class="action-btn primary">
+                        <span class="action-icon"></span>
+                        Создать группу
+                    </button>
+                    
+                    <button id="logout-profile-btn" class="action-btn danger">
+                        <span class="action-icon"></span>
+                        Выйти из аккаунта
+                    </button>
                 </div>
             </div>
         </div>
-        
-        <div class="info-section">
-            <div class="info-row">
-                <label>Имя:</label>
-                <span id="profile-name"></span>
-            </div>
-            <div class="info-row">
-                <label>Email:</label>
-                <span id="profile-email"></span>
-            </div>
-        </div>
-
-        
-                <!-- КНОПКА НАСТРОЕК -->
-        <button id="settings-btn" class="settings-btn">
-            <span class="icon"></span>
-            Настройки
-        </button>
-
-
-        <!-- БЛОК С ДЕЙСТВИЯМИ (НОВЫЙ) -->
-        <div class="profile-actions">
-            <button id="create-group-btn" class="action-btn primary">
-                <span class="action-icon"></span>
-                Создать группу
-            </button>
-            
-            <button id="logout-profile-btn" class="action-btn danger">
-                <span class="action-icon"></span>
-                Выйти из аккаунта
-            </button>
-        </div>
+    </div>
 </div>

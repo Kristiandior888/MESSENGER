@@ -4,6 +4,7 @@
   "description": "Визуальная оболочка для локального мессенджера Собор",
   "main": "main.cjs",
   "scripts": {
+    "dev" : "electronmon .",
     "start": "electron .",
     "build": "electron-packager . SoborMessenger --platform=win32 --arch=x64 --out=release --overwrite --icon=icon/icon.ico",
     "build:linux": "electron-packager . SoborMessenger --platform=linux --arch=x64 --out=release --overwrite --icon=icon/icon.png",
@@ -12,7 +13,8 @@
   },
   "devDependencies": {
     "electron": "^40.4.1",
-    "electron-packager": "^17.1.2"
+    "electron-packager": "^17.1.2",
+    "electronmon": "^2.0.4"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.14.3",

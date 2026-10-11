@@ -1,5 +1,6 @@
 // js/handlers/chat/chat-files.js
 import { getFileIcon, formatFileSize, getFileFromStorage, downloadFile } from '../../utils/fileUtils.js';
+import { escapeHtml } from '../../utils/domUtils.js';
 
 // Состояние прикреплённых файлов.
 // Каждый элемент: { id, name, size, type, file }
@@ -14,8 +15,7 @@ export function updateAttachedFilesIndicator(files) {
     if (!btn) return;
 
     if (files.length > 0) {
-        btn.style.backgroundColor = 'rgba(212, 175, 55, 0.2)';
-        btn.style.borderColor = '#d4af37';
+        btn.classList.add('has-files');
         btn.title = `${files.length} файл(ов) прикреплено`;
 
         let counter = btn.querySelector('.file-counter');
@@ -26,8 +26,7 @@ export function updateAttachedFilesIndicator(files) {
         }
         counter.textContent = files.length;
     } else {
-        btn.style.backgroundColor = 'transparent';
-        btn.style.borderColor = '#3a424c';
+        btn.classList.remove('has-files');
         btn.title = 'Прикрепить файл';
 
         const counter = btn.querySelector('.file-counter');
@@ -45,8 +44,6 @@ export function clearAttachedFiles() {
 
 /**
  * Добавление файлов в список прикреплённых.
- * Сохраняем оригинальный File-объект (.file) — он нужен для загрузки на сервер.
- * localStorage используем только как кеш для предпросмотра / скачивания до получения server file_id.
  */
 export async function addAttachedFiles(files) {
     for (const file of files) {
@@ -55,15 +52,14 @@ export async function addAttachedFiles(files) {
             continue;
         }
 
-        // Генерируем временный локальный ID (используется только в DOM до ответа сервера)
         const localId = `local_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
         attachedFiles.push({
-            id: localId,       // временный ID для DOM
+            id: localId,
             name: file.name,
             size: file.size,
             type: file.type,
-            file,              // ← оригинальный File-объект для UploadFile RPC
+            file,
         });
 
         console.log(`✅ Файл прикреплён (локально): ${file.name}`);
@@ -85,7 +81,7 @@ export function createFileElement(fileData) {
     fileDiv.innerHTML = `
         <span class="file-icon ${fileIcon.class}">${fileIcon.icon}</span>
         <div class="file-info">
-            <div class="file-name">${fileData.name}</div>
+            <div class="file-name">${escapeHtml(fileData.name)}</div>
             <div class="file-size">${formatFileSize(fileData.size)}</div>
         </div>
         <span class="download-hint">⬇️</span>

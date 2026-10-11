@@ -14,7 +14,7 @@ export function showGroupInfo(groupId) {
         console.error('Группа не найдена или это не групповой чат');
         return;
     }
-    
+
     fetch('pages/group-info.html')
         .then(response => response.text())
         .then(html => {
@@ -41,47 +41,40 @@ async function setupGroupInfoModalHandlers(group) {
     const pinnedCheckbox = document.getElementById('group-pinned');
     const participantsList = document.getElementById('participants-list');
     const participantsCount = document.getElementById('participants-count');
-    
+
     if (!modal) {
         console.error('Модальное окно не найдено');
         return;
     }
-    
-    // Заполняем название группы
+
     if (groupNameEl) {
         groupNameEl.textContent = group.name || 'Групповой чат';
     }
-    
-    // Настройки уведомлений
+
     if (notificationsCheckbox) {
         notificationsCheckbox.checked = group.notifications !== false;
         notificationsCheckbox.addEventListener('change', (e) => {
             group.notifications = e.target.checked;
             console.log(`Уведомления для группы ${group.name}: ${e.target.checked}`);
-            // TODO: Сохранить настройку на сервере
         });
     }
-    
-    // Настройки закрепления
+
     if (pinnedCheckbox) {
         pinnedCheckbox.checked = group.pinned || false;
         pinnedCheckbox.addEventListener('change', (e) => {
             group.pinned = e.target.checked;
             updateChatsList();
             console.log(`Закрепление для группы ${group.name}: ${e.target.checked}`);
-            // TODO: Сохранить настройку на сервере
         });
     }
-    
-    // Загружаем участников
+
     await loadAndRenderParticipants(group, participantsList, participantsCount);
-    
-    // Закрытие модального окна
+
     const closeModalWindow = () => modal.remove();
-    
+
     if (closeBtn) closeBtn.addEventListener('click', closeModalWindow);
     if (closeBtn2) closeBtn2.addEventListener('click', closeModalWindow);
-    
+
     modal.addEventListener('click', (e) => {
         if (e.target === modal) closeModalWindow();
     });
@@ -92,11 +85,11 @@ async function setupGroupInfoModalHandlers(group) {
  */
 async function loadAndRenderParticipants(group, participantsList, participantsCount) {
     if (!participantsList) return;
-    
+
     try {
         const { service } = await initGrpc();
         const participants = [];
-        
+
         for (const userId of group.participant_ids || []) {
             try {
                 const response = await service.getUser(userId);
@@ -120,15 +113,15 @@ async function loadAndRenderParticipants(group, participantsList, participantsCo
                 });
             }
         }
-        
+
         if (participantsCount) {
             participantsCount.textContent = participants.length;
         }
-        
+
         renderParticipantsList(participantsList, participants);
     } catch (error) {
         console.error('Ошибка загрузки участников группы:', error);
-        participantsList.innerHTML = '<div class="error" style="padding: 20px; text-align: center;">Ошибка загрузки участников</div>';
+        participantsList.innerHTML = '<div class="no-contacts">Ошибка загрузки участников</div>';
     }
 }
 
@@ -137,13 +130,15 @@ async function loadAndRenderParticipants(group, participantsList, participantsCo
  */
 function renderParticipantsList(container, participants) {
     container.innerHTML = '';
-    
+
     participants.forEach(participant => {
         const participantItem = document.createElement('div');
         participantItem.className = 'participant-item';
         participantItem.innerHTML = `
             <div class="participant-avatar">
-                ${participant.avatar ? `<img src="${participant.avatar}" alt="avatar">` : '👤'}
+                ${participant.avatar
+                    ? `<img src="${participant.avatar}" alt="avatar">`
+                    : '👤'}
             </div>
             <div class="participant-info">
                 <div class="participant-name">
@@ -160,7 +155,7 @@ function renderParticipantsList(container, participants) {
 /**
  * Показать ошибку
  */
-function showError(message) {
-    const { showErrorMessage } = require('../chat/chat-ui.js');
+async function showError(message) {
+    const { showErrorMessage } = await import('../chat/chat-ui.js');
     showErrorMessage(message);
 }
