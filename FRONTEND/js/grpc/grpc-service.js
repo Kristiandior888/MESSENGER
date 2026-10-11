@@ -87,7 +87,7 @@ class GrpcService {
             name: name || '',
             participant_ids: participantIds || []
         };
-        console.log('📤 CreateChat запрос:', request);
+        console.log('CreateChat запрос:', request);
         return this.#call('CreateChat', request);
     }
 
@@ -100,20 +100,20 @@ class GrpcService {
         });
     }
 
-    async sendMessage(chatId, text, type = 0, fileIds = []) {
-        if (!state.currentUser) {
-            throw new Error('Пользователь не авторизован');
-        }
-
-        const fileId = fileIds.length > 0 ? fileIds[0] : '';
-        
-        return this.#call('SendMessage', {
-            chatid: chatId,
-            type: type,
-            text: text,
-            file_id: fileId,
-        });
+    async sendMessage(chatId, text, type = 'TEXT', fileIds = []) {
+    if (!state.currentUser) {
+        throw new Error('Пользователь не авторизован');
     }
+
+    const fileId = fileIds.length > 0 ? fileIds[0] : '';
+    
+    return this.#call('SendMessage', {
+        chatid: chatId,
+        type: type,          // теперь 'TEXT' | 'FILE' | 'IMAGE'
+        text: text,
+        file_id: fileId,
+    });
+}
 
     // Users
     async getUser(userId) {

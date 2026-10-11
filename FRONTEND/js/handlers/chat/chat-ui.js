@@ -8,19 +8,11 @@ import {
 } from './chat-core.js';
 import { loadMessagesFromServer } from './chat-messages.js';
 import { showChatContextMenu } from '../groups/index.js';
+import { escapeHtml } from '../../utils/domUtils.js';
+import { showErrorToast } from '../../utils/notificationUtils.js';
 
-function escapeHtml(str) {
-    if (!str) return str;
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-}
-
-export async function updateChatAreaUI() {
-    console.log('Полное обновление UI чата, currentChat:', state.currentChat);
+export async function updateChatAreaUI(loadMessages = true) {
+    console.log(`Полное обновление UI чата, currentChat: ${state.currentChat}, loadMessages: ${loadMessages}`);
 
     const messagesDiv = document.getElementById('messages');
     const messageInput = document.querySelector('.message-input');
@@ -55,7 +47,9 @@ export async function updateChatAreaUI() {
             }
         }
 
-        await loadMessagesFromServer(getCurrentChat());
+        if (loadMessages) {
+            await loadMessagesFromServer(getCurrentChat());
+        }
     } else {
         messagesDiv.style.display = 'none';
         messageInput.style.display = 'none';
@@ -78,63 +72,10 @@ export async function updateChatAreaUI() {
         chatArea.insertBefore(placeholder, messagesDiv);
     }
 }
+
 
 export async function updateChatAreaUIOnly() {
-    console.log('Обновление UI чата (без загрузки сообщений), currentChat:', state.currentChat);
-
-    const messagesDiv = document.getElementById('messages');
-    const messageInput = document.querySelector('.message-input');
-    const chatArea = document.querySelector('.chat-area');
-    const chatName = document.getElementById('chat-name');
-    const chatStatus = document.getElementById('chat-status');
-    const chatHeaderAvatar = document.querySelector('.chat-avatar-placeholder span');
-
-    if (!messagesDiv || !messageInput || !chatArea) return;
-
-    const oldPlaceholder = document.getElementById('chat-placeholder');
-    if (oldPlaceholder) oldPlaceholder.remove();
-
-    if (getCurrentChat()) {
-        messagesDiv.style.display = 'flex';
-        messageInput.style.display = 'flex';
-
-        const currentChatObj = state.chats?.find(c => c.id === state.currentChat);
-        if (currentChatObj) {
-            const displayName = getChatDisplayName(currentChatObj);
-            if (chatName) chatName.textContent = displayName;
-            if (chatHeaderAvatar) {
-                chatHeaderAvatar.textContent = isGroupChat(currentChatObj) ? '👥' : '💬';
-            }
-            if (chatStatus) {
-                if (isGroupChat(currentChatObj)) {
-                    const participantsCount = currentChatObj.participants?.length || 0;
-                    chatStatus.textContent = `${participantsCount} участников`;
-                } else {
-                    chatStatus.textContent = '';
-                }
-            }
-        }
-    } else {
-        messagesDiv.style.display = 'none';
-        messageInput.style.display = 'none';
-
-        if (chatName) chatName.textContent = 'Выберите чат';
-        if (chatStatus) chatStatus.textContent = '';
-        if (chatHeaderAvatar) chatHeaderAvatar.textContent = '💬';
-
-        const placeholder = document.createElement('div');
-        placeholder.id = 'chat-placeholder';
-        placeholder.className = 'chat-placeholder';
-        placeholder.innerHTML = `
-            <div class="placeholder-content">
-                <div class="placeholder-icon">💬</div>
-                <h3>Выберите чат для общения</h3>
-                <p>Нажмите на чат в списке слева, чтобы начать переписку</p>
-            </div>
-        `;
-
-        chatArea.insertBefore(placeholder, messagesDiv);
-    }
+    return updateChatAreaUI(false);
 }
 
 export function createChatItemElement(chat) {
@@ -200,18 +141,5 @@ export function setupAvatar() {
 }
 
 export function showErrorMessage(message) {
-    let errorToast = document.querySelector('.error-toast');
-
-    if (!errorToast) {
-        errorToast = document.createElement('div');
-        errorToast.className = 'error-toast';
-        document.body.appendChild(errorToast);
-    }
-
-    errorToast.textContent = message;
-    errorToast.style.display = 'block';
-
-    setTimeout(() => {
-        errorToast.style.display = 'none';
-    }, 3000);
+    showErrorToast(message);
 }

@@ -4,6 +4,7 @@ import { showScreen } from '../../ui.js';
 import { loadMessagesFromServer } from '../chat/chat-messages.js';
 import { updateChatsList } from './index.js';
 import { showErrorMessage } from '../chat/chat-ui.js';
+import { showNotification } from '../../utils/notificationUtils.js';
 
 /**
  * Выход из группы
@@ -36,7 +37,7 @@ export async function leaveGroup(groupId) {
             }
         }
         
-        showInfoMessage(`Вы вышли из группы "${groupName}"`);
+        showNotification(`Вы вышли из группы "${groupName}"`);
     } catch (error) {
         console.error('Ошибка выхода из группы:', error);
         showErrorMessage('Не удалось выйти из группы');
@@ -55,28 +56,9 @@ export function clearChatHistory(chatId) {
     
     // TODO: Добавить API для очистки истории на сервере
     console.log(`Очистка истории чата ${chatId}`);
-    showInfoMessage('История очищена');
+    showNotification('История очищена');
 }
 
-/**
- * Показать информационное сообщение
- */
-function showInfoMessage(message) {
-    // Используем существующую систему уведомлений
-    const notification = document.createElement('div');
-    notification.className = 'settings-notification';
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => notification.remove(), 300);
-    }, 2000);
-}
 
 /**
  * Выход из системы (глобальный)

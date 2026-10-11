@@ -43,14 +43,14 @@ async function uploadAttachedFilesToServer(service, filesToSend) {
 }
 
 function resolveMessageType(text, files) {
-    if (!files || files.length === 0) return 0;
+    if (!files || files.length === 0) return 'TEXT';
 
     const hasImage = files.some(f =>
         f.type?.startsWith('image/') ||
         /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(f.name)
     );
 
-    return hasImage ? 2 : 1;
+    return hasImage ? 'IMAGE' : 'FILE';
 }
 
 export async function sendMessage() {

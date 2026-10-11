@@ -10,10 +10,10 @@ import {
     getCurrentChat,
     createRealChatWithUser,
     cleanupChatResources,
-    refreshChatsList,
     refreshAllChatNames,
     loadAllUsersFromServer
 } from './chat-core.js';
+import { updateChatsList } from '../groups/index.js';
 
 import { 
     updateChatAreaUI, 

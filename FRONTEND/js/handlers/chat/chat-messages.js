@@ -1,7 +1,8 @@
 // js/handlers/chat/chat-messages.js
 
 import { state } from '../../app.js';
-import { initGrpc, getCurrentChat, isGroupChat, refreshChatsList } from './chat-core.js';
+import { initGrpc, getCurrentChat, isGroupChat } from './chat-core.js';
+import { updateChatsList } from '../groups/index.js';
 import { showErrorMessage } from './chat-ui.js';
 import { formatMessageTime, formatDateSeparator, getDateKey } from '../../utils/dateUtils.js';
 
@@ -340,7 +341,7 @@ function updateChatLastMessage(chatId, message) {
     const chat = state.chats?.find(c => c.id === chatId);
     if (chat) {
         chat.last_message = message;
-        refreshChatsList();
+        updateChatsList();   // ← было refreshChatsList()
     }
 }
 

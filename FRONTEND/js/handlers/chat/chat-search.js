@@ -6,7 +6,7 @@ import {
     nextResult,
     prevResult,
     clearSearch,
-} from '../../utils/searchUtils.js';
+} from '../../utils/search/index.js';
 
 let isInitialized = false;
 

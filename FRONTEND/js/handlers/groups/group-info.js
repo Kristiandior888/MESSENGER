@@ -20,7 +20,16 @@ export function showGroupInfo(groupId) {
         .then(html => {
             const modalContainer = document.createElement('div');
             modalContainer.innerHTML = html;
-            document.body.appendChild(modalContainer.firstChild);
+
+            // Ищем модалку по ID, а не берём firstChild
+            // (в HTML может быть комментарий перед div-ом)
+            const modalElement = modalContainer.querySelector('#group-info-modal');
+            if (!modalElement) {
+                console.error('Не удалось найти #group-info-modal в загруженном HTML');
+                return;
+            }
+
+            document.body.appendChild(modalElement);
             setupGroupInfoModalHandlers(group);
         })
         .catch(error => {
@@ -80,47 +89,37 @@ async function setupGroupInfoModalHandlers(group) {
     });
 }
 
-/**
- * Загрузка и отображение участников группы
+
+/** 
+ * Загрузка и отображение участников группы.
+ * Участники приходят с сервера в поле `participants` как массив объектов User,
+ * отдельные запросы GetUser делать НЕ нужно.
  */
 async function loadAndRenderParticipants(group, participantsList, participantsCount) {
     if (!participantsList) return;
 
     try {
-        const { service } = await initGrpc();
-        const participants = [];
-
-        for (const userId of group.participant_ids || []) {
-            try {
-                const response = await service.getUser(userId);
-                if (response.user) {
-                    participants.push({
-                        id: userId,
-                        name: response.user.name || response.user.email.split('@')[0],
-                        email: response.user.email,
-                        avatar: response.user.avatar_url,
-                        isCreator: userId === group.created_by
-                    });
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки участника:', error);
-                participants.push({
-                    id: userId,
-                    name: 'Неизвестный',
-                    email: '',
-                    avatar: null,
-                    isCreator: false
-                });
-            }
-        }
+        // Участники уже пришли с сервера вместе с чатом
+        const participants = (group.participants || []).map(user => ({
+            id: user.id,
+            name: user.name || user.email?.split('@')[0] || 'Пользователь',
+            email: user.email || '',
+            avatar: user.avatar_url || null,
+            isCreator: user.id === group.created_by,
+        }));
 
         if (participantsCount) {
             participantsCount.textContent = participants.length;
         }
 
+        if (participants.length === 0) {
+            participantsList.innerHTML = '<div class="no-contacts">Нет данных об участниках</div>';
+            return;
+        }
+
         renderParticipantsList(participantsList, participants);
     } catch (error) {
-        console.error('Ошибка загрузки участников группы:', error);
+        console.error('Ошибка отображения участников группы:', error);
         participantsList.innerHTML = '<div class="no-contacts">Ошибка загрузки участников</div>';
     }
 }

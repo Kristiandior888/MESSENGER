@@ -8,6 +8,7 @@ import {
     applyPendingSettings 
 } from '../utils/settingsUtils.js';
 import { updateChatsList } from './groups/index.js';
+import { showNotification } from '../utils/notificationUtils.js';
 
 // Флаг, чтобы предотвратить повторную инициализацию
 let isApplying = false;
@@ -131,7 +132,7 @@ function setupSettingsHandlers() {
             showNotification('Настройки успешно применены!');
             
             // Обновляем список чатов БЕЗ дублирования
-            await refreshChatsWithoutDuplication();
+            await updateChatsList();
             
             // Возвращаемся в профиль
             setTimeout(() => {
@@ -153,57 +154,6 @@ function setupSettingsHandlers() {
     }
 }
 
-// Функция для обновления списка чатов без дублирования
-async function refreshChatsWithoutDuplication() {
-    const chatsList = document.getElementById('chats-list');
-    if (!chatsList) return;
-    
-    // ОЧИЩАЕМ список перед добавлением (это ключевой момент!)
-    chatsList.innerHTML = '';
-    
-    if (!state.chats || state.chats.length === 0) {
-        chatsList.innerHTML = '<div class="no-chats">Нет чатов. Создайте новый чат или напишите кому-нибудь.</div>';
-        return;
-    }
-    
-    // Импортируем функцию создания элемента чата
-    const { createChatItemElement } = await import('./chat/chat-ui.js');
-    
-    // Добавляем чаты заново (без дублей, так как список очищен)
-    for (const chat of state.chats) {
-        const chatItem = createChatItemElement(chat);
-        chatsList.appendChild(chatItem);
-    }
-    
-    // Если есть активный чат, подсвечиваем его
-    if (state.currentChat) {
-        const activeChat = chatsList.querySelector(`.chat-item[data-chat-id="${state.currentChat}"]`);
-        if (activeChat) {
-            activeChat.classList.add('active');
-        }
-    }
-    
-    console.log('✅ Список чатов обновлен, чатов:', state.chats.length);
-}
 
-// Функция для показа уведомления
-function showNotification(message) {
-    const notification = document.createElement('div');
-    notification.className = 'settings-notification';
-    notification.textContent = message;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
-    }, 2000);
-}
 
 export { setupSettingsHandlers };

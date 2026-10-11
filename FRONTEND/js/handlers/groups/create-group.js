@@ -220,7 +220,7 @@ function setupGroupModalHandlers(modal) {
                 participants: selectedContacts
             });
 
-            const response = await service.createChat(1, groupName, selectedContacts);
+            const response = await service.createChat('GROUP', groupName, selectedContacts);
 
             console.log('📨 Ответ сервера:', response);
 

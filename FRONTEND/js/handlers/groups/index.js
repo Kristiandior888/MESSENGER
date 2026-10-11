@@ -17,37 +17,87 @@ import { showChatContextMenu } from './group-context-menu.js';
  * Обновление списка чатов в боковой панели
  */
 export async function updateChatsList() {
-    const chatsList = document.getElementById('chats-list');
+    const chatsList = document.getElementById('chats-list')
+        || document.querySelector('.chats-list');
     if (!chatsList) return;
 
     chatsList.innerHTML = '';
 
-    if (!state.chats || state.chats.length === 0) {
-        chatsList.innerHTML = '<div class="no-chats">Нет доступных чатов</div>';
-        return;
-    }
+    // Загружаем необходимые модули
+    const { createChatItemElement } = await import('../chat/chat-ui.js');
+    const { createUserListItem } = await import('../chat/chat-users-list.js');
+    const { getAllUsersFromCache } = await import('../chat/chat-users.js');
 
-    const sortedChats = [...state.chats].sort((a, b) => {
+    // 1. Существующие чаты
+    const sortedChats = [...(state.chats || [])].sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
         return (a.name || '').localeCompare(b.name || '');
     });
-
-    const { createChatItemElement } = await import('../chat/chat-ui.js');
 
     for (const chat of sortedChats) {
         const chatItem = createChatItemElement(chat);
         chatsList.appendChild(chatItem);
     }
 
+    // 2. Пользователи без чатов
+    const usersWithoutChats = getUsersWithoutChats(getAllUsersFromCache());
+
+    for (const user of usersWithoutChats) {
+        const userItem = createUserListItem(user);
+        chatsList.appendChild(userItem);
+    }
+
+    // 3. Заглушка, если совсем ничего
+    if (sortedChats.length === 0 && usersWithoutChats.length === 0) {
+        chatsList.innerHTML = '<div class="no-chats">Нет других пользователей в системе</div>';
+        return;
+    }
+
+    // 4. Подсветка активного чата
     if (state.currentChat) {
-        const activeChat = chatsList.querySelector(`.chat-item[data-chat-id="${state.currentChat}"]`);
+        const activeChat = chatsList.querySelector(
+            `.chat-item[data-chat-id="${state.currentChat}"], .chat-item[data-user-id="${state.currentChat}"]`
+        );
         if (activeChat) {
             activeChat.classList.add('active');
         }
     }
 
-    console.log('✅ Список чатов обновлен через updateChatsList');
+    console.log(`✅ Список чатов обновлен: ${sortedChats.length} чатов, ${usersWithoutChats.length} пользователей без чатов`);
+}
+
+/**
+ * Возвращает пользователей, с которыми ещё нет личного чата.
+ * Группы не учитываются — только личные чаты.
+ */
+function getUsersWithoutChats(allUsers) {
+    if (!state.currentUser || !allUsers || allUsers.length === 0) return [];
+
+    // Собираем ID всех, с кем уже есть чат
+    const existingUserIds = new Set();
+
+    for (const chat of (state.chats || [])) {
+        if (chat.type === 'GROUP' || chat.type === 1) continue;
+
+        if (chat.other_user_id) {
+            existingUserIds.add(chat.other_user_id);
+        }
+
+        if (Array.isArray(chat.participants)) {
+            for (const p of chat.participants) {
+                if (p.id !== state.currentUser.id) {
+                    existingUserIds.add(p.id);
+                }
+            }
+        }
+    }
+
+    // Фильтруем пользователей: убираем себя и тех, с кем уже есть чат
+    return allUsers.filter(user =>
+        user.id !== state.currentUser.id &&
+        !existingUserIds.has(user.id)
+    );
 }
 
 /**

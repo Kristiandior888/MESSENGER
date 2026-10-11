@@ -3,6 +3,7 @@ import { state } from '../../app.js';
 import { createRealChatWithUser } from './chat-core.js';
 import { loadMessagesFromServer } from './chat-messages.js';
 import { escapeHtml } from '../../utils/domUtils.js';
+import { showErrorMessage } from './chat-ui.js';
 
 /**
  * Создание элемента пользователя для списка
@@ -28,14 +29,7 @@ export function createUserListItem(user) {
     `;
 
     userItem.addEventListener('click', async () => {
-        document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
-        userItem.classList.add('active');
-
-        const chat = await getOrCreateChatWithUser(user);
-        if (chat) {
-            state.currentChat = chat.id;
-            await loadMessagesFromServer(chat.id);
-        }
+    await openChatWithUser(user);
     });
 
     userItem.addEventListener('contextmenu', (e) => {
@@ -45,6 +39,29 @@ export function createUserListItem(user) {
     });
 
     return userItem;
+}
+
+/**
+ * Открыть (или создать) чат с пользователем и переключиться на него.
+ * Делает всё: создаёт чат, ставит currentChat, грузит сообщения, обновляет активный класс.
+ */
+async function openChatWithUser(user) {
+    const chat = await getOrCreateChatWithUser(user);
+    if (!chat) return null;
+
+    state.currentChat = chat.id;
+
+    // Снимаем active со всех чатов
+    document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
+
+    // Ставим active на нужный элемент — ищем и по data-chat-id, и по data-user-id
+    const targetItem = document.querySelector(
+        `.chat-item[data-chat-id="${chat.id}"], .chat-item[data-user-id="${user.id}"]`
+    );
+    if (targetItem) targetItem.classList.add('active');
+
+    await loadMessagesFromServer(chat.id);
+    return chat;
 }
 
 /**
@@ -102,14 +119,7 @@ function showUserContextMenu(e, user) {
     const startChatItem = menu.querySelector('[data-action="start-chat"]');
     startChatItem.addEventListener('click', async () => {
         menu.remove();
-        const chat = await getOrCreateChatWithUser(user);
-        if (chat) {
-            state.currentChat = chat.id;
-            await loadMessagesFromServer(chat.id);
-            document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
-            const userItem = document.querySelector(`.chat-item[data-user-id="${user.id}"]`);
-            if (userItem) userItem.classList.add('active');
-        }
+        await openChatWithUser(user);
     });
 
     const profileItem = menu.querySelector('[data-action="view-profile"]');
@@ -186,27 +196,6 @@ function showUserProfileModal(user) {
     const startChatBtn = modal.querySelector('.start-chat-from-profile');
     startChatBtn.addEventListener('click', async () => {
         modal.remove();
-        const chat = await getOrCreateChatWithUser(user);
-        if (chat) {
-            state.currentChat = chat.id;
-            await loadMessagesFromServer(chat.id);
-            document.querySelectorAll('.chat-item').forEach(ci => ci.classList.remove('active'));
-            const userItem = document.querySelector(`.chat-item[data-user-id="${user.id}"]`);
-            if (userItem) userItem.classList.add('active');
-        }
+        await openChatWithUser(user);
     });
-}
-
-function showErrorMessage(message) {
-    let errorToast = document.querySelector('.error-toast');
-    if (!errorToast) {
-        errorToast = document.createElement('div');
-        errorToast.className = 'error-toast';
-        document.body.appendChild(errorToast);
-    }
-    errorToast.textContent = message;
-    errorToast.style.display = 'block';
-    setTimeout(() => {
-        errorToast.style.display = 'none';
-    }, 3000);
 }
