@@ -328,6 +328,31 @@ html, body {
     filter: drop-shadow(0 4px 18px rgba(184, 169, 224, 0.35));
 }
 
+
+.login-container h2 {
+    font-size: var(--fs-3xl);
+    font-weight: 700;
+    letter-spacing: 20px;
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    background: linear-gradient(120deg,
+        #8b6cc7 0%,
+        #c78bb8 40%,
+        #e08a9e 70%,
+        #e0925f 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-align: center;
+    animation: fadeUp 0.8s var(--transition) both;
+    filter: drop-shadow(0 4px 18px rgba(184, 169, 224, 0.35));
+
+    transform: scaleX(1.2);       /* ← на 20% шире */
+    transform-origin: center;
+    display: inline-block;
+    animation: fadeUpScaled 0.8s var(--transition) both;
+}
+
 .login-container p {
     font-size: var(--fs-md);
     margin-bottom: 3rem;
